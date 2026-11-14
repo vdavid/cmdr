@@ -4,24 +4,27 @@ Live: https://cmdr.macupdate.com/ (accepted from the 2026-09-18 v0.46.0 submissi
 through). Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form
 creates and modifies a listing: type `Cmdr` into "Modify an existing listing?" at the top to load this one.
 
-Status: **v0.61.0 prepared 2026-11-13, not submitted yet** (the fields below are what goes in). Before it, v0.53.0 was
-submitted 2026-10-15 with the reviewer pinged the same day; the live page showed v0.46.0 then. The v0.47.0, v0.49.0, and
-v0.55.0 updates were prepared but never submitted, and v0.54.0 and v0.56.0–v0.60.0 got none, so the v0.61.0 Version
-changes end with highlights from v0.54.0–v0.60.0. The Description changed in three places since v0.53.0, each for a
-feature v0.61.0 graduated out of alpha: NFS joins "More servers", restic backups get a bullet, and the built-in chat
-reads "beta version".
+Status: **v0.61.0 submitted 2026-11-14** (the fields below are what went in), with the screenshots converted from the
+2026-10-26 masters; the 2026-11-14 reshoot goes in with the next update. Before it, v0.53.0 was submitted 2026-10-15
+with the reviewer pinged the same day; the live page showed v0.46.0 then. The v0.47.0, v0.49.0, and v0.55.0 updates were
+prepared but never submitted, and v0.54.0 and v0.56.0–v0.60.0 got none, so the v0.61.0 Version changes end with
+highlights from v0.54.0–v0.60.0. The Description changed in three places since v0.53.0, each for a feature v0.61.0
+graduated out of alpha: NFS joins "More servers", restic backups get a bullet, and the built-in chat reads "beta
+version".
 
 ❗ **A submission sits unreviewed until David pings a MacUpdate reviewer directly.** The v0.46.0 one only went through
 after a ping, and the earlier ones never did. The contact is in the vault's directory blitz plan (MacUpdate entry), so
 every handoff ends with "submit, then ping". The v0.53.0 submission skipped v0.47–v0.52, so its Description picked up
 what shipped in between (multi-rename, compare folders, folder sizes on demand, S3).
 
-**The Download URL is the dynamic `getcmdr.com/download/latest/universal` link** (since the v0.53.0 submission), so it
-never goes stale and downloads count toward MacUpdate. Their guidelines ask for "the direct URL to the installer package
-(e.g., .pkg .dmg, .zip)", and this one takes 3 redirects to a signed `release-assets.githubusercontent.com` blob URL
-that doesn't end in `.dmg` (verified 2026-09-18). The two submissions that used it went unreviewed, but so did
-everything until a reviewer got pinged, so the missing ping, not the redirect, is the likely cause. If MacUpdate ever
-refuses it, fall back to the version-pinned GitHub Releases URL
+**The Download URL is the dynamic `getcmdr.com/download/latest/universal` link** (since the v0.61.0 submission), so it
+never goes stale and downloads count toward MacUpdate. Loading the listing into the form on 2026-11-14 still showed the
+pinned `github.com/vdavid/cmdr/.../v0.53.0/...dmg` URL and the old `vdavid/cmdr` support URL, so the v0.53.0 submission
+didn't carry the dynamic link after all; always overwrite every URL field from this file. Their guidelines ask for "the
+direct URL to the installer package (e.g., .pkg .dmg, .zip)", and this one takes 3 redirects to a signed
+`release-assets.githubusercontent.com` blob URL that doesn't end in `.dmg` (verified 2026-09-18). The two submissions
+that used it went unreviewed, but so did everything until a reviewer got pinged, so the missing ping, not the redirect,
+is the likely cause. If MacUpdate ever refuses it, fall back to the version-pinned GitHub Releases URL
 (`https://github.com/getcmdr/cmdr/releases/download/vX.Y.Z/Cmdr_X.Y.Z_universal.dmg`), bumped per release.
 
 "Version changes" covers the release being submitted (the whole minor line, patches included, once patches start getting
