@@ -1133,8 +1133,10 @@ context-menu and menu-bar label, and the analytics event's props.
 7. `CLOUD_AI_CONSENT_VERSION` was bumped in the commit that built `for_model`, with both disclosure items, before any
    sender existed; every kind `for_model` can emit maps to a disclosure item (a test fails on a new field).
 8. Every LLM call goes through `resolve_agent_llm`, resolved before the peek: a refused slot reads no file for a model
-   and sends nothing. Every verdict is metered on the reserved row, which holds no text; unpriced is never $0; cancel,
-   consent revoke, and a policy narrowing all stop it; one verdict in flight, at most 12 starts a minute.
+   and sends nothing. Every completed verdict is metered on the reserved row, which holds no text (a stopped or failed
+   call reports no usage, as a stopped Ask Cmdr turn doesn't, so it goes unmetered though the provider billed its
+   prompt: `about/DETAILS.md` § Its cost); unpriced is never $0; cancel, consent revoke, and a policy narrowing all stop
+   it; one verdict in flight, at most 12 starts a minute.
 9. Nothing reads inside another app's container.
 10. `cmdr-about` has no `tauri`, `tauri-specta`, or `cmdr` in its tree and sits at its surface ceiling.
 11. The op-log provenance claim requires a matching node identity (or, only if D11 picked (b), a size + mtime match
