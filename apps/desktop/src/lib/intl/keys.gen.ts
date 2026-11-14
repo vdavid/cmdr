@@ -31,6 +31,7 @@ export type MessageKey =
   | 'aboutThis.childKind.other'
   | 'aboutThis.childKind.video'
   | 'aboutThis.cmdrOperation.copySource'
+  | 'aboutThis.cmdrOperation.datesChanged'
   | 'aboutThis.cmdrOperation.done'
   | 'aboutThis.cmdrOperation.from'
   | 'aboutThis.cmdrOperation.noRecord'

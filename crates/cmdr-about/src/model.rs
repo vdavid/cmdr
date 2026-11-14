@@ -561,6 +561,9 @@ impl ModelOperation {
             initiator,
             source_path,
             source_volume,
+            // The card's caveat about the item's own dates, ❌ not sent: the model
+            // reads the item's dates on the identity row.
+            dates_changed: _,
         } = operation;
         Self {
             kind: *kind,

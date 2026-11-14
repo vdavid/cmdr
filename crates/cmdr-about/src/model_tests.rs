@@ -431,6 +431,7 @@ fn a_protected_path_leaves_name_level_facts_only() {
         initiator: StartedBy::You,
         source_path: Some(text("/Volumes/naspi/backup/.ssh/id_ed25519")),
         source_volume: Some(text("Naspolya")),
+        dates_changed: false,
     }));
     card.last_opened = Some(Fact::Known(Usage {
         last_opened: 1_772_400_000,
@@ -1080,6 +1081,7 @@ fn every_field() -> AboutCard {
         initiator: StartedBy::You,
         source_path: Some(text("/Volumes/naspi/Tool.dmg")),
         source_volume: Some(text("Naspolya")),
+        dates_changed: true,
     }));
     card.last_opened = Some(Fact::Known(Usage {
         last_opened: 1_772_400_000,

@@ -124,6 +124,7 @@ fn a_cmdr_copy_leads_when_no_site_is_recorded() {
             initiator: StartedBy::You,
             source_path: Some(text("/films/Trip.mkv")),
             source_volume: Some(text("Naspolya")),
+            dates_changed: false,
         })),
     );
     land(&mut copied, last_opened(1_761_000_000));

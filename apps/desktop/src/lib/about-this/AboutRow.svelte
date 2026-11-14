@@ -268,6 +268,9 @@
                         snippets={{ date: opDate }}
                     />
                 </span>
+                {#if op.datesChanged}
+                    <span class="line quiet">{t('aboutThis.cmdrOperation.datesChanged')}</span>
+                {/if}
                 {#if op.sourcePath}
                     {@const sourcePath = op.sourcePath}
                     {#snippet source(_content: Snippet)}<AboutPath path={sourcePath} />{/snippet}

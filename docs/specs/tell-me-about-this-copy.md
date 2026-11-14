@@ -351,6 +351,10 @@ The list below covers every key the branch adds, grouped by the surface it shows
   - Where: Answer on the "Cmdr's history" row of the "Tell me about this" card: which Cmdr operation put the item where
     it is, who started it, and when. <date></date> becomes the date. "Ask Cmdr" is the name of Cmdr's built-in
     assistant; keep it. "An AI client" is another AI app that was driving Cmdr.
+- `aboutThis.cmdrOperation.datesChanged`: It’s the same item, though its dates have changed since.
+  - Where: Muted line under that answer, when the item is the very node Cmdr landed but its dates were backdated since
+    (a sync app or a backup tool restoring an older date moves the creation date back on APFS). Without it the row said
+    "replaced since" for the same file (conformance M7). New, needs David's review.
 - `aboutThis.cmdrOperation.from`: From <source></source>{hasVolume, select, yes { on {volume}} other {}}
   - Where: Second line on the "Cmdr's history" row of the "Tell me about this" card: where the item was copied or moved
     from. <source></source> becomes the original path; {volume} names the drive or server it was on when that differs.

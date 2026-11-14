@@ -377,6 +377,10 @@
       "kind": { "description": "What the operation did: copy, move, rename, create, extract, compress, or trash." }
     }
   },
+  "aboutThis.cmdrOperation.datesChanged": "It’s the same item, though its dates have changed since.",
+  "@aboutThis.cmdrOperation.datesChanged": {
+    "description": "Muted line under the answer on the \"Cmdr's history\" row of the \"Tell me about this\" card, shown when the item is the very one Cmdr copied or moved, but its dates were changed afterwards (for example, by a sync app or a backup tool restoring an older date). Reassures that the history above still applies to it. \"Item\" covers a file or a folder."
+  },
   "aboutThis.cmdrOperation.from": "From <source></source>{hasVolume, select, yes { on {volume}} other {}}",
   "@aboutThis.cmdrOperation.from": {
     "description": "Second line on the \"Cmdr's history\" row of the \"Tell me about this\" card: where the item was copied or moved from. <source></source> becomes the original path; {volume} names the drive or server it was on when that differs. No closing period.",

@@ -121,14 +121,15 @@ fn strongest(answers: Vec<(String, LandedAt)>) -> Option<(String, LandedAt)> {
 /// The card's fact for what the log answered. `landed_on` is the volume id the
 /// row was found under.
 fn fact_of(landed: LandedAt, landed_on: &str, volume_name: &dyn Fn(&str) -> Option<String>) -> Fact<CmdrOperation> {
-    let (kind, initiator, at, source_volume_id, source_path) = match landed {
+    let (kind, initiator, at, source_volume_id, source_path, dates_changed) = match landed {
         LandedAt::ByOperation {
             kind,
             initiator,
             at,
             source_volume_id,
             source_path,
-        } => (kind, initiator, at, source_volume_id, source_path),
+            dates_changed,
+        } => (kind, initiator, at, source_volume_id, source_path, dates_changed),
         LandedAt::NodeChangedSince => return Fact::unknown(UnknownWhy::NodeChangedSince),
         LandedAt::NoRecord => return Fact::unknown(UnknownWhy::NoRecord),
     };
@@ -147,6 +148,7 @@ fn fact_of(landed: LandedAt, landed_on: &str, volume_name: &dyn Fn(&str) -> Opti
             .then(|| volume_name(&source_volume_id))
             .flatten()
             .map(|name| ItemText::new(&name)),
+        dates_changed,
     })
 }
 

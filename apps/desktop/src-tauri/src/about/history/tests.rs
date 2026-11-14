@@ -162,8 +162,35 @@ fn a_copy_off_another_volume_names_where_it_came_from() {
             initiator: StartedBy::You,
             source_path: Some(ItemText::new("smb://nas/share/reports/report.pdf")),
             source_volume: Some(ItemText::new("Naspolya")),
+            dates_changed: false,
         })
     );
+}
+
+/// Backdating a file on APFS moves its birth earlier; the card still names the
+/// copy and says the dates changed, ❌ never "replaced since".
+#[test]
+fn a_copy_whose_dates_were_backdated_is_still_the_copy() {
+    let journal = Journal::new("about-history-backdated");
+    journal.landed(
+        "op",
+        OpKind::Copy,
+        Initiator::User,
+        100,
+        ("nas", "smb://nas/share/reports/report.pdf"),
+        ("root", LANDED),
+        Some(node(7)),
+    );
+    let backdated = NodeIdentity {
+        inode: 7,
+        birth_nanos: node(7).birth_nanos - 1_000_000_000,
+    };
+
+    let Fact::Known(operation) = ask(&journal.history("root"), LANDED, Some(backdated)) else {
+        panic!("the backdated file is still the copy's");
+    };
+    assert!(operation.dates_changed);
+    assert_eq!(operation.kind, LandedBy::Copy);
 }
 
 #[test]

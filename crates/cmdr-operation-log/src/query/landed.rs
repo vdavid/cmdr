@@ -13,7 +13,7 @@ use cmdr_fs::volume::NodeIdentity;
 use rusqlite::Connection;
 
 use crate::store::{OperationLogStoreError, decode, find_dir, fold_name, join_leaf, resolve_dir};
-use crate::types::{Initiator, OpKind};
+use crate::types::{Initiator, ItemOutcome, OpKind};
 
 /// How many rows at one path are looked through, newest first. A path collects a
 /// row per operation that landed something there; past this many the older ones
@@ -35,6 +35,11 @@ pub enum LandedAt {
         source_volume_id: String,
         /// Where on that volume it came from.
         source_path: String,
+        /// The node is the recorded one with its birth time moved EARLIER: on APFS,
+        /// setting a modified time before a file's birth moves the birth back
+        /// (`touch -t`, `rsync -t`, a sync client restoring dates). The same item,
+        /// whose dates changed since. A birth that moved later is another node.
+        dates_changed: bool,
     },
     /// Operations landed something at the path, and none of the nodes they
     /// recorded is the one there now: it was replaced since.
@@ -72,7 +77,8 @@ pub fn landed_at(
         let mut rows = stmt.query(rusqlite::params![
             fold_name(&name.to_string_lossy()),
             dir_id,
-            NEWEST_ROWS_READ
+            NEWEST_ROWS_READ,
+            ItemOutcome::RolledBack.as_token()
         ])?;
         let mut landed = None;
         while let Some(row) = rows.next()? {
@@ -80,12 +86,14 @@ pub fn landed_at(
             else {
                 continue;
             };
-            // The inode is stored bit-cast to SQLite's signed integer.
-            if (inode as u64, birth_nanos) != (node.inode, node.birth_nanos) {
+            // The inode is stored bit-cast to SQLite's signed integer. Nothing moves
+            // a birth time later, so a later one is a new node that got the number.
+            if inode as u64 != node.inode || node.birth_nanos > birth_nanos {
                 recorded_another_node = true;
                 continue;
             }
             landed = Some(Landing {
+                dates_changed: node.birth_nanos < birth_nanos,
                 source_dir_id: row.get(2)?,
                 source_name: row.get(3)?,
                 kind: decode(row.get(4)?, OpKind::from_token, "kind")?,
@@ -109,6 +117,7 @@ pub fn landed_at(
                 source_path: join_leaf(&source_folder, &landing.source_name)
                     .to_string_lossy()
                     .into_owned(),
+                dates_changed: landing.dates_changed,
             })
         }
         None if recorded_another_node => Ok(LandedAt::NodeChangedSince),
@@ -117,11 +126,15 @@ pub fn landed_at(
 }
 
 /// The newest rows landing at one name in one folder. A rollback's own rows are
-/// left out: they record no node, and its original carries the story.
+/// left out: they record no node, and its original carries the story. So is a row
+/// an undo reversed (`?4`, the rolled-back outcome): the undo carried that node off
+/// (or removed it), so if it's here again, something else brought it back, and
+/// crediting the operation would tell a stale story.
 const LANDED_AT_SQL: &str = "SELECT i.dest_inode, i.dest_birth_ns, i.source_dir_id, i.source_name, \
             o.kind, o.initiator, o.started_at, o.ended_at \
      FROM operation_items i JOIN operations o ON o.op_id = i.op_id \
      WHERE i.dest_name_folded = ?1 AND i.dest_dir_id = ?2 AND o.rolls_back_op_id IS NULL \
+       AND i.outcome != ?4 \
      ORDER BY o.started_at DESC, o.op_id DESC, i.seq DESC LIMIT ?3";
 
 /// The matching row, before its source folder is resolved to a path.
@@ -131,6 +144,7 @@ struct Landing {
     kind: OpKind,
     initiator: Initiator,
     at: i64,
+    dates_changed: bool,
 }
 
 #[cfg(test)]

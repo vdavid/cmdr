@@ -142,8 +142,45 @@ fn the_node_an_operation_landed_names_that_operation() {
             at: 110,
             source_volume_id: "nas".to_string(),
             source_path: "smb://nas/share/reports/report.pdf".to_string(),
+            dates_changed: false,
         }
     );
+    writer.shutdown();
+}
+
+/// On APFS, setting a file's modified time before its birth moves the birth back
+/// (`touch -t`, `rsync -t`, a sync client restoring dates): same inode, earlier
+/// birth (verified on macOS 27, APFS, `stat` before and after `touch -t
+/// 202001010000`, 2026-11-14). That's the node Cmdr landed with its dates changed,
+/// ❌ never "replaced since". A birth that moved LATER is a new node: nothing
+/// moves a birth time forward.
+#[test]
+fn a_node_whose_birth_moved_earlier_is_the_same_item_with_its_dates_changed() {
+    let (store, writer, _dir) = fresh();
+    copied_from_the_nas(&writer, "op", 100, Some(node(7)));
+    let backdated = NodeIdentity {
+        inode: 7,
+        birth_nanos: node(7).birth_nanos - 86_400 * 1_000_000_000,
+    };
+
+    let LandedAt::ByOperation { dates_changed, .. } = ask(store.conn(), LANDED, backdated) else {
+        panic!("the backdated node is the one the copy landed");
+    };
+    assert!(dates_changed);
+    writer.shutdown();
+}
+
+/// Cmdr moved the item here, an undo carried it back, and something else moved
+/// it here again: the node matches the move's row, but that landing was undone,
+/// so the move doesn't explain how it's here now.
+#[test]
+fn a_landing_an_undo_reversed_credits_nothing() {
+    let (store, writer, _dir) = fresh();
+    let mut moved = item("/Users/me/Inbox/report.pdf", LANDED, Some(node(7)));
+    moved.outcome = ItemOutcome::RolledBack;
+    journal(&writer, "op", OpKind::Move, Initiator::User, 100, vec![moved]);
+
+    assert_eq!(ask(store.conn(), LANDED, node(7)), LandedAt::NoRecord);
     writer.shutdown();
 }
 
@@ -345,7 +382,9 @@ fn the_lookup_is_index_served() {
         .prepare(&format!("EXPLAIN QUERY PLAN {LANDED_AT_SQL}"))
         .expect("prepare explain");
     let plan = stmt
-        .query_map(rusqlite::params!["report.pdf", 1, 64], |row| row.get::<_, String>(3))
+        .query_map(rusqlite::params!["report.pdf", 1, 64, "rolled_back"], |row| {
+            row.get::<_, String>(3)
+        })
         .expect("explain rows")
         .map(|row| row.expect("detail"))
         .collect::<Vec<_>>()

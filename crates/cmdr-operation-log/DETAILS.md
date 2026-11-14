@@ -722,6 +722,17 @@ one an operation put there (§ "Where an item landed").
 - **What it costs an undo, on purpose**: a landed file later REPLACED by an identical one (restored from a backup,
   re-downloaded, saved by an app that swaps files) no longer counts as the operation's, even at the same size and date.
   It's skipped as `Drift`, where a row without an identity would have removed or moved it.
+- **Decision: the cloud-sync case is the same tradeoff, accepted.** A File Provider folder (iCloud Drive, Dropbox,
+  Google Drive) can rewrite a synced file by replacement: a new inode with the same bytes and date. An undo that
+  `verify_snapshot` alone would allow is refused as `Drift` there. That's the fail-safe direction (Cmdr can't tell the
+  sync client's twin from a stranger saved over the name), and a skipped undo leaves the file where the person sees it.
+  Treating a size + mtime match inside a File Provider domain as the snapshot check alone was considered and not done:
+  it needs a per-path "is this a File Provider domain" call at undo time, and a wrong yes deletes someone's file
+  (conformance review M7, 2026-11-14).
+- **Backdating also fails the node check for undo, and that's fine.** On APFS, setting a modified time before a file's
+  birth moves the birth time back (verified on macOS 27, APFS, `stat` before and after `touch -t 202001010000`,
+  2026-11-14), so the recorded pair no longer matches. The mtime moved too, so `verify_snapshot` would refuse that item
+  anyway: the undo's outcome doesn't change. Only the card reads it differently (§ "Where an item landed").
 - **Inode plus birth time, no device number.** `st_dev` follows the order disks attached, so it can change across a
   reboot or a replug while the node stays put, which would strand every older undo on an external drive. The path
   already names the volume. Both fields survive a rename.
@@ -1211,6 +1222,14 @@ it: it matches SOURCE names, and where an item came from isn't where it is.
   found behind newer rows for other nodes (the file left and came back).
 - **A rollback's rows never answer** (`rolls_back_op_id IS NULL`, as in the feed): they record no node, and the original
   carries the story.
+- **Nor does a row an undo reversed** (`outcome != 'rolled_back'`): the undo carried that node off or removed it, so if
+  it's at the path again, something else brought it back (Cmdr moved it `/a` → `/b`, an undo moved it back, Finder moved
+  it to `/b` again). Crediting the move would tell a stale story; the answer is `NoRecord`
+  (`a_landing_an_undo_reversed_credits_nothing`).
+- **Same inode, EARLIER birth is the same node, its dates changed** (`ByOperation { dates_changed: true }`): backdating
+  a file on APFS moves its birth time back (§ "A landed item must still be the node that landed"), and reading that as
+  `NodeChangedSince` would tell the person their file was replaced. Nothing moves a birth LATER, so a later one is a new
+  node that got the number. The card adds "its dates have changed since" under the operation.
 - **Matching**: the item's folder by the EXACT names `dirs` interned (`store::find_dir`, the read-only twin of
   `intern_dir`; a folder the journal never saw ends the read at once), its own name folded with `fold_name` as at
   insert, plain b-tree equality, no collation. The fold can match a case twin's row; the node check discards it.

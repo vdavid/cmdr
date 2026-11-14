@@ -8565,6 +8565,13 @@ export type CmdrOperation = {
    *  it).
    */
   sourceVolume: ItemText | null
+  /**
+   *  The item is the node the operation landed, with its dates changed since:
+   *  on APFS, backdating a file moves its birth time earlier, which a match on
+   *  the node alone would read as "replaced since". The card says the dates
+   *  changed; it stays the card's (the model's projection leaves it out).
+   */
+  datesChanged: boolean
 }
 
 // What [`count_all`] decided for a listing.

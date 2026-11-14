@@ -70,6 +70,11 @@ pub struct CmdrOperation {
     /// made it new, or a volume that isn't connected now (its path still names
     /// it).
     pub source_volume: Option<ItemText>,
+    /// The item is the node the operation landed, with its dates changed since:
+    /// on APFS, backdating a file moves its birth time earlier, which a match on
+    /// the node alone would read as "replaced since". The card says the dates
+    /// changed; it stays the card's (the model's projection leaves it out).
+    pub dates_changed: bool,
 }
 
 /// How a Cmdr operation landed an item.
