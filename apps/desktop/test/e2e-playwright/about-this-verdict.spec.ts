@@ -124,8 +124,15 @@ test.describe('Tell me about this: the AI take', () => {
     const text = await verdictText(page)
     expect(text).toContain('AI wrote this')
     expect(text).toContain('From the card’s facts and its first lines.')
-    // Its place: the right-hand column, with the facts and What removing it means on the left.
-    expect(await page.count(`${CARD} [data-layout="twoColumns"] [data-take-column] [data-verdict-text]`)).toBe(1)
+    // Its place: the right-hand column, with the facts and What removing it means on the left. Polled: a take planned
+    // after the first frame widens the card from 40 to 60 rem, and the layout learns its new width from a
+    // ResizeObserver, which lands at the next rendering update. Until then it still reads the one-column width
+    // (stacked), and a loaded Linux container got the take's first words in before that update (2026-11-14).
+    await expect
+      .poll(() => page.count(`${CARD} [data-layout="twoColumns"] [data-take-column] [data-verdict-text]`), {
+        timeout: waitBudget(2000),
+      })
+      .toBe(1)
     expect(await removalInView(page)).toBe(true)
     // However short the card gets, the facts scroll and the removal row stays in view beside the take.
     await page.evaluate(`document.querySelector('${CARD} .modal-dialog').style.maxHeight = '320px'`)
