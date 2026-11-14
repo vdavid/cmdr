@@ -28,7 +28,7 @@ use super::jobs::{GATHERED, Sources, local_jobs};
 use super::model::GateReach;
 use super::owner::AppSource;
 use super::platform;
-use super::probe::{Probe, probe, sits_on_a_local_disk};
+use super::probe::{Probe, probe};
 use super::session::{Gathered, ItemReach, PROBE_BUDGET, Watch};
 use super::through::{self, ArchiveRecord, Asked, DownloadFrom, STUCK, SnapshotPath, Through};
 use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
@@ -142,6 +142,8 @@ pub(crate) struct Placed {
     /// The resolver's place for the item (tilde expanded, rebased).
     pub(crate) location: Location,
     pub(crate) asking: Asking,
+    /// How far the sensitive gate may follow the path before a model reads the card.
+    pub(crate) gate_reach: GateReach,
 }
 
 /// Whether the card asks the item's volume.
@@ -152,17 +154,6 @@ pub(crate) enum Asking {
     /// Not at all: Cmdr started this and the volume isn't a local disk, so every
     /// row that would ask it answers `RefusedInBackground`.
     RefusedInBackground,
-}
-
-impl Asking {
-    /// How far the sensitive gate may follow the path before a model reads the
-    /// card: only as far as the card itself reaches.
-    pub(crate) fn gate_reach(self) -> GateReach {
-        match self {
-            Asking::TheVolume => GateReach::FollowLinks,
-            Asking::RefusedInBackground => GateReach::NamesOnly,
-        }
-    }
 }
 
 /// Why there's no card: the card's reason, and the same miss in a tool's words.
@@ -246,10 +237,17 @@ pub(crate) async fn gather_for(request: &AboutRequest, started: Started) -> Resu
         stuck_id: location.volume_id.clone(),
         runtime,
     };
+    // The gate follows links only from a local disk, and ❌ never into a mount that
+    // isn't one (`place`): a share's own path answers names only, so a dead share
+    // strands no thread, and a share the card already silenced is asked nothing.
     let placed = |gathered: Gathered, asking: Asking| Placed {
         gathered,
         location: location.clone(),
         asking,
+        gate_reach: match (asking, drive_way) {
+            (Asking::TheVolume, Way::Local) => GateReach::FollowLocalLinks,
+            _ => GateReach::NamesOnly,
+        },
     };
 
     // Before the route's confirm, which reads the drive.
@@ -259,8 +257,9 @@ pub(crate) async fn gather_for(request: &AboutRequest, started: Started) -> Resu
             .answered_without_the_volume(UnknownWhy::RefusedInBackground);
         return Ok(placed(gathered, Asking::RefusedInBackground));
     }
-    // A local path whose parents link into a share: its `lstat` would reach the share,
-    // so a card Cmdr started asks it nothing, the same as a share's own path.
+    // A local path whose parents link into a share, or that is itself a link into one:
+    // reading it would reach the share, so a card Cmdr started asks it nothing, the
+    // same as a share's own path.
     if started == Started::ByCmdr && drive_way == Way::Local && reaches_a_share_off_the_executor(&path).await {
         log::debug!(target: "about", "a background card's path links into a share; not asking it");
         let is_directory = is_directory(request, &resolved).await;
@@ -273,7 +272,11 @@ pub(crate) async fn gather_for(request: &AboutRequest, started: Started) -> Resu
     // holds it. The lexical gate costs nothing; the route confirms on the pool.
     if path_routes_over_its_parent(Path::new(&path)) {
         match routed_on_pool(&asked_drive, &path).await {
-            Routed::View(routed, volume) => {
+            Routed::View {
+                routed,
+                volume,
+                archive_on_local_disk,
+            } => {
                 let view = Asked {
                     volume,
                     ..asked_drive.clone()
@@ -284,7 +287,11 @@ pub(crate) async fn gather_for(request: &AboutRequest, started: Started) -> Resu
                     is_directory,
                     &resolved,
                     view,
-                    Some((drive_way, &asked_drive)),
+                    Some(Drive {
+                        way: drive_way,
+                        asked: &asked_drive,
+                        archive_on_local_disk,
+                    }),
                 );
                 // A backup's repository can live on a server.
                 if started == Started::ByCmdr && reads_a_backup(routed) {
@@ -438,8 +445,13 @@ fn index_place(resolved: &ResolvedLocation, path: &str) -> IndexPlace {
 
 /// What the route answered for a path its lexical gate let through.
 enum Routed {
-    /// A view serves it.
-    View(RoutedKind, Arc<dyn Volume>),
+    /// A view serves it. `archive_on_local_disk`: an archive's own file sits on a
+    /// local disk (decided on the pool: the walk `lstat`s its local ancestors).
+    View {
+        routed: RoutedKind,
+        volume: Arc<dyn Volume>,
+        archive_on_local_disk: bool,
+    },
     /// No route took it: the drive serves it.
     Passthrough,
     /// The route's confirm didn't answer in time (it reads the drive).
@@ -458,7 +470,12 @@ async fn routed_on_pool(drive: &Asked, path: &str) -> Routed {
         crate::file_system::framework_pool::note_activity("resolve the route", "probe");
         let resolved = runtime.block_on(get_volume_manager().resolve(&volume_id, Path::new(&path)));
         let routed = match (resolved.routed, resolved.volume) {
-            (Some(kind), Some(volume)) => Routed::View(kind, volume),
+            (Some(routed), Some(volume)) => Routed::View {
+                routed,
+                volume,
+                archive_on_local_disk: cmdr_fs::archive_format::archive_boundary_candidate(Path::new(&path))
+                    .is_some_and(|(archive, _)| super::place::sits_on_a_local_disk(&archive.to_string_lossy())),
+            },
             _ => Routed::Passthrough,
         };
         let _ = answer.send(routed);
@@ -469,11 +486,11 @@ async fn routed_on_pool(drive: &Asked, path: &str) -> Routed {
     }
 }
 
-/// [`super::probe::reaches_a_share`] on a blocking thread, at most [`PROBE_BUDGET`]:
+/// [`super::place::reaches_a_share`] on a blocking thread, at most [`PROBE_BUDGET`]:
 /// past it (a local disk that stopped answering) the path reads as unproven, so yes.
 async fn reaches_a_share_off_the_executor(path: &str) -> bool {
     let owned = path.to_string();
-    let walk = tokio::task::spawn_blocking(move || super::probe::reaches_a_share(&owned));
+    let walk = tokio::task::spawn_blocking(move || super::place::reaches_a_share(&owned));
     !matches!(tokio::time::timeout(PROBE_BUDGET, walk).await, Ok(Ok(false)))
 }
 
@@ -567,16 +584,24 @@ pub(crate) fn hinted_target(name: &str, is_directory: bool) -> AboutTarget {
     }
 }
 
+/// For a view, the drive under it: how it's reached and asked (an archive's own
+/// download record lives there).
+#[derive(Clone, Copy)]
+pub(crate) struct Drive<'a> {
+    pub(crate) way: Way,
+    pub(crate) asked: &'a Asked,
+    /// The archive's own file sits on a local disk, decided where blocking is fine.
+    pub(crate) archive_on_local_disk: bool,
+}
+
 /// The plan and jobs for an item reached `way`, through `asked`'s own calls.
-/// `is_directory`: what the pane (or the index) says the item is. `drive`: for a
-/// view, how the drive under it is reached and asked (an archive's own download
-/// record lives there).
+/// `is_directory`: what the pane (or the index) says the item is.
 pub(crate) fn through_gathered(
     way: Way,
     is_directory: bool,
     resolved: &ResolvedLocation,
     asked: Asked,
-    drive: Option<(Way, &Asked)>,
+    drive: Option<Drive<'_>>,
 ) -> Gathered {
     let path = resolved.location.path.clone();
     let name = Path::new(&path)
@@ -678,16 +703,25 @@ impl Gathered {
 }
 
 /// An archive entry's download row: the archive's name, and where its own record
-/// can be read.
-fn archive_download(path: &str, drive: Option<(Way, &Asked)>) -> Option<DownloadFrom> {
+/// can be read. ❌ No filesystem call here (it runs on the executor): whether the
+/// archive sits on a local disk came from the route's pool job.
+fn archive_download(path: &str, drive: Option<Drive<'_>>) -> Option<DownloadFrom> {
     let (archive_path, _inner) = cmdr_fs::archive_format::archive_boundary_candidate(Path::new(path))?;
     let archive = ItemText::new(&archive_path.file_name()?.to_string_lossy());
     let record = match drive {
-        // The mount table, no call to the mount: a symlink into a share isn't local.
-        Some((Way::Local, _)) if sits_on_a_local_disk(&archive_path.to_string_lossy()) => ArchiveRecord::Local {
+        // A symlink in its parents into a share isn't local.
+        Some(Drive {
+            way: Way::Local,
+            archive_on_local_disk: true,
+            ..
+        }) => ArchiveRecord::Local {
             archive_path: archive_path.to_string_lossy().into_owned(),
         },
-        Some((Way::OsMountedShare, asked)) if asked.volume.supports_xattrs() => ArchiveRecord::Volume {
+        Some(Drive {
+            way: Way::OsMountedShare,
+            asked,
+            ..
+        }) if asked.volume.supports_xattrs() => ArchiveRecord::Volume {
             volume: asked.clone(),
             archive_path,
         },

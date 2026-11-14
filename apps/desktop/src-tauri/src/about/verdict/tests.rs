@@ -162,7 +162,7 @@ fn verdict_for<'a>(card: &Card, token: &CancellationToken, limits: &'a Limits, w
         request_id: "card-1".to_string(),
         volume_id: "root".to_string(),
         path: card.path.clone(),
-        gate_reach: GateReach::FollowLinks,
+        gate_reach: GateReach::FollowLocalLinks,
         item: card.gathered.item,
         card: token.clone(),
         locale: "en".to_string(),

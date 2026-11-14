@@ -906,6 +906,8 @@ FOLDER is a Python venv. `com.veszelovszki.cmdr*` matches every instance's data 
   deadline of its own. `multi_rename`'s loader joins its reads, so a hung resolve there would wedge the call.
 - `names_gate(path)`: `path_gate` minus the realpath (the rules plus Cmdr's data dir on the path as given), pure, for a
   read that may not touch the volume.
+- `resolved_gate(path, real)`: `path_gate` with the caller's own resolve, for a caller that may follow links only so
+  far (the card's never enters a share: `apps/desktop/src-tauri/src/about/place.rs`).
 
 **Where each tool checks:**
 
@@ -918,9 +920,10 @@ FOLDER is a Python venv. `com.veszelovszki.cmdr*` matches every instance's data 
   snippet in a hit would leak, and widens its read when hiding left a volume short: the read API's own limit would
   otherwise let a hidden hit eat the answer.
 - `about_item` (no contents, but name-level facts only for a protected path): `about::model::gate_within`, the one
-  gate both it and the card's AI take go through. `path_gate_within` (a link into `.ssh` is caught, as for
-  `inspect_file`), failing closed to `unresolved`; on a turn Cmdr started that asked the volume nothing, `names_gate`,
-  since every row left is the index's, which stores the paths it walked (the `image_facts` precedent).
+  gate both it and the card's AI take go through. On a local disk, `resolved_gate` over a walk that follows every local
+  link and never enters a share (a link into `.ssh` is caught, as for `inspect_file`), failing closed to `unresolved`;
+  for an item reached through its volume, or on a turn Cmdr started that asked the volume nothing, `names_gate`, since
+  nothing there reads contents and the rows describe the path as given (the `image_facts` precedent).
 - `multi_rename`: `gated` wraps the loader's reader, so media fields (`tag.comment`, `tag.title`, EXIF) are gated where
   the file is read, on wakes too since `Propose` runs there. A refusal is `ReadError::NotSupported`, not `Io`: a folder of
   refused files mustn't read as a dying volume. The row reads `unreadable`, and `protectedFiles` says why. A read whose

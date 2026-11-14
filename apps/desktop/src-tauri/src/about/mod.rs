@@ -14,6 +14,7 @@ mod jobs;
 pub(crate) mod lookup;
 mod model;
 mod owner;
+mod place;
 mod platform;
 mod pool;
 mod probe;

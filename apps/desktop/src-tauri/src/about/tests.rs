@@ -314,6 +314,29 @@ fn a_symlink_is_about_the_link_and_reads_nothing_through_it() {
     }
 }
 
+/// ❗ A link into a mount that isn't a local disk is described from its own `lstat`,
+/// on the disk it lives on, and nothing follows it: no `statfs` through it, so a link
+/// to a dead share can't hold the card past its budget. A card Cmdr started counts
+/// it as the share. A pseudo-filesystem stands in for the share: the mount table
+/// calls it no local disk.
+#[cfg(unix)]
+#[test]
+fn a_link_into_a_mount_that_isnt_a_local_disk_is_described_as_a_link() {
+    let elsewhere = if cfg!(target_os = "macos") { "/dev" } else { "/proc" };
+    let dir = TestDir::new("about-link-off-disk");
+    let link = dir.as_ref().join("nas");
+    std::os::unix::fs::symlink(elsewhere, &link).expect("make the link");
+    let path = link.to_string_lossy();
+    let probed = probe(&path).expect("the link is there");
+    assert_eq!(probed.target, AboutTarget::Symlink);
+    assert!(probed.on_local_disk, "a link lives where its parent lives");
+    assert!(
+        super::place::reaches_a_share(&path),
+        "reading through it reaches the other mount"
+    );
+    assert!(!super::place::reaches_a_share(&dir.as_ref().to_string_lossy()));
+}
+
 // ── Routing ─────────────────────────────────────────────────────────────────
 
 /// Which way each volume kind is reached: only a live local disk reads locally,

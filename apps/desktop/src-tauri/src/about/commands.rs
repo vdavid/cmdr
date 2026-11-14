@@ -83,7 +83,7 @@ pub(super) fn start(
                         request_id: request.request_id.clone(),
                         volume_id: placed.location.volume_id.clone(),
                         path: placed.location.path.clone(),
-                        gate_reach: placed.asking.gate_reach(),
+                        gate_reach: placed.gate_reach,
                         item: placed.gathered.item,
                         card: token.clone(),
                         locale: crate::intl::active_locale(),

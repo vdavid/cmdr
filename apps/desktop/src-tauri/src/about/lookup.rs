@@ -84,7 +84,12 @@ async fn look_up_with(
                 log::debug!(target: "about", "lookup unavailable: {why:?}");
                 Err(miss)
             }
-            Ok(Placed { gathered, location, asking }) => {
+            Ok(Placed {
+                gathered,
+                location,
+                asking,
+                gate_reach,
+            }) => {
                 let kept = Arc::new(Kept::default());
                 let sink: Arc<dyn AboutSink> = Arc::clone(&kept) as Arc<dyn AboutSink>;
                 let gathering = async {
@@ -97,7 +102,7 @@ async fn look_up_with(
                 };
                 let (finished, gated) = tokio::join!(
                     gathering,
-                    gate_within(&location.path, asking.gate_reach(), PROBE_BUDGET)
+                    gate_within(&location.path, gate_reach, PROBE_BUDGET)
                 );
                 // Stops the jobs still out and drops their late answers.
                 token.cancel();

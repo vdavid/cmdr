@@ -182,6 +182,20 @@ fn gate_on(path: &str, data_dir: Option<&Path>, moved: &[(Dir, PathBuf)]) -> Res
     let Some(real) = resolve_existing(Path::new(path)) else {
         return Ok(());
     };
+    check_resolved(&real, data_dir, moved)
+}
+
+/// [`path_gate`] with the links already followed by the caller, as far as it may follow
+/// them (the card's own resolve never enters a share: `about/place.rs`). The rules run on
+/// `path` as given and again on `real`. Blocking only for the host's own dirs' realpath.
+pub(crate) fn resolved_gate(path: &str, real: &Path) -> Result<(), Protected> {
+    let data_dir = crate::config::standalone_app_data_dir();
+    check_rules(path, data_dir.as_deref(), &MOVED)?;
+    check_resolved(real, data_dir.as_deref(), &MOVED_DIRS)
+}
+
+/// The rules on a resolved path, against the host's dirs resolved too.
+fn check_resolved(real: &Path, data_dir: Option<&Path>, moved: &[(Dir, PathBuf)]) -> Result<(), Protected> {
     let real = real.to_string_lossy();
     check_rules(&real, data_dir, &folded_dirs(moved))?;
     // The host's dirs resolved too: `/tmp` and `/var` are links on a Mac, so a resolved path

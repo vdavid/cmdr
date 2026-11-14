@@ -103,13 +103,23 @@ once and the note says it stopped. That bounds a dead share to two stranded pool
 ### A local item
 
 - **`Local`**: `probe` on the about pool under `PROBE_BUDGET` (1.5 s; past it, `Unreachable`). The probe is one `lstat`,
-  a mount-table read, for a dotted folder one `NSURLIsPackageKey` lookup, and on a local disk the look for a repo around
-  the item (`git::repo_around`, through the app's repo cache), so the plan knows whether it has a git row.
+  `place`'s walk (below), for a dotted folder one `NSURLIsPackageKey` lookup, and on a local disk the look for a repo
+  around the item (`git::repo_around`, through the app's repo cache), so the plan knows whether it has a git row.
   - The route also asks `OwnerQuestion::of(path, home)` (pure, no IO), so the plan knows whether it has an owner row,
     and places the item in the index (`index::IndexPlace`: the index id, which isn't always the volume's, and the
     importance store's path for it).
-  - The mount table must call the item's mount a local disk (`mount_is_local_disk`). A path whose parent chain reaches a
-    share through a symlink resolves to the boot volume and isn't local: it answers identity only.
+  - The mount table must call the item's mount a local disk (`mount_is_local_disk`), decided by `place::walk`, ❌ never
+    a `statfs` on the item. The walk goes component by component from `/`: each is placed in the mount table by its
+    text (longest mount point, `/System/Volumes/Data/…` also covering its `/…` spelling) BEFORE it's `lstat`ed, and
+    each link is `readlink`ed where it lives. It stops at the edge of the first mount that isn't a local disk, so it
+    never calls into one. Two answers come off it: `sits_on_a_local_disk` (parents' links followed, the item's own
+    not: a link lives where its parent lives, so `~/nas` → a dead share is still described from its `lstat`) and
+    `reaches_a_share` (the item's own link followed too). A path whose parent chain reaches a share through a symlink
+    isn't local: it answers identity only. Why not `statfs`: on macOS it follows the item's own link (so a link to a
+    dead share held the probe past its budget, and a live one woke the NAS on a background card); on Linux the
+    `/proc/mounts` match was on the unresolved text, so `~/nas/x` with `~/nas` → an NFS mount read as the home disk
+    and got every local job. The walk answers the same on both. Tests: `place_tests.rs` (a fake mount table with a
+    stand-in NFS share, asserting no `lstat` inside it), and `tests.rs` (a real link to `/dev` or `/proc`).
   - `SF_DATALESS` (an evicted cloud file) sets `contents_local: false`, so the plan has no real-type or signature row.
 
 ## Jobs and budgets
@@ -283,17 +293,22 @@ own size and date words (`human_size`, `format_local_date`). The agent tool and 
 
 - **The gate is a type**: `Gate` is made only by `model::gate` / `gate_within`, so a projection can't be built on a
   path nobody checked.
-- **At least as strict as `inspect_file`**: `GateReach::FollowLinks` is `sensitive::path_gate_within` (the rules on
-  the path, then on its realpath, so `~/keys/id_ed25519` with `keys → .ssh` is protected), on its own thread under
+- **As strict as `inspect_file` on a local disk**: `GateReach::FollowLocalLinks` runs `inspect_file`'s rules on the path
+  as given, then on the path with its links followed (`sensitive::resolved_gate`), so `~/keys/id_ed25519` with
+  `keys → .ssh` is protected. The links are followed by `place::resolved_on_local_disks`, ❌ never `canonicalize`:
+  the walk stops at the edge of a share and keeps the rest as written, so `~/nas` → a dead share strands no thread and
+  wakes no NAS. A link loop or unreadable mount table fails closed (`Unresolved`). It runs on a blocking thread under
   `PROBE_BUDGET`, ❌ never the about pool: queued behind the card's own slow jobs (Spotlight, receipts), it timed out on
-  a healthy disk in tests. Past the budget it fails closed: `ProtectedReason::Unresolved`, name-level facts only.
-- **`GateReach::NamesOnly`** (`sensitive::names_gate`, no realpath) only for a card that asked the volume nothing
-  (`route::Asking::RefusedInBackground`): every row left comes from the drive index, which stores the paths it walked,
-  so the path as given is what they describe. `Asking::gate_reach` ties the two, so a card that reads the volume always
-  follows links.
+  a healthy disk in tests. Past the budget it fails closed too: name-level facts only.
+- **`GateReach::NamesOnly`** (`sensitive::names_gate`, no realpath) for every card not read on a local disk: an item
+  reached through its volume (a share the OS mounted, a server, a phone, an offline volume) and a card that asked the
+  volume nothing (`route::Asking::RefusedInBackground`). Nothing on such a card reads the item's contents (no peek:
+  `ItemReach::bytes_readable` is local-only), and its rows come from the volume's metadata or the drive index, which
+  stores the paths it walked, so the path as given is what they describe. `route::gather_for` sets `Placed::gate_reach`
+  from the way and the asking together, so a share's path never costs a thread per call.
 
 Its tests: a credentials path and a link into one leave name-level facts, a gate that can't finish fails closed, and
-numbers read as other tool results word them.
+numbers read as other tool results word them (`model.rs`); the walk's stop at a share's edge (`place_tests.rs`).
 
 ## The agent's lookup
 
@@ -312,17 +327,16 @@ card from the stream instead of sending it, and runs `model::gate_within` beside
   volume and no backup view (a restic repository can sit on a server): those rows answer `RefusedInBackground`, the
   index rows still run. A local disk answers in full. The decision sits before the route's confirm, which reads the
   drive.
-- **A local path whose parents link into a share counts as the share** (`probe::reaches_a_share`). The resolver places
-  `~/nas/report.pdf` (with `~/nas` → `/Volumes/naspi`) on the boot disk by its text, and the probe's `lstat` would then
-  reach the share through the parent's link. So a `ByCmdr` card walks the path from the root first: each component is
-  checked against the mount table (`getfsstat(MNT_NOWAIT)` / `/proc/mounts`, no call into any mount) before it's
-  `lstat`ed, and each link is read where it lives, on the local disk. A component under a mount that isn't a local disk
-  makes the card `RefusedInBackground` the way a share's own path does (index rows only, names-only gate). A link loop,
-  an unreadable mount table, or a walk past `PROBE_BUDGET` reads as a share: a background card that can't prove the
-  path local asks nothing. The item itself is never followed (it's `lstat`ed as itself). Residual: the walk `lstat`s
-  each LOCAL ancestor and `readlink`s each local link, both on the local disk; a person's own card (`ByPerson`) doesn't
-  walk, since its `lstat` reaching the share is what the person asked for. Tests: `probe.rs` (a link into a stand-in
-  share, absolute and relative, found with no `lstat` inside it).
+- **A local path that leads into a share counts as the share** (`place::reaches_a_share`), through its parents' links
+  (`~/nas/report.pdf`, with `~/nas` → `/Volumes/naspi`) or its own (`~/nas` itself). The resolver places both on the
+  boot disk by their text, and the probe's `lstat` of the first would reach the share through the parent's link. So a
+  `ByCmdr` card runs `place`'s walk first (§ A local item), following the item's own link too. A walk that reaches a
+  mount that isn't a local disk makes the card `RefusedInBackground` the way a share's own path does (index rows only,
+  names-only gate). A link loop, an unreadable mount table, or a walk past `PROBE_BUDGET` reads as a share: a
+  background card that can't prove the path local asks nothing. Residual: the walk `lstat`s each LOCAL ancestor and
+  `readlink`s each local link, both on the local disk. A person's own card (`ByPerson`) on `~/nas/report.pdf` still
+  `lstat`s through the parent's link, since that's what the person asked for; its other rows don't (identity only).
+  Tests: `place_tests.rs`.
 - **No pane, so no `isDirectory`**: an item reached through its volume is planned from the drive index's answer
   (`route::is_directory`, `dir_stats` on a blocking thread); one the index doesn't hold plans as a file.
 

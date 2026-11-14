@@ -17,16 +17,18 @@ use crate::tools::sensitive::{self, GateStop, Protected};
 /// How far the gate may follow a path before it answers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum GateReach {
-    /// `inspect_file`'s own check (`sensitive::path_gate`): the rules on the path
-    /// as given and again after following its symlinks, so `~/link-to-ssh/key`
-    /// is caught. It can touch the item's volume, so only where the card asks the
-    /// volume anyway.
-    FollowLinks,
+    /// `inspect_file`'s rules on the path as given and again after following its
+    /// symlinks, so `~/link-to-ssh/key` is caught, with every link followed by
+    /// `place`'s walk: on local disks only, ❌ never into a share (past a share's
+    /// edge the rest stays as written). For a card on a local disk.
+    FollowLocalLinks,
     /// The rules and Cmdr's data dir on the path as given, with no call to the
-    /// volume (`sensitive::names_gate`): a card Cmdr asked for on its own, whose
-    /// rows that read the volume answer `RefusedInBackground`. What's left comes
-    /// from the drive index, which stores the paths it walked, so the path as given
-    /// is the path those rows describe (the precedent `image_facts` sets).
+    /// volume (`sensitive::names_gate`): a card reached through its volume (a
+    /// share, a server, a phone), and a card Cmdr asked for on its own whose rows
+    /// that read the volume answer `RefusedInBackground`. Nothing on such a card
+    /// reads the item's contents, and the index rows store the paths they walked,
+    /// so the path as given is the path those rows describe (the precedent
+    /// `image_facts` sets).
     NamesOnly,
 }
 
@@ -56,29 +58,48 @@ impl Gate {
     }
 }
 
-/// Checks `path` for a model. Blocking with [`GateReach::FollowLinks`] (a
-/// realpath on the item's volume): run it where a deadline can abandon it, as
+/// Checks `path` for a model. Blocking with [`GateReach::FollowLocalLinks`] (the
+/// walk `lstat`s each local ancestor): run it where a deadline can abandon it, as
 /// [`gate_within`] does.
 pub(crate) fn gate(path: &str, reach: GateReach) -> Gate {
     let answer = match reach {
-        GateReach::FollowLinks => sensitive::path_gate(path),
         GateReach::NamesOnly => sensitive::names_gate(path),
+        GateReach::FollowLocalLinks => match super::place::resolved_on_local_disks(path) {
+            Some(real) => sensitive::resolved_gate(path, &real),
+            // Nothing proves where the path goes (a link loop, an unreadable mount
+            // table): fail closed, with the rule's own reason when the name has one.
+            None => {
+                return Gate(Some(
+                    sensitive::names_gate(path)
+                        .err()
+                        .map_or(ProtectedReason::Unresolved, reason),
+                ));
+            }
+        },
     };
     Gate(answer.err().map(reason))
 }
 
 /// [`gate`] under a deadline, failing closed: a resolve still out at `budget` (a
-/// hung mount) answers [`ProtectedReason::Unresolved`], so the model gets
-/// name-level facts only. The resolve runs on a thread of its own
-/// (`sensitive::path_gate_within`), ❌ never the about pool: queued behind the
-/// card's own slow jobs, it would time out on a healthy disk.
+/// local disk that stopped answering) answers [`ProtectedReason::Unresolved`], so
+/// the model gets name-level facts only. The resolve runs on a blocking thread,
+/// ❌ never the about pool: queued behind the card's own slow jobs, it would time
+/// out on a healthy disk.
 pub(crate) async fn gate_within(path: &str, reach: GateReach, budget: Duration) -> Gate {
     match reach {
         GateReach::NamesOnly => gate(path, reach),
-        GateReach::FollowLinks => {
+        GateReach::FollowLocalLinks => {
+            // The rules on the name need no thread, and a protected name stays
+            // protected whether or not the resolve finishes.
+            if let Err(protected) = sensitive::names_gate(path) {
+                return Gate(Some(reason(protected)));
+            }
             let owned = path.to_string();
-            let answer = tokio::task::spawn_blocking(move || sensitive::path_gate_within(&owned, budget)).await;
-            gate_of(answer.unwrap_or(Err(GateStop::TimedOut)))
+            let resolve = tokio::task::spawn_blocking(move || gate(&owned, reach));
+            match tokio::time::timeout(budget, resolve).await {
+                Ok(Ok(gated)) => gated,
+                Ok(Err(_)) | Err(_) => gate_of(Err(GateStop::TimedOut)),
+            }
         }
     }
 }
@@ -167,7 +188,7 @@ mod tests {
     /// folder's item to a model with its recorded facts.
     #[test]
     fn a_path_the_gate_protects_leaves_name_level_facts_only() {
-        for reach in [GateReach::FollowLinks, GateReach::NamesOnly] {
+        for reach in [GateReach::FollowLocalLinks, GateReach::NamesOnly] {
             let leaving = leaving("/Users/jane/.ssh/id_ed25519", reach);
             assert_eq!(leaving["contentsStayHome"], "credentials");
             assert_eq!(
@@ -196,7 +217,7 @@ mod tests {
         let through_link = link.join("id_ed25519").to_string_lossy().into_owned();
 
         assert_eq!(
-            gate(&through_link, GateReach::FollowLinks).protected(),
+            gate(&through_link, GateReach::FollowLocalLinks).protected(),
             Some(ProtectedReason::Credentials)
         );
         // Reading the names alone can't see a link, by design: that reach is only
@@ -214,7 +235,7 @@ mod tests {
         assert_eq!(gate_of(Ok(())).protected(), None);
         let gated = gate_within(
             "/Users/jane/.ssh/id_ed25519",
-            GateReach::FollowLinks,
+            GateReach::FollowLocalLinks,
             Duration::from_secs(5),
         )
         .await;
