@@ -116,7 +116,8 @@ and `OsCaps`, all known before any job. It returns the sections in display order
   `download_records` is off on Windows, where Cmdr reads no download record: a row that could only answer `NoRecord`
   would claim there's none.
 - **An online-only file** (`contents_local: false`, a cloud drive evicted it) plans no row that reads its bytes: the
-  real type and the signature. Reading them would download it. Its xattrs are metadata and stay.
+  real type and the signature, and for an app or package the bundle and its app data (both open its `Info.plist`).
+  Reading them would download it. Its xattrs are metadata and stay.
 - **Each kind sits in exactly one section** (`rows_of`): Origin (download, Cmdr operation), Nature (identity, real type,
   bundle, signature, recursive size), Use (last opened, default app, importance), Context (owner, git, app data),
   Contents (folder digest), Removal (derived, no rows, always last).

@@ -335,6 +335,28 @@ fn an_online_only_file_plans_no_row_that_reads_its_bytes() {
     assert!(plan.has(K::Download), "an xattr is metadata, kept for an evicted file");
 }
 
+/// ❗ An online-only app or package (iCloud Drive) plans no row that opens its
+/// `Info.plist`: the bundle row and an app's data row would download it.
+#[test]
+fn an_online_only_bundle_plans_no_row_that_opens_its_description() {
+    for target in [AppBundle, Package] {
+        let plan = plan(PlanInput {
+            target,
+            extension: Some("app"),
+            is_executable: false,
+            contents_local: false,
+            caps: &local(),
+            os: &macos(),
+            owner: &OwnerQuestion::Nothing,
+            in_a_repo: false,
+            git_snapshot: false,
+        });
+        assert!(!plan.has(K::Bundle), "{target:?}");
+        assert!(!plan.has(K::AppData), "{target:?}");
+        assert!(!plan.has(K::Signature), "{target:?}");
+    }
+}
+
 /// An OS whose download records Cmdr doesn't read (Windows) plans no Download row: a
 /// row it can only answer "no record" would claim a record isn't there.
 #[test]

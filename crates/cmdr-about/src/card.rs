@@ -337,7 +337,8 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
     let applies = |kind: FactKind| match kind {
         FactKind::Identity => true,
         FactKind::RealType => target == File && caps.content && contents_local,
-        FactKind::Bundle => is_bundle && caps.system,
+        // Opening an online-only bundle's `Info.plist` downloads it.
+        FactKind::Bundle => is_bundle && caps.system && contents_local,
         FactKind::Signature => signable && caps.system && os.code_signing && contents_local,
         // A symlink carries no record of its own, and an archive's entry answers with
         // the archive's.
@@ -350,7 +351,8 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         FactKind::Git => target != ArchiveEntry && !git_snapshot && caps.git && in_a_repo,
         FactKind::RecursiveSize => is_folder_like && caps.index,
         FactKind::FolderDigest => target == Folder && caps.index,
-        FactKind::AppData => target == AppBundle && caps.index && caps.system,
+        // Its id comes from the app's `Info.plist`, as the bundle row's does.
+        FactKind::AppData => target == AppBundle && caps.index && caps.system && contents_local,
         FactKind::GitSnapshot => git_snapshot,
     };
 
