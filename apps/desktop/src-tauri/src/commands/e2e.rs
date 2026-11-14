@@ -171,6 +171,16 @@ pub fn force_agent_wake(folder: Option<String>, script: Option<String>) -> Resul
     Ok(())
 }
 
+/// Holds (`true`) or releases (`false`) the "Tell me about this" AI take's E2E fake before its
+/// last delta, under `CMDR_E2E_ABOUT_VERDICT_PACE=<ms>,held`. `about-this-verdict.spec.ts`
+/// releases it to see a take finish, and re-arms it after.
+#[cfg(feature = "playwright-e2e")]
+#[tauri::command]
+#[specta::specta]
+pub fn hold_about_verdict(held: bool) {
+    crate::test_mode::set_about_verdict_held(held);
+}
+
 /// Stages one folder's activity for the proactive agent WITHOUT waking it.
 ///
 /// What the indexer's tap does all run long, on demand. A spec uses it to put something in the

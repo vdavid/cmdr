@@ -2,8 +2,9 @@
  * E2E for the "Tell me about this" card's AI take and "Continue in Ask Cmdr".
  *
  * The take comes from the E2E fake (`CMDR_E2E_ASK_CMDR_FAKE`, `e2e_fake::ABOUT_THIS_FAKE_VERDICT`), held mid-stream by
- * the harness's `CMDR_E2E_ABOUT_VERDICT_PACE` (a wait before each delta, a long hold before the last), so Stop lands on
- * a take that's still writing. The gate still reads `ai.provider`, so the take tests set it to `cloud` through MCP's
+ * the harness's `CMDR_E2E_ABOUT_VERDICT_PACE=0,held` (a hold before the last delta that only `hold_about_verdict`
+ * releases), so Stop lands on a take that's still writing and a take finishes when the spec says,
+ * never by outwaiting a clock. Each test starts held. The gate still reads `ai.provider`, so the take tests set it to `cloud` through MCP's
  * `set_setting` and put it back to `off` after each test (every other spec keeps it off). The fake answers before any
  * consent check, so nothing leaves the machine.
  *
@@ -62,6 +63,11 @@ function cardOpen(page: TauriPage): Promise<boolean> {
   return page.evaluate<boolean>(`!!document.querySelector('${CARD}')`)
 }
 
+/** Holds (or releases) the fake take before its last delta. A release reaches a take already holding. */
+async function holdTake(page: TauriPage, held: boolean): Promise<void> {
+  await page.evaluate(`window.__TAURI_INTERNALS__.invoke('hold_about_verdict', { held: ${JSON.stringify(held)} })`)
+}
+
 /**
  * Opens the card with the provider on. The provider reaches the backend a push after `set_setting` answers, so a card
  * opened in between gets no take: close and reopen until it plans one.
@@ -85,10 +91,12 @@ test.describe('Tell me about this: the AI take', () => {
     fs.rmSync(fixtureDir(), { recursive: true, force: true })
     fs.mkdirSync(fixtureDir(), { recursive: true })
     fs.writeFileSync(path.join(fixtureDir(), FILE), 'Groceries\nMilk\nBread\n')
+    await holdTake(tauriPage as TauriPage, true)
     await setProvider(tauriPage as TauriPage, 'cloud')
   })
   test.afterEach(async ({ tauriPage }) => {
     if (await cardOpen(tauriPage as TauriPage)) await dismissOverlay(tauriPage)
+    await holdTake(tauriPage as TauriPage, true)
     await setProvider(tauriPage as TauriPage, 'off')
     fs.rmSync(fixtureDir(), { recursive: true, force: true })
   })
@@ -110,7 +118,7 @@ test.describe('Tell me about this: the AI take', () => {
       ),
     ).toBe(true)
 
-    // Stop, while the fake holds its last delta.
+    // Stop, while the fake holds its last delta (it holds until released, and nothing releases it here).
     expect(
       await page.evaluate<boolean>(`(() => {
         const stop = [...document.querySelectorAll('${VERDICT} button')].find((b) => b.textContent.trim() === 'Stop')
@@ -132,7 +140,9 @@ test.describe('Tell me about this: the AI take', () => {
   }) => {
     const page = tauriPage as TauriPage
     await openCardWithATake(page)
-    await expect.poll(() => verdictPhase(page), { timeout: waitBudget(15000) }).toBe('done')
+    await expect.poll(() => verdictText(page), { timeout: waitBudget(10000) }).toContain(FIRST_WORDS)
+    await holdTake(page, false)
+    await expect.poll(() => verdictPhase(page), { timeout: waitBudget(5000) }).toBe('done')
     expect(await verdictText(page)).toContain(LAST_WORDS)
     await dismissOverlay(page)
     await expect.poll(() => cardOpen(page), { timeout: waitBudget(3000) }).toBe(false)
@@ -143,7 +153,8 @@ test.describe('Tell me about this: the AI take', () => {
     expect(await verdictText(page)).toContain(LAST_WORDS)
     await dismissOverlay(page)
 
-    // Changed since: a new take, and Escape closes the card mid-stream.
+    // Changed since: a new take, held again, and Escape closes the card mid-stream.
+    await holdTake(page, true)
     fs.appendFileSync(path.join(fixtureDir(), FILE), 'Eggs\n')
     await openCardOnFixture(page)
     await expect.poll(() => verdictText(page), { timeout: waitBudget(10000) }).toContain(FIRST_WORDS)

@@ -22,7 +22,7 @@ use crate::about::probe::probe;
 use crate::about::route::local_gathered;
 use crate::about::session::{AboutSink, Gathered};
 use crate::about::tests::Recorder;
-use crate::agent::llm::fake::{FakeAgentLlm, Pace, ScriptedTurn};
+use crate::agent::llm::fake::{FakeAgentLlm, Hold, Pace, ScriptedTurn};
 use crate::agent::llm::types::{AgentMessage, AgentPart, AgentUsage, CallSettings, ProviderTag, ToolDeclaration};
 use crate::agent::llm::{AgentDeltaStream, AgentLlm};
 use crate::agent::pricing::PricedCost;
@@ -452,7 +452,7 @@ async fn stop_and_a_revoke_end_the_verdict_and_keep_the_card() {
         let verdict = verdict_for(&card, &token, &limits, &world);
         let held = says(&VERDICT).paced(Pace {
             per_delta: Duration::from_millis(1),
-            hold_before_last: Duration::from_secs(60),
+            hold_before_last: Hold::For(Duration::from_secs(60)),
         });
         let stop = async {
             play_facts(&watched, &card, true);
@@ -499,7 +499,7 @@ async fn closing_the_card_stops_the_verdict_silently() {
     let verdict = verdict_for(&card, &token, &limits, &world);
     let held = says(&VERDICT).paced(Pace {
         per_delta: Duration::from_millis(1),
-        hold_before_last: Duration::from_secs(60),
+        hold_before_last: Hold::For(Duration::from_secs(60)),
     });
     let close = async {
         play_facts(&watched, &card, true);

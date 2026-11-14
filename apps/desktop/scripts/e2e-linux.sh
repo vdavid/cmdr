@@ -710,10 +710,11 @@ else
             # same flag on its app launch; keep them in sync.
             export CMDR_E2E_ASK_CMDR_FAKE=1
 
-            # Hold the fake AI take of the "Tell me about this" card mid-stream, so
-            # about-this-verdict.spec.ts can press Stop on a take still writing.
+            # Hold the fake AI take of the "Tell me about this" card mid-stream until the
+            # spec releases it, so about-this-verdict.spec.ts can press Stop on a take
+            # still writing.
             # The macOS harness sets the same value; keep them in sync.
-            export CMDR_E2E_ABOUT_VERDICT_PACE=150,4000
+            export CMDR_E2E_ABOUT_VERDICT_PACE=0,held
 
             # Pause a search cover walk before each directory read, so the live-walk
             # specs (search-live, search-walk-handoff) have a window to watch results

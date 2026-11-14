@@ -70,22 +70,25 @@ fn about_this_fake() -> FakeAgentLlm {
 
 /// What `CMDR_E2E_ABOUT_VERDICT_PACE` asks of the verdict's fake: `<ms>` waits that long before
 /// each delta, `<ms>,<hold ms>` also holds before the last one, so the streaming and stopped
-/// states hold still for a screenshot or a person's QA. Only this fake reads it, and the fake
-/// itself needs `CMDR_E2E_ASK_CMDR_FAKE` in a dev or E2E build. Anything that doesn't parse
-/// reads as no pacing.
+/// states hold still for a screenshot or a person's QA, and `<ms>,held` holds until
+/// `test_mode::set_about_verdict_held(false)` releases it (the E2E lanes' choice: a spec ends the
+/// hold itself, ❌ never by outwaiting it). Only this fake reads it, and the fake itself needs
+/// `CMDR_E2E_ASK_CMDR_FAKE` in a dev or E2E build. Anything that doesn't parse reads as no pacing.
 fn about_verdict_pace(value: &str) -> Option<crate::agent::llm::fake::Pace> {
+    use crate::agent::llm::fake::Hold;
     let mut parts = value.split(',').map(str::trim);
     let per_delta = parts.next()?.parse::<u64>().ok()?;
     let hold = match parts.next() {
-        None => 0,
-        Some(hold) => hold.parse::<u64>().ok()?,
+        None => Hold::For(std::time::Duration::ZERO),
+        Some("held") => Hold::UntilReleased(crate::test_mode::about_verdict_hold()),
+        Some(hold) => Hold::For(std::time::Duration::from_millis(hold.parse::<u64>().ok()?)),
     };
     if parts.next().is_some() {
         return None;
     }
     Some(crate::agent::llm::fake::Pace {
         per_delta: std::time::Duration::from_millis(per_delta),
-        hold_before_last: std::time::Duration::from_millis(hold),
+        hold_before_last: hold,
     })
 }
 
@@ -297,16 +300,22 @@ mod tests {
 
     #[test]
     fn the_verdict_pace_reads_a_wait_and_an_optional_hold() {
+        use crate::agent::llm::fake::Hold;
         use std::time::Duration;
         let pace = about_verdict_pace("300, 20000").expect("parses");
         assert_eq!(pace.per_delta, Duration::from_millis(300));
-        assert_eq!(pace.hold_before_last, Duration::from_millis(20_000));
-        assert_eq!(
+        assert!(matches!(pace.hold_before_last, Hold::For(hold) if hold == Duration::from_millis(20_000)));
+        assert!(matches!(
             about_verdict_pace("50").expect("parses").hold_before_last,
-            Duration::ZERO
-        );
-        assert_eq!(about_verdict_pace("slow"), None);
-        assert_eq!(about_verdict_pace("1,2,3"), None);
+            Hold::For(Duration::ZERO)
+        ));
+        assert!(matches!(
+            about_verdict_pace("150,held").expect("parses").hold_before_last,
+            Hold::UntilReleased(_)
+        ));
+        assert!(about_verdict_pace("slow").is_none());
+        assert!(about_verdict_pace("1,2,3").is_none());
+        assert!(about_verdict_pace("1,soon").is_none());
     }
 
     /// The verdict's fake says the same fixed verdict to every card, in several deltas.

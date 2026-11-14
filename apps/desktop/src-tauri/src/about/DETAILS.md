@@ -474,8 +474,10 @@ model that spent its reply thinking) ends `failed { noAnswer }` WITH its cost, a
 
 Under `CMDR_E2E_ASK_CMDR_FAKE`, `AgentSlot::AboutThis` plays `e2e_fake::ABOUT_THIS_FAKE_VERDICT` (fixed text, four
 deltas) for every card; the gate's provider and setting steps still apply, so a spec sets `ai.provider` to `cloud`.
-`CMDR_E2E_ABOUT_VERDICT_PACE=<ms>[,<hold ms>]` paces it (`FakeAgentLlm::paced`): a wait before each delta and a hold
-before the last, so the streaming and stopped states stay on screen for QA and screenshots.
+`CMDR_E2E_ABOUT_VERDICT_PACE=<ms>[,<hold ms>|held]` paces it (`FakeAgentLlm::paced`): a wait before each delta and a
+hold before the last, so the streaming and stopped states stay on screen for QA and screenshots. `held` (the E2E lanes'
+value) holds until `test_mode::set_about_verdict_held(false)`, which the spec reaches through the `playwright-e2e`
+command `hold_about_verdict`: a test ends the hold by order, never by outwaiting it.
 
 ### The eval on real models
 

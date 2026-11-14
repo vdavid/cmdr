@@ -260,6 +260,24 @@ fn ask_cmdr_fake_from(honored: bool, var_set: bool) -> bool {
     honored && var_set
 }
 
+/// Whether the "Tell me about this" AI take's paced fake holds before its last delta, under
+/// `CMDR_E2E_ABOUT_VERDICT_PACE=<ms>,held` (`agent::chat::e2e_fake`). Starts held; the
+/// `playwright-e2e` command `hold_about_verdict` releases and re-arms it, so a spec ends a held
+/// take by an order it controls. A release reaches a take already holding and every later one,
+/// until re-armed. Strictly additive: nothing reads it without that pace.
+static ABOUT_VERDICT_HELD: LazyLock<tokio::sync::watch::Sender<bool>> =
+    LazyLock::new(|| tokio::sync::watch::channel(true).0);
+
+/// Hold (`true`) or release (`false`) the AI take's paced fake.
+pub fn set_about_verdict_held(held: bool) {
+    ABOUT_VERDICT_HELD.send_replace(held);
+}
+
+/// What a paced fake's hold watches.
+pub fn about_verdict_hold() -> tokio::sync::watch::Receiver<bool> {
+    ABOUT_VERDICT_HELD.subscribe()
+}
+
 /// Which script the WAKE slot's fake assistant plays, set by the `playwright-e2e`
 /// `force_agent_wake` command.
 ///

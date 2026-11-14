@@ -437,7 +437,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   loop's real channel and makes it act now, on that folder alone; it skips the timer and the proactive toggle, never a
   gate, and its `quiet` flag picks which script the wake's fake assistant plays), `stage_agent_rollup` (the same
   staging without the wake, so a spec can prove the force reports on its own folder). Both are in
-  `agent/wake/DETAILS.md` § Forcing a wake. `e2e_propose_suggestions` (dispatch-only) runs the real
+  `agent/wake/DETAILS.md` § Forcing a wake. `hold_about_verdict` (dispatch-only) holds or releases the card's AI take
+fake before its last delta (`about/DETAILS.md` § The E2E fake). `e2e_propose_suggestions` (dispatch-only) runs the real
   `propose_suggestions` handler over a spec's own call, so a spec reviews exactly the group a model would have staged
   (`suggested-ops-named-move.spec.ts`). `e2e_propose_server` (dispatch-only) does the same for `propose_server`, as on
   a turn the user started (`suggested-ops-server-card.spec.ts`).

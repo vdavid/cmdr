@@ -931,6 +931,8 @@ macro_rules! ipc_command_manifest {
                     crate::commands::e2e::e2e_propose_suggestions,
                     // Stages a server card through the real `propose_server` handler.
                     crate::commands::e2e::e2e_propose_server,
+                    // Releases or re-arms the AI take's held fake (`about-this-verdict.spec.ts`).
+                    crate::commands::e2e::hold_about_verdict,
                 ]
             }
             // The dialog gallery's fixtures, which outlive `debug_assertions`: an E2E build is a
