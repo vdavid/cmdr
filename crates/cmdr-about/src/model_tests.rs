@@ -608,50 +608,354 @@ fn every_field_that_leaves_names_its_disclosure_item() {
         git_snapshot: _,
         removal: _,
     } = card;
-    let disclosed_by: [(&str, AboutDisclosure); 19] = [
-        ("target", D::Identity),
-        ("path", D::Identity),
-        ("contentsStayHome", D::ContentsStayHome),
-        ("identity", D::Identity),
-        ("realType", D::RealType),
-        ("bundle", D::AppAndSigner),
-        ("signature", D::AppAndSigner),
-        ("download", D::Download),
-        ("cmdrOperation", D::CmdrHistory),
-        ("lastOpened", D::Use),
-        ("defaultApp", D::Use),
-        ("importance", D::Importance),
-        ("owner", D::Owner),
-        ("git", D::Git),
-        ("recursiveSize", D::Identity),
-        ("folderDigest", D::Inside),
-        ("appData", D::AppData),
-        ("gitSnapshot", D::Git),
-        ("removal", D::Removal),
+    // Every key path a fully populated card can carry, nested ones included, under
+    // the item whose consent line covers it. A nested field slips past a top-level
+    // check (`identity.value.nameHidReordering` once did), so a new path anywhere
+    // fails here until someone files it under an item and reads that item's line.
+    let disclosed_by: [(&str, AboutDisclosure, &[&str]); 19] = [
+        (
+            "appData",
+            D::AppData,
+            &[
+                "appData",
+                "appData.state",
+                "appData.value",
+                "appData.value.folders",
+                "appData.value.folders[].name",
+                "appData.value.folders[].place",
+                "appData.value.folders[].size",
+                "appData.value.folders[].size.state",
+                "appData.value.folders[].size.value",
+                "appData.value.folders[].size.value.coverage",
+                "appData.value.folders[].size.value.files",
+                "appData.value.folders[].size.value.folders",
+                "appData.value.folders[].size.value.hasSymlinks",
+                "appData.value.folders[].size.value.logical",
+                "appData.value.folders[].size.value.logicalHuman",
+                "appData.value.folders[].size.value.physical",
+                "appData.value.folders[].size.value.physicalHuman",
+                "appData.value.folders[].size.value.updating",
+                "appData.value.notLookedIn",
+                "appData.value.totalBytes",
+                "appData.value.totalHuman",
+                "appData.value.totalIsLowerBound",
+            ],
+        ),
+        (
+            "bundle",
+            D::AppAndSigner,
+            &[
+                "bundle",
+                "bundle.state",
+                "bundle.value",
+                "bundle.value.bundleId",
+                "bundle.value.displayName",
+                "bundle.value.version",
+            ],
+        ),
+        (
+            "cmdrOperation",
+            D::CmdrHistory,
+            &[
+                "cmdrOperation",
+                "cmdrOperation.state",
+                "cmdrOperation.value",
+                "cmdrOperation.value.at",
+                "cmdrOperation.value.atHuman",
+                "cmdrOperation.value.initiator",
+                "cmdrOperation.value.kind",
+                "cmdrOperation.value.sourcePath",
+                "cmdrOperation.value.sourceVolume",
+            ],
+        ),
+        ("contentsStayHome", D::ContentsStayHome, &["contentsStayHome"]),
+        (
+            "defaultApp",
+            D::Use,
+            &[
+                "defaultApp",
+                "defaultApp.state",
+                "defaultApp.value",
+                "defaultApp.value.id",
+                "defaultApp.value.name",
+            ],
+        ),
+        (
+            "download",
+            D::Download,
+            &[
+                "download",
+                "download.state",
+                "download.value",
+                "download.value.downloadedAt",
+                "download.value.downloadedAtHuman",
+                "download.value.downloadedBy",
+                "download.value.sources",
+                "download.value.sources.state",
+                "download.value.sources.value",
+                "download.value.sources.value[].host",
+                "download.value.sources.value[].type",
+            ],
+        ),
+        (
+            "folderDigest",
+            D::Inside,
+            &[
+                "folderDigest",
+                "folderDigest.state",
+                "folderDigest.value",
+                "folderDigest.value.children",
+                "folderDigest.value.children.state",
+                "folderDigest.value.children.value",
+                "folderDigest.value.children.value.biggest",
+                "folderDigest.value.children.value.biggest[].isFolder",
+                "folderDigest.value.children.value.biggest[].name",
+                "folderDigest.value.children.value.biggest[].size",
+                "folderDigest.value.children.value.biggest[].size.state",
+                "folderDigest.value.children.value.biggest[].size.value",
+                "folderDigest.value.children.value.biggest[].size.value.coverage",
+                "folderDigest.value.children.value.biggest[].size.value.files",
+                "folderDigest.value.children.value.biggest[].size.value.folders",
+                "folderDigest.value.children.value.biggest[].size.value.hasSymlinks",
+                "folderDigest.value.children.value.biggest[].size.value.logical",
+                "folderDigest.value.children.value.biggest[].size.value.logicalHuman",
+                "folderDigest.value.children.value.biggest[].size.value.physical",
+                "folderDigest.value.children.value.biggest[].size.value.physicalHuman",
+                "folderDigest.value.children.value.biggest[].size.value.updating",
+                "folderDigest.value.children.value.count",
+                "folderDigest.value.children.value.kindMix",
+                "folderDigest.value.children.value.kindMix[].count",
+                "folderDigest.value.children.value.kindMix[].kind",
+                "folderDigest.value.class",
+                "folderDigest.value.largestFiles",
+                "folderDigest.value.largestFiles.state",
+                "folderDigest.value.largestFiles.value",
+                "folderDigest.value.largestFiles.value[].isFolder",
+                "folderDigest.value.largestFiles.value[].name",
+                "folderDigest.value.largestFiles.value[].size",
+                "folderDigest.value.largestFiles.value[].size.state",
+                "folderDigest.value.largestFiles.value[].size.value",
+                "folderDigest.value.largestFiles.value[].size.value.coverage",
+                "folderDigest.value.largestFiles.value[].size.value.files",
+                "folderDigest.value.largestFiles.value[].size.value.folders",
+                "folderDigest.value.largestFiles.value[].size.value.hasSymlinks",
+                "folderDigest.value.largestFiles.value[].size.value.logical",
+                "folderDigest.value.largestFiles.value[].size.value.logicalHuman",
+                "folderDigest.value.largestFiles.value[].size.value.physical",
+                "folderDigest.value.largestFiles.value[].size.value.physicalHuman",
+                "folderDigest.value.largestFiles.value[].size.value.updating",
+                "folderDigest.value.unchangedForAYear",
+                "folderDigest.value.unchangedForAYear.state",
+                "folderDigest.value.unchangedForAYear.value",
+                "folderDigest.value.unchangedForAYear.value.atLeast",
+                "folderDigest.value.unchangedForAYear.value.bytes",
+                "folderDigest.value.unchangedForAYear.value.bytesHuman",
+                "folderDigest.value.unchangedForAYear.value.of",
+                "folderDigest.value.unchangedForAYear.value.ofHuman",
+            ],
+        ),
+        (
+            "git",
+            D::Git,
+            &[
+                "git",
+                "git.state",
+                "git.value",
+                "git.value.branch",
+                "git.value.repoRoot",
+                "git.value.status",
+                "git.value.status.state",
+                "git.value.status.value",
+                "git.value.status.value.state",
+                "git.value.status.value.type",
+            ],
+        ),
+        (
+            "gitSnapshot",
+            D::Git,
+            &[
+                "gitSnapshot",
+                "gitSnapshot.state",
+                "gitSnapshot.value",
+                "gitSnapshot.value.kind",
+                "gitSnapshot.value.lastChanged",
+                "gitSnapshot.value.lastChangedHuman",
+                "gitSnapshot.value.name",
+                "gitSnapshot.value.repoRoot",
+            ],
+        ),
+        (
+            "identity",
+            D::Identity,
+            &[
+                "identity",
+                "identity.state",
+                "identity.value",
+                "identity.value.created",
+                "identity.value.createdHuman",
+                "identity.value.hardLinks",
+                "identity.value.logicalSize",
+                "identity.value.logicalSizeHuman",
+                "identity.value.modified",
+                "identity.value.modifiedHuman",
+                "identity.value.name",
+                // That the name hid a direction override. The Identity line says
+                // "its name"; it doesn't name this flag (see the model's DETAILS).
+                "identity.value.nameHidReordering",
+                "identity.value.physicalSize",
+                "identity.value.physicalSizeHuman",
+                "identity.value.symlinkTarget",
+            ],
+        ),
+        (
+            "importance",
+            D::Importance,
+            &[
+                "importance",
+                "importance.state",
+                "importance.value",
+                "importance.value.band",
+                "importance.value.reasons",
+                "importance.value.stale",
+                "importance.value.visits",
+            ],
+        ),
+        (
+            "lastOpened",
+            D::Use,
+            &[
+                "lastOpened",
+                "lastOpened.state",
+                "lastOpened.value",
+                "lastOpened.value.lastOpened",
+                "lastOpened.value.lastOpenedHuman",
+                "lastOpened.value.useCount",
+            ],
+        ),
+        (
+            "owner",
+            D::Owner,
+            &[
+                "owner",
+                "owner.state",
+                "owner.value",
+                "owner.value.app",
+                "owner.value.type",
+            ],
+        ),
+        ("path", D::Identity, &["path"]),
+        (
+            "realType",
+            D::RealType,
+            &[
+                "realType",
+                "realType.state",
+                "realType.value",
+                "realType.value.agreement",
+                "realType.value.bytesAre",
+                "realType.value.extension",
+                "realType.value.extensionClaims",
+            ],
+        ),
+        (
+            "recursiveSize",
+            D::Identity,
+            &[
+                "recursiveSize",
+                "recursiveSize.state",
+                "recursiveSize.value",
+                "recursiveSize.value.coverage",
+                "recursiveSize.value.files",
+                "recursiveSize.value.folders",
+                "recursiveSize.value.hasSymlinks",
+                "recursiveSize.value.logical",
+                "recursiveSize.value.logicalHuman",
+                "recursiveSize.value.physical",
+                "recursiveSize.value.physicalHuman",
+                "recursiveSize.value.updating",
+            ],
+        ),
+        (
+            "removal",
+            D::Removal,
+            &[
+                "removal",
+                "removal[].app",
+                "removal[].certainty",
+                "removal[].dataLeft",
+                "removal[].dataLeft.state",
+                "removal[].dataLeft.value",
+                "removal[].dataLeft.value.folders",
+                "removal[].dataLeft.value.folders[].name",
+                "removal[].dataLeft.value.folders[].place",
+                "removal[].dataLeft.value.folders[].size",
+                "removal[].dataLeft.value.folders[].size.state",
+                "removal[].dataLeft.value.folders[].size.value",
+                "removal[].dataLeft.value.folders[].size.value.coverage",
+                "removal[].dataLeft.value.folders[].size.value.files",
+                "removal[].dataLeft.value.folders[].size.value.folders",
+                "removal[].dataLeft.value.folders[].size.value.hasSymlinks",
+                "removal[].dataLeft.value.folders[].size.value.logical",
+                "removal[].dataLeft.value.folders[].size.value.logicalHuman",
+                "removal[].dataLeft.value.folders[].size.value.physical",
+                "removal[].dataLeft.value.folders[].size.value.physicalHuman",
+                "removal[].dataLeft.value.folders[].size.value.updating",
+                "removal[].dataLeft.value.notLookedIn",
+                "removal[].dataLeft.value.totalBytes",
+                "removal[].dataLeft.value.totalHuman",
+                "removal[].dataLeft.value.totalIsLowerBound",
+                "removal[].host",
+                "removal[].type",
+            ],
+        ),
+        (
+            "signature",
+            D::AppAndSigner,
+            &[
+                "signature",
+                "signature.state",
+                "signature.value",
+                "signature.value.checked",
+                "signature.value.checked.type",
+                "signature.value.checked.why",
+                "signature.value.signer",
+                "signature.value.signer.org",
+                "signature.value.signer.team",
+                "signature.value.signer.type",
+                "signature.value.ticket",
+            ],
+        ),
+        ("target", D::Identity, &["target"]),
     ];
-    // The JSON keys a fully planned card can carry are exactly these.
-    let mut full = downloaded_dmg();
-    let project = project_folder();
-    let app = app_with_data();
-    full.bundle = app.bundle.clone();
-    full.importance = project.importance.clone();
-    full.owner = app.owner.clone();
-    full.git = project.git.clone();
-    full.recursive_size = project.recursive_size.clone();
-    full.folder_digest = project.folder_digest.clone();
-    full.app_data = app.app_data.clone();
-    full.git_snapshot = Some(Fact::unknown(UnknownWhy::NoRecord));
-    let keys: HashSet<String> = json_of(&full, "/x", Some(ProtectedReason::Credentials))
-        .as_object()
-        .expect("an object")
-        .keys()
-        .cloned()
-        .collect();
-    let mapped: HashSet<String> = disclosed_by.iter().map(|(key, _)| (*key).to_owned()).collect();
-    assert_eq!(keys, mapped);
+    let mut sent = std::collections::BTreeSet::new();
+    let every = every_field();
+    key_paths(&json_of(&every, "/x", None), "", &mut sent);
+    key_paths(
+        &json_of(&every, "/x", Some(ProtectedReason::Credentials)),
+        "",
+        &mut sent,
+    );
+    // The removal row's other variants carry fields of their own.
+    for card in [downloaded_dmg(), app_with_data(), project_folder()] {
+        key_paths(&json_of(&card, "/Applications/Tool.app", None), "", &mut sent);
+    }
+    let mut mapped = std::collections::BTreeSet::new();
+    for (top, _, paths) in &disclosed_by {
+        for path in *paths {
+            assert!(
+                *path == *top || path.starts_with(&format!("{top}.")) || path.starts_with(&format!("{top}[")),
+                "{path} is filed under {top}"
+            );
+            mapped.insert((*path).to_owned());
+        }
+    }
+    let unfiled: Vec<&String> = sent.difference(&mapped).collect();
+    let stale: Vec<&String> = mapped.difference(&sent).collect();
+    assert!(unfiled.is_empty(), "sent but under no disclosure item: {unfiled:?}");
+    assert!(stale.is_empty(), "filed but never sent: {stale:?}");
     // Every item is some field's: an item with nothing behind it is a promise
     // nobody checks.
-    let used: HashSet<AboutDisclosure> = disclosed_by.iter().map(|(_, item)| *item).collect();
+    let used: HashSet<AboutDisclosure> = disclosed_by.iter().map(|(_, item, _)| *item).collect();
     for item in [
         D::Identity,
         D::RealType,
@@ -752,4 +1056,67 @@ fn a_name_that_hid_invisible_text_leaves_as_the_name_a_person_sees() {
     assert_eq!(told["identity"]["value"]["name"], "invoice.pdf");
     assert!(told["identity"]["value"].get("nameHidReordering").is_none());
     assert!(!told.to_string().contains('\u{E0049}'));
+}
+
+/// A card with every row known and every optional field set, so its projection
+/// carries every key the model can be sent.
+fn every_field() -> AboutCard {
+    let mut card = downloaded_dmg();
+    let project = project_folder();
+    let app = app_with_data();
+    let Some(Fact::Known(plain_identity)) = card.identity.clone() else {
+        panic!("the fixture has a known identity");
+    };
+    card.identity = Some(Fact::Known(Identity {
+        name_hid: Some(HiddenInName::Reordering),
+        hard_links: Some(2),
+        symlink_target: Some(text("../Tool.dmg")),
+        ..plain_identity
+    }));
+    card.bundle = app.bundle;
+    card.cmdr_operation = Some(Fact::Known(CmdrOperation {
+        kind: LandedBy::Copy,
+        at: 1_772_400_000,
+        initiator: StartedBy::You,
+        source_path: Some(text("/Volumes/naspi/Tool.dmg")),
+        source_volume: Some(text("Naspolya")),
+    }));
+    card.last_opened = Some(Fact::Known(Usage {
+        last_opened: 1_772_400_000,
+        use_count: Some(3),
+    }));
+    card.importance = project.importance;
+    card.owner = app.owner;
+    card.git = project.git;
+    card.recursive_size = project.recursive_size;
+    card.folder_digest = project.folder_digest;
+    card.app_data = app.app_data;
+    card.git_snapshot = Some(Fact::Known(GitSnapshot {
+        repo_root: text("/Users/jane/code/tool"),
+        kind: SnapshotKind::Commit,
+        name: text("1a2b3c4d"),
+        last_changed: Some(1_772_400_000),
+    }));
+    card
+}
+
+/// Every key path in `value`: `a.b` for a nested key, `a[].b` inside a list.
+fn key_paths(value: &Value, prefix: &str, out: &mut std::collections::BTreeSet<String>) {
+    match value {
+        Value::Object(map) => {
+            for (key, child) in map {
+                let path = if prefix.is_empty() {
+                    key.clone()
+                } else {
+                    format!("{prefix}.{key}")
+                };
+                out.insert(path.clone());
+                key_paths(child, &path, out);
+            }
+        }
+        Value::Array(items) => items
+            .iter()
+            .for_each(|item| key_paths(item, &format!("{prefix}[]"), out)),
+        _ => {}
+    }
 }

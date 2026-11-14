@@ -342,8 +342,12 @@ How a silent widening is made impossible (each one a compile error, not a review
 - The output types are this module's own; payload types ride along only when they're tokens, and `tokens_are_fieldless`
   casts each to `u8`, which compiles only for an enum with no data. `EgressSource` is the one exception: it IS the
   redaction.
-- `every_field_that_leaves_names_its_disclosure_item` destructures `ModelCard` with no `..` and maps every field to an
-  `AboutDisclosure`, and every token to some field. The consent copy is a `Record<AboutDisclosure, MessageKey>`
+- `every_field_that_leaves_names_its_disclosure_item` destructures `ModelCard` with no `..`, files EVERY key path a
+  fully populated projection carries (`every_field`, its protected form, and the removal variants the other fixtures
+  reach), nested ones included, under one `AboutDisclosure`, and maps every token to some path. A top-level check let
+  `identity.value.nameHidReordering` land after the consent bump unnoticed; now a new path anywhere fails until someone
+  files it and reads that item's consent line. A new optional field must be set in `every_field` too, or the list can't
+  see it. The consent copy is a `Record<AboutDisclosure, MessageKey>`
   (`apps/desktop/src/lib/ai/about-this-disclosure.ts`), so a new token fails the frontend's typecheck until it has a
   line, and a new line is a `CLOUD_AI_CONSENT_VERSION` bump (`apps/desktop/src-tauri/src/ai/DETAILS.md` § Cloud AI
   consent).
