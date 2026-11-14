@@ -390,12 +390,14 @@ fn finder_default_name_with_contents() -> EvalCard {
     let card = Item::folder(&path)
         .plan()
         .with(folder_identity(&path, 40, 10))
-        .with(total(84_000_000, 37, 2))
+        // The totals add up: `Scans` holds 40 files and one folder (the digest's child
+        // row), plus the two PDFs beside it.
+        .with(total(84_000_000, 42, 2))
         .with(digest(
             &path,
             FolderClass::Plain,
             &[
-                ("Scans", true, 60_000_000),
+                ("Scans", true, 79_000_000),
                 ("passport.pdf", false, 3_000_000),
                 ("lease.pdf", false, 2_000_000),
             ],

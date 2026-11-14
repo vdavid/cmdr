@@ -26,7 +26,10 @@
 //! `CMDR_VERDICT_EVAL_UNSANITIZED` (any value: a card that carries raw text the sanitizer
 //! drops sends it raw, the regression arm; notes § Invisible text in a name),
 //! `CMDR_VERDICT_EVAL_JUDGE_RUNS` (judge only the first N runs per card and language;
-//! default all). Add `second` to the stages for a Sonnet re-grade of every take the
+//! default all), `CMDR_VERDICT_EVAL_RUN_SCALE` (every run count times this, rounded, at
+//! least one: cuts repeats evenly for a budget), `CMDR_VERDICT_EVAL_SHIPPING_ONLY` (any
+//! value: skip the ordinary cards' facts-only arm, so only what ships runs). The stage `plan`
+//! alone writes `plan.md`, the takes and judge calls a run would make, and calls nothing. Add `second` to the stages for a Sonnet re-grade of every take the
 //! Opus judge flagged on questions 1–4 (`second.jsonl`). A rerun into the
 //! same folder skips the takes and judgments already there, so an interrupted run resumes;
 //! use a fresh folder for a fresh measurement. `local` starts the bundled llama-server from
@@ -48,6 +51,8 @@ mod cards_images_test;
 mod cards_ordinary_test;
 #[path = "about_verdict_eval/cards_round3_test.rs"]
 mod cards_round3_test;
+#[path = "about_verdict_eval/cards_shapes_test.rs"]
+mod cards_shapes_test;
 #[path = "about_verdict_eval/cards_tempting_test.rs"]
 mod cards_tempting_test;
 #[path = "about_verdict_eval/corpus_test.rs"]
@@ -78,6 +83,7 @@ async fn corpus(files: &PeekFiles) -> Vec<EvalCard> {
     cards.extend(cards_fresh_test::cards(files).await);
     cards.extend(cards_round3_test::cards(files).await);
     cards.extend(cards_images_test::cards(files).await);
+    cards.extend(cards_shapes_test::cards(files).await);
     cards
 }
 
@@ -192,6 +198,29 @@ async fn verdict_eval() {
     let by_id: HashMap<&str, &EvalCard> = cards.iter().map(|card| (card.id, card)).collect();
     let gen_path = out.join("generations.jsonl");
     let judge_path = out.join("judgments.jsonl");
+    if stages.contains("plan") {
+        // Free: what a run would cost in calls, for the estimate a budget needs first.
+        let jobs = run_test::plan_jobs(&cards, &classes, &variants, run_test::Sizing::from_env());
+        let mut per: BTreeMap<String, (usize, HashSet<String>)> = BTreeMap::new();
+        for job in &jobs {
+            let entry = per.entry(format!("{:?}", job.class)).or_default();
+            entry.0 += 1;
+            entry.1.insert(judge_test::judge_key(job));
+        }
+        let plan: String = per
+            .iter()
+            .map(|(class, (takes, groups))| {
+                // allowed-pluralize-noun: a dev-only budget count, never 1 in practice
+                format!(
+                    "- {class}: {} cards, {takes} takes, {} judge calls\n",
+                    cards.len(),
+                    groups.len()
+                )
+            })
+            .collect();
+        std::fs::write(out.join("plan.md"), plan).expect("write the plan");
+        return;
+    }
     let needs_cloud = classes.iter().any(|c| *c != Class::Local);
     let key = needs_cloud.then(|| super::smoke_providers::api_key(&super::smoke_providers::ANTHROPIC));
 
@@ -238,7 +267,7 @@ async fn verdict_eval() {
         }
 
         let done = run_test::done_keys(&run_test::read_lines::<Generation>(&gen_path));
-        let jobs: Vec<run_test::Job> = run_test::plan_jobs(&cards, &classes, &variants)
+        let jobs: Vec<run_test::Job> = run_test::plan_jobs(&cards, &classes, &variants, run_test::Sizing::from_env())
             .into_iter()
             .filter(|job| !done.contains(&job.key()))
             .collect();

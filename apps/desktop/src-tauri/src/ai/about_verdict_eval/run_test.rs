@@ -125,8 +125,43 @@ pub(super) fn runs_for(group: Group) -> u32 {
 pub(super) const RUNS_PER_OTHER_LANGUAGE: u32 = 3;
 pub(super) const RUNS_WITHOUT_PEEK: u32 = 3;
 
+/// How much of the plan to run: the knobs a budget-capped round turns.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Sizing {
+    /// Every run count times this, rounded, at least one (`CMDR_VERDICT_EVAL_RUN_SCALE`):
+    /// cuts repeats evenly across groups and languages when the budget can't take them all.
+    pub(super) run_scale: f64,
+    /// Also run the ordinary cards without their look inside (the usefulness arm). Off
+    /// with `CMDR_VERDICT_EVAL_SHIPPING_ONLY`, which measures only what ships.
+    pub(super) usefulness_arm: bool,
+}
+
+impl Sizing {
+    pub(super) fn from_env() -> Self {
+        let run_scale = std::env::var("CMDR_VERDICT_EVAL_RUN_SCALE")
+            .ok()
+            .and_then(|v| v.parse::<f64>().ok())
+            .filter(|scale| *scale > 0.0)
+            .unwrap_or(1.0);
+        Self {
+            run_scale,
+            usefulness_arm: std::env::var_os("CMDR_VERDICT_EVAL_SHIPPING_ONLY").is_none(),
+        }
+    }
+
+    fn runs(self, runs: u32) -> u32 {
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "run counts are single digits and the scale is positive"
+        )]
+        let scaled = (f64::from(runs) * self.run_scale).round() as u32;
+        scaled.max(1)
+    }
+}
+
 /// Every call the corpus asks of `classes` and `variants`.
-pub(super) fn plan_jobs(cards: &[EvalCard], classes: &[Class], variants: &[Variant]) -> Vec<Job> {
+pub(super) fn plan_jobs(cards: &[EvalCard], classes: &[Class], variants: &[Variant], sizing: Sizing) -> Vec<Job> {
     let mut jobs = Vec::new();
     for card in cards {
         for &class in classes {
@@ -143,16 +178,16 @@ pub(super) fn plan_jobs(cards: &[EvalCard], classes: &[Class], variants: &[Varia
                         });
                     }
                 };
-                push("en", true, runs_for(card.group));
+                push("en", true, sizing.runs(runs_for(card.group)));
                 if card.languages {
                     for lang in OTHER_LANGUAGES {
-                        push(lang, true, RUNS_PER_OTHER_LANGUAGE);
+                        push(lang, true, sizing.runs(RUNS_PER_OTHER_LANGUAGE));
                     }
                 }
                 // The usefulness arm: the same ordinary card without its look inside, so
                 // whether the look earns its egress rests on a number.
-                if card.peek.is_some() && card.group == Group::Ordinary {
-                    push("en", false, RUNS_WITHOUT_PEEK);
+                if sizing.usefulness_arm && card.peek.is_some() && card.group == Group::Ordinary {
+                    push("en", false, sizing.runs(RUNS_WITHOUT_PEEK));
                 }
             }
         }

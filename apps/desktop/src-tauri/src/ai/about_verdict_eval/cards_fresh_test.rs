@@ -216,11 +216,17 @@ fn saved_app_state() -> EvalCard {
                 path: Some("/Applications/Tessera.app".to_string()),
             },
         }))
-        .with(total(2_100_000, 6, 0))
+        // Every child listed: a digest showing fewer children than a flat folder's file
+        // count contradicts itself, and the take reasoned about the gap.
+        .with(total(2_100_000, 3, 0))
         .with(digest(
             &path,
             FolderClass::Plain,
-            &[("windows.plist", false, 1_100_000), ("data.data", false, 1_000_000)],
+            &[
+                ("windows.plist", false, 1_000_000),
+                ("data.data", false, 1_000_000),
+                ("restorecount.plist", false, 100_000),
+            ],
             &[],
             None,
         ))

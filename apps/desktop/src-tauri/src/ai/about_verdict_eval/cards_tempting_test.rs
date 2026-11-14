@@ -256,13 +256,17 @@ fn python_cache() -> EvalCard {
             "main",
             Fact::Known(GitStatus::Ignored),
         ))
-        .with(total(412_000, 14, 0))
+        // Every child listed: a digest showing fewer children than a flat folder's file
+        // count contradicts itself, and the take reasoned about the gap.
+        .with(total(161_000, 4, 0))
         .with(digest(
             &path,
             FolderClass::Cache,
             &[
                 ("routes.cpython-313.pyc", false, 61_000),
                 ("export.cpython-313.pyc", false, 40_000),
+                ("models.cpython-313.pyc", false, 38_000),
+                ("__init__.cpython-313.pyc", false, 22_000),
             ],
             &[],
             None,
