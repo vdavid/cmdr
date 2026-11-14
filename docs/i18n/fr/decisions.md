@@ -385,3 +385,15 @@ and the top traps live in `style.md`; don't repeat them here.
 
 - `Quitter le mode plein écran avec Échap` (Finder), identical in the notice and the setting. `la touche Échap` at first
   mention (MS FRA). "a dialog or menu" takes the masculine (`est ouvert`, `le fermer`).
+
+## Parlez-moi de ceci (`aboutThis.*`, `commands.fileTellMeAbout.*`, `ai.cloudConsent.aboutThis.*`, `askCmdr.tool.aboutItem.*`)
+
+- `Parlez-moi de ceci` (vous, a request to Cmdr), the card `la fiche`, its facts `les faits`. AI take →
+  `commentaire de l’IA` (❌ `avis`, `verdict`: never a judgment); deeper read → `un regard plus approfondi`.
+- "Recorded" → `noter` (`macOS a noté ce téléchargement depuis {host}`), record → `trace` (`Aucune trace`): a claim,
+  never `enregistré`. `{what}` and `{kind}` have unknown gender, so headlines and kind rows use nouns (`copie ici`,
+  `téléchargement noté`, `dernière ouverture : <date>`, `{kind}, contenu vérifié`), never a participle.
+- `{app}` takes a type noun (`données de l’app {app}`): `de` would elide. User Library → `votre Bibliothèque`; Finder
+  folders `dossier Images` / `Vidéos` / `Utilisateurs` / `Système`; startup-disk root → `dossier racine` (so `créé`
+  agrees). Ticket → `ticket de notarisation` (no Apple term in the pile; tentative). Reasons list after a colon
+  (`Raisons : …`), since `En raison de` would elide before `un` / `des`.

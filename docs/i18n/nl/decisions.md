@@ -332,3 +332,10 @@ Over TC `Uitgebreid hernoemen` (Finder `Wijzig naam van ^0 onderdelen…`). TC `
 - `multiRename.mediaField.*`: Spotlight's `nl.lproj/schema.strings` names (`Opnamedatum`, `Tracknummer`, `Richting`,
   `Opmerking`), except focal length → `Brandpuntsafstand` (Apple's `Scherptediepte` is depth of field; its own ShortName
   says `brandpuntsafstand`); song → `nummer`; file metadata → `gegevens`; date format → `notatie`.
+
+## Vertel me hierover (`aboutThis.*`, `commands.fileTellMeAbout.*`, `menu.file.tellMeAbout`, `ai.cloudConsent.aboutThis.*`)
+
+- "Recorded (as)" → `geregistreerd (als)`, noun `registratie`, "Nothing on record" → `Niets geregistreerd`: it says the
+  system wrote it down, not that Cmdr checked it. The AI take → `AI-commentaar`, "deeper read" → `diepere blik`.
+- Standard folders use Finder's `SystemFolderLocalizations/nl.lproj` names in `je map ‘…’` (`Bibliotheek`, `Publiek`,
+  `Apps`); `{what}`/`{kind}` stand before a colon or a non-inflecting participle, so no `de`/`het` agreement.

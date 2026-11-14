@@ -872,15 +872,15 @@
   "@commands.fileGetInfo.label": {
     "sourceHash": "da65a65"
   },
-  "commands.fileTellMeAbout.label": "Tell me about this",
+  "commands.fileTellMeAbout.label": "介绍一下这个",
   "@commands.fileTellMeAbout.label": {
     "sourceHash": "0d5deaf"
   },
-  "commands.fileTellMeAbout.description": "Shows where the item came from, what it is, and what removing it would mean",
+  "commands.fileTellMeAbout.description": "显示这个项目来自哪里、它是什么，以及移除它意味着什么",
   "@commands.fileTellMeAbout.description": {
     "sourceHash": "66f0488"
   },
-  "commands.aboutThisStopVerdict.label": "Stop the AI take",
+  "commands.aboutThisStopVerdict.label": "停止 AI 解读",
   "@commands.aboutThisStopVerdict.label": {
     "sourceHash": "0ffd7ae"
   },

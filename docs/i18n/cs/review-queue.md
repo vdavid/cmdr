@@ -48,3 +48,11 @@ Awaiting a native read, from the keymap batch:
   heading, since Hledání a Vybrat soubory doesn't read.
 - `shortcuts.system.windowMenu`, `shortcuts.system.securityScreen`: systémová nabídka okna (MS TBX system menu) and
   obrazovka zabezpečení (not in the pile); confirm against Czech Windows.
+- `commands.fileTellMeAbout.label` (and `menu.file.tellMeAbout`, `shortcuts.scope.tellMeAbout`, the draft
+  `aboutThis.continueInAskCmdr.draft`): `Povězte mi o tom`, the user asking Cmdr in the app's vy-plural; confirm it
+  doesn't read stiff next to a tykání `Pověz mi o tom`.
+- `aboutThis.signature.ticket*`, `ai.cloudConsent.aboutThis.item.appAndSigner`: notarization ticket is
+  `doklad o notarizaci`, a plain coinage (no pile hit for Apple's Czech term).
+- AI take is `komentář AI` (`aboutThis.verdict.*`), and `it-team` is `IT oddělení`; both tentative.
+- `fileExplorer.list.rowKind.package` still says `balík` while the new `macos-package` ruling is Finder's `balíček`;
+  align it (a `macosChangeReason` change) once confirmed.

@@ -300,3 +300,9 @@ Caret `插入點` (Apple), ❌ `游標` (our pane cursor). Point at it `把指�
 ## Spoken counts (`fileOperations.transferProgress.*ValueText`, `viewer.pull.progress`, `settings.sidebar.matchCount`)
 
 X of Y `{doneText}，共 {totalText}`, ❌ `/`. Section `區段`, ❌ `部分` (= partly).
+
+## Tell me about this (`commands.fileTellMeAbout.label`, `aboutThis.verdict.*`, `aboutThis.standardFolder.*`)
+
+Command `告訴我這是什麼` wherever it's named. AI take `AI 看法`, labeled `由 AI 撰寫`; the card's facts `卡片上的事實`.
+Standard folders quote Finder's names (`「資源庫」`, `「使用者」` TW over HK `用户`). Notarization ticket `公證票證` (no
+pile hit, tentative).

@@ -1,1285 +1,1300 @@
 {
-  "aboutThis.dialog.title": "About “{name}”",
+  "aboutThis.dialog.title": "Về “{name}”",
   "@aboutThis.dialog.title": {
     "sourceHash": "3c5c0b4"
   },
-  "aboutThis.dialog.close": "Close",
+  "aboutThis.dialog.close": "Đóng",
   "@aboutThis.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "aboutThis.action.open": "Open",
+  "aboutThis.action.open": "Mở",
   "@aboutThis.action.open": {
     "sourceHash": "ed077f3"
   },
-  "aboutThis.action.openTooltip": "Opens it with {app}, as Enter does.",
+  "aboutThis.action.openTooltip": "Mở bằng {app}, giống như khi nhấn Enter.",
   "@aboutThis.action.openTooltip": {
     "sourceHash": "4bbaa35"
   },
-  "aboutThis.action.showInFileManager": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "aboutThis.action.showInFileManager": "{platform, select, macos {Hiển thị trong Finder} windows {Hiển thị trong File Explorer} other {Hiển thị trong trình quản lý tệp}}",
   "@aboutThis.action.showInFileManager": {
     "sourceHash": "21f1ff1"
   },
-  "aboutThis.action.downloadPage": "Download page",
+  "aboutThis.action.downloadPage": "Trang tải về",
   "@aboutThis.action.downloadPage": {
     "sourceHash": "c2f0e5b"
   },
-  "aboutThis.action.downloadPageTooltip": "Opens {host} in your browser: the page this was recorded as downloaded from.",
+  "aboutThis.action.downloadPageTooltip": "Mở {host} trong trình duyệt của bạn: trang được ghi nhận là nơi mục này được tải về.",
   "@aboutThis.action.downloadPageTooltip": {
     "sourceHash": "ee94d9d"
   },
-  "aboutThis.action.revealOwner": "Show {app}",
+  "aboutThis.action.revealOwner": "Hiển thị {app}",
   "@aboutThis.action.revealOwner": {
     "sourceHash": "4d27c5e"
   },
-  "aboutThis.action.appFolder": "Go to {app}’s data",
+  "aboutThis.action.appFolder": "Đi tới dữ liệu của {app}",
   "@aboutThis.action.appFolder": {
     "sourceHash": "43ea077"
   },
-  "aboutThis.action.appFolderUnnamed": "Go to the app’s data",
+  "aboutThis.action.appFolderUnnamed": "Đi tới dữ liệu của ứng dụng",
   "@aboutThis.action.appFolderUnnamed": {
     "sourceHash": "8d0aa42"
   },
-  "aboutThis.action.trash": "{platform, select, windows {Move to the Recycle Bin…} other {Move to trash…}}",
+  "aboutThis.action.trash": "{platform, select, windows {Chuyển vào Thùng rác…} other {Chuyển vào thùng rác…}}",
   "@aboutThis.action.trash": {
     "sourceHash": "13ef52a"
   },
-  "aboutThis.action.delete": "Delete…",
+  "aboutThis.action.delete": "Xóa…",
   "@aboutThis.action.delete": {
     "sourceHash": "9ce78fe"
   },
-  "aboutThis.action.more": "More",
+  "aboutThis.action.more": "Thêm",
   "@aboutThis.action.more": {
     "sourceHash": "d47d7cb"
   },
-  "aboutThis.action.moreMenu": "More actions",
+  "aboutThis.action.moreMenu": "Tác vụ khác",
   "@aboutThis.action.moreMenu": {
     "sourceHash": "f8d46c2"
   },
-  "aboutThis.dialog.lookingUp": "Looking this up",
+  "aboutThis.dialog.lookingUp": "Đang tra cứu",
   "@aboutThis.dialog.lookingUp": {
     "sourceHash": "0962a61"
   },
-  "aboutThis.section.origin": "Where it came from",
+  "aboutThis.section.origin": "Đến từ đâu",
   "@aboutThis.section.origin": {
     "sourceHash": "8246c8b"
   },
-  "aboutThis.section.nature": "What it is",
+  "aboutThis.section.nature": "Là gì",
   "@aboutThis.section.nature": {
     "sourceHash": "1f36bec"
   },
-  "aboutThis.section.use": "How it’s used",
+  "aboutThis.section.use": "Được dùng ra sao",
   "@aboutThis.section.use": {
     "sourceHash": "b4ae9f3"
   },
-  "aboutThis.section.context": "Where it sits",
+  "aboutThis.section.context": "Thuộc về đâu",
   "@aboutThis.section.context": {
     "sourceHash": "547244a"
   },
-  "aboutThis.section.contents": "What’s inside",
+  "aboutThis.section.contents": "Bên trong có gì",
   "@aboutThis.section.contents": {
     "sourceHash": "b9b9395"
   },
-  "aboutThis.section.removal": "What removing it means",
+  "aboutThis.section.removal": "Gỡ bỏ thì sao",
   "@aboutThis.section.removal": {
     "sourceHash": "34b52a3"
   },
-  "aboutThis.section.nothingOnRecord": "Nothing on record",
+  "aboutThis.section.nothingOnRecord": "Không có bản ghi nào",
   "@aboutThis.section.nothingOnRecord": {
     "sourceHash": "7679180"
   },
-  "aboutThis.volumeNote.identityOnly": "On {volume}, Cmdr can see the name, size, and dates.",
+  "aboutThis.volumeNote.identityOnly": "Trên {volume}, Cmdr thấy được tên, kích cỡ và ngày tháng.",
   "@aboutThis.volumeNote.identityOnly": {
     "sourceHash": "89b8563"
   },
-  "aboutThis.volumeNote.someFacts": "On {volume}, Cmdr can see only some of this.",
+  "aboutThis.volumeNote.someFacts": "Trên {volume}, Cmdr chỉ thấy được một phần những thông tin này.",
   "@aboutThis.volumeNote.someFacts": {
     "sourceHash": "2e4ad33"
   },
-  "aboutThis.volumeNote.unreachable": "{volume} stopped answering, so Cmdr can’t tell more right now.",
+  "aboutThis.volumeNote.unreachable": "{volume} đã ngừng phản hồi, nên lúc này Cmdr không thể cho biết thêm.",
   "@aboutThis.volumeNote.unreachable": {
     "sourceHash": "cc9d168"
   },
-  "aboutThis.unavailable.unknownVolume": "Cmdr doesn’t know the drive this item is on anymore.",
+  "aboutThis.unavailable.unknownVolume": "Cmdr không còn biết ổ đĩa chứa mục này nữa.",
   "@aboutThis.unavailable.unknownVolume": {
     "sourceHash": "e5f9fa3"
   },
-  "aboutThis.unavailable.pathOutsideVolume": "Cmdr couldn’t place this item on its drive.",
+  "aboutThis.unavailable.pathOutsideVolume": "Cmdr không định vị được mục này trên ổ đĩa chứa nó.",
   "@aboutThis.unavailable.pathOutsideVolume": {
     "sourceHash": "0355842"
   },
-  "aboutThis.unavailable.noVolumeAtPath": "The drive this item was on isn’t connected.",
+  "aboutThis.unavailable.noVolumeAtPath": "Ổ đĩa từng chứa mục này hiện không được kết nối.",
   "@aboutThis.unavailable.noVolumeAtPath": {
     "sourceHash": "d63b8da"
   },
-  "aboutThis.unavailable.notFound": "This item isn’t there anymore. It may have been moved or removed.",
+  "aboutThis.unavailable.notFound": "Mục này không còn ở đó nữa. Có thể nó đã bị di chuyển hoặc gỡ bỏ.",
   "@aboutThis.unavailable.notFound": {
     "sourceHash": "60c881a"
   },
-  "aboutThis.unavailable.permissionDenied": "{platform, select, macos {macOS didn’t let Cmdr look at this item.} windows {Windows didn’t let Cmdr look at this item.} other {The system didn’t let Cmdr look at this item.}}",
+  "aboutThis.unavailable.permissionDenied": "{platform, select, macos {macOS không cho Cmdr xem mục này.} windows {Windows không cho Cmdr xem mục này.} other {Hệ thống không cho Cmdr xem mục này.}}",
   "@aboutThis.unavailable.permissionDenied": {
     "sourceHash": "81e217c"
   },
-  "aboutThis.unavailable.unreachable": "The drive didn’t answer in time. Give it another try in a moment.",
+  "aboutThis.unavailable.unreachable": "Ổ đĩa không phản hồi kịp thời. Hãy thử lại sau một lát.",
   "@aboutThis.unavailable.unreachable": {
     "sourceHash": "8038ce3"
   },
-  "aboutThis.unavailable.unreadable": "Cmdr couldn’t read anything about this item.",
+  "aboutThis.unavailable.unreadable": "Cmdr không đọc được thông tin nào về mục này.",
   "@aboutThis.unavailable.unreadable": {
     "sourceHash": "7d7ab1f"
   },
-  "aboutThis.label.download": "Downloaded",
+  "aboutThis.label.download": "Đã tải về",
   "@aboutThis.label.download": {
     "sourceHash": "f0b0738"
   },
-  "aboutThis.label.cmdrOperation": "Cmdr’s history",
+  "aboutThis.label.cmdrOperation": "Lịch sử của Cmdr",
   "@aboutThis.label.cmdrOperation": {
     "sourceHash": "eecea03"
   },
-  "aboutThis.label.size": "Size",
+  "aboutThis.label.size": "Kích cỡ",
   "@aboutThis.label.size": {
     "sourceHash": "1af8519"
   },
-  "aboutThis.label.created": "Created",
+  "aboutThis.label.created": "Đã tạo",
   "@aboutThis.label.created": {
     "sourceHash": "d70b9e2"
   },
-  "aboutThis.label.modified": "Modified",
+  "aboutThis.label.modified": "Đã sửa đổi",
   "@aboutThis.label.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "aboutThis.label.otherNames": "Other names",
+  "aboutThis.label.otherNames": "Tên khác",
   "@aboutThis.label.otherNames": {
     "sourceHash": "df5ad6a"
   },
-  "aboutThis.label.pointsTo": "Points to",
+  "aboutThis.label.pointsTo": "Trỏ tới",
   "@aboutThis.label.pointsTo": {
     "sourceHash": "6dca1c1"
   },
-  "aboutThis.label.realType": "Kind",
+  "aboutThis.label.realType": "Loại",
   "@aboutThis.label.realType": {
     "sourceHash": "f5387f9"
   },
-  "aboutThis.label.bundle": "Bundle",
+  "aboutThis.label.bundle": "Gói",
   "@aboutThis.label.bundle": {
     "sourceHash": "f2daa18"
   },
-  "aboutThis.label.signature": "Signature",
+  "aboutThis.label.signature": "Chữ ký",
   "@aboutThis.label.signature": {
     "sourceHash": "f1a73e2"
   },
-  "aboutThis.label.lastOpened": "Last opened",
+  "aboutThis.label.lastOpened": "Mở lần cuối",
   "@aboutThis.label.lastOpened": {
     "sourceHash": "e300685"
   },
-  "aboutThis.label.defaultApp": "Opens with",
+  "aboutThis.label.defaultApp": "Mở bằng",
   "@aboutThis.label.defaultApp": {
     "sourceHash": "cd1d8a1"
   },
-  "aboutThis.label.importance": "Importance",
+  "aboutThis.label.importance": "Mức độ quan trọng",
   "@aboutThis.label.importance": {
     "sourceHash": "3fc78b5"
   },
-  "aboutThis.label.owner": "Belongs to",
+  "aboutThis.label.owner": "Thuộc về",
   "@aboutThis.label.owner": {
     "sourceHash": "5c9c76c"
   },
   "aboutThis.label.git": "Git",
   "@aboutThis.label.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "Git is the version-control tool's name, kept as the vi catalog keeps it (fileExplorer.columns.git = Git)."
   },
-  "aboutThis.label.contents": "Contents",
+  "aboutThis.label.contents": "Nội dung",
   "@aboutThis.label.contents": {
     "sourceHash": "437aea6"
   },
-  "aboutThis.label.appData": "Its data in your Library",
+  "aboutThis.label.appData": "Dữ liệu trong Thư viện của bạn",
   "@aboutThis.label.appData": {
     "sourceHash": "bf02531"
   },
-  "aboutThis.label.biggest": "Biggest inside",
+  "aboutThis.label.biggest": "Lớn nhất bên trong",
   "@aboutThis.label.biggest": {
     "sourceHash": "32c6992"
   },
-  "aboutThis.label.largestFiles": "Largest files",
+  "aboutThis.label.largestFiles": "Tệp lớn nhất",
   "@aboutThis.label.largestFiles": {
     "sourceHash": "0255d17"
   },
-  "aboutThis.label.unchanged": "Untouched",
+  "aboutThis.label.unchanged": "Không đụng tới",
   "@aboutThis.label.unchanged": {
     "sourceHash": "e9dc3b0"
   },
-  "aboutThis.unknown.noRecord": "Nothing on record",
+  "aboutThis.unknown.noRecord": "Không có bản ghi nào",
   "@aboutThis.unknown.noRecord": {
     "sourceHash": "7679180"
   },
-  "aboutThis.unknown.notInStatus": "No changes Cmdr can see",
+  "aboutThis.unknown.notInStatus": "Cmdr không thấy thay đổi nào",
   "@aboutThis.unknown.notInStatus": {
     "sourceHash": "c1e5f27"
   },
-  "aboutThis.unknown.noInstalledAppMatches": "No app Cmdr knows of",
+  "aboutThis.unknown.noInstalledAppMatches": "Không có ứng dụng nào mà Cmdr biết",
   "@aboutThis.unknown.noInstalledAppMatches": {
     "sourceHash": "3adc02b"
   },
-  "aboutThis.unknown.volumeCantTell": "Not on this drive",
+  "aboutThis.unknown.volumeCantTell": "Ổ đĩa này không cung cấp",
   "@aboutThis.unknown.volumeCantTell": {
     "sourceHash": "0e1edb4"
   },
-  "aboutThis.unknown.libraryNameMatchesNoApp": "No installed app has this folder’s name.",
+  "aboutThis.unknown.libraryNameMatchesNoApp": "Không có ứng dụng đã cài đặt nào mang tên của thư mục này.",
   "@aboutThis.unknown.libraryNameMatchesNoApp": {
     "sourceHash": "d4b689c"
   },
-  "aboutThis.unknown.notIndexed": "Not indexed yet",
+  "aboutThis.unknown.notIndexed": "Chưa lập chỉ mục",
   "@aboutThis.unknown.notIndexed": {
     "sourceHash": "808e81b"
   },
-  "aboutThis.unknown.timedOut": "Cmdr didn’t get an answer in time.",
+  "aboutThis.unknown.timedOut": "Cmdr không nhận được phản hồi kịp thời.",
   "@aboutThis.unknown.timedOut": {
     "sourceHash": "332423d"
   },
-  "aboutThis.unknown.unreachable": "The drive stopped answering.",
+  "aboutThis.unknown.unreachable": "Ổ đĩa đã ngừng phản hồi.",
   "@aboutThis.unknown.unreachable": {
     "sourceHash": "eb590cc"
   },
-  "aboutThis.unknown.permissionDenied": "{platform, select, macos {macOS didn’t let Cmdr read this.} windows {Windows didn’t let Cmdr read this.} other {The system didn’t let Cmdr read this.}}",
+  "aboutThis.unknown.permissionDenied": "{platform, select, macos {macOS không cho Cmdr đọc thông tin này.} windows {Windows không cho Cmdr đọc thông tin này.} other {Hệ thống không cho Cmdr đọc thông tin này.}}",
   "@aboutThis.unknown.permissionDenied": {
     "sourceHash": "0080525"
   },
-  "aboutThis.unknown.protected": "This is a private place, so Cmdr doesn’t look inside.",
+  "aboutThis.unknown.protected": "Đây là nơi riêng tư, nên Cmdr không xem bên trong.",
   "@aboutThis.unknown.protected": {
     "sourceHash": "f7003db"
   },
-  "aboutThis.unknown.nodeChangedSince": "Cmdr has a record for this name, and the file has been replaced since.",
+  "aboutThis.unknown.nodeChangedSince": "Cmdr có một bản ghi cho tên này, nhưng tệp ở đó đã bị thay thế từ sau lần đó.",
   "@aboutThis.unknown.nodeChangedSince": {
     "sourceHash": "8988ec9"
   },
-  "aboutThis.unknown.ambiguous": "Several could fit, so Cmdr doesn’t pick one.",
+  "aboutThis.unknown.ambiguous": "Có vài khả năng cùng phù hợp, nên Cmdr không chọn cái nào.",
   "@aboutThis.unknown.ambiguous": {
     "sourceHash": "efce259"
   },
-  "aboutThis.unknown.unparseable": "There’s a record, and Cmdr can’t read it.",
+  "aboutThis.unknown.unparseable": "Có một bản ghi, nhưng Cmdr không đọc được.",
   "@aboutThis.unknown.unparseable": {
     "sourceHash": "2e59eac"
   },
-  "aboutThis.unknown.refusedInBackground": "Cmdr doesn’t reach this drive on its own.",
+  "aboutThis.unknown.refusedInBackground": "Cmdr không tự truy cập ổ đĩa này.",
   "@aboutThis.unknown.refusedInBackground": {
     "sourceHash": "ee95bef"
   },
-  "aboutThis.notApplicable.noCodeSigningOnThisOs": "This system doesn’t sign programs",
+  "aboutThis.notApplicable.noCodeSigningOnThisOs": "Hệ thống này không ký chương trình",
   "@aboutThis.notApplicable.noCodeSigningOnThisOs": {
     "sourceHash": "0315400"
   },
-  "aboutThis.notApplicable.notInARepo": "Not in a git repository",
+  "aboutThis.notApplicable.notInARepo": "Không nằm trong kho git nào",
   "@aboutThis.notApplicable.notInARepo": {
     "sourceHash": "f68b8ba"
   },
-  "aboutThis.notApplicable.notABundle": "Not an app or package",
+  "aboutThis.notApplicable.notABundle": "Không phải ứng dụng hay gói",
   "@aboutThis.notApplicable.notABundle": {
     "sourceHash": "46581aa"
   },
-  "aboutThis.notApplicable.volumeHasNone": "This drive keeps no such record",
+  "aboutThis.notApplicable.volumeHasNone": "Ổ đĩa này không lưu loại bản ghi này",
   "@aboutThis.notApplicable.volumeHasNone": {
     "sourceHash": "2d47613"
   },
-  "aboutThis.download.noRecord": "No download record",
+  "aboutThis.download.noRecord": "Không có bản ghi tải về",
   "@aboutThis.download.noRecord": {
     "sourceHash": "f8cba1c"
   },
-  "aboutThis.download.fromSite": "{platform, select, macos {macOS recorded this as downloaded from {host}{hasApp, select, yes { with {app}} other {}}{hasDate, select, yes { on <date></date>} other {}}.} other {Your browser recorded this as downloaded from {host}{hasApp, select, yes { with {app}} other {}}{hasDate, select, yes { on <date></date>} other {}}.}}",
+  "aboutThis.download.fromSite": "{platform, select, macos {macOS ghi nhận mục này được tải về từ {host}{hasApp, select, yes { bằng {app}} other {}}{hasDate, select, yes { vào <date></date>} other {}}.} other {Trình duyệt của bạn ghi nhận mục này được tải về từ {host}{hasApp, select, yes { bằng {app}} other {}}{hasDate, select, yes { vào <date></date>} other {}}.}}",
   "@aboutThis.download.fromSite": {
     "sourceHash": "725c8d9"
   },
-  "aboutThis.download.fromAddress": "{platform, select, macos {macOS recorded this as downloaded from the address {address}.} other {Your browser recorded this as downloaded from the address {address}.}}",
+  "aboutThis.download.fromAddress": "{platform, select, macos {macOS ghi nhận mục này được tải về từ địa chỉ {address}.} other {Trình duyệt của bạn ghi nhận mục này được tải về từ địa chỉ {address}.}}",
   "@aboutThis.download.fromAddress": {
     "sourceHash": "1ac0da7"
   },
-  "aboutThis.download.linkedFrom": "The record also names a page on {host}.",
+  "aboutThis.download.linkedFrom": "Bản ghi cũng nêu một trang trên {host}.",
   "@aboutThis.download.linkedFrom": {
     "sourceHash": "87708b2"
   },
-  "aboutThis.download.copyLink": "Copy the download link",
+  "aboutThis.download.copyLink": "Sao chép liên kết tải về",
   "@aboutThis.download.copyLink": {
     "sourceHash": "bd3e47a"
   },
-  "aboutThis.download.copyPageLink": "Copy the page’s link",
+  "aboutThis.download.copyPageLink": "Sao chép liên kết của trang",
   "@aboutThis.download.copyPageLink": {
     "sourceHash": "404f4fb"
   },
-  "aboutThis.download.mail": "macOS recorded this as a Mail attachment{hasSender, select, yes {, from {sender}} other {}}.",
+  "aboutThis.download.mail": "macOS ghi nhận mục này là một tệp đính kèm Mail{hasSender, select, yes {, từ {sender}} other {}}.",
   "@aboutThis.download.mail": {
     "sourceHash": "c6536ad"
   },
-  "aboutThis.download.mailSubject": "Subject: {subject}",
+  "aboutThis.download.mailSubject": "Chủ đề: {subject}",
   "@aboutThis.download.mailSubject": {
     "sourceHash": "71de376"
   },
-  "aboutThis.download.airDrop": "macOS recorded this as received over AirDrop from {sender}.",
+  "aboutThis.download.airDrop": "macOS ghi nhận mục này được nhận qua AirDrop từ {sender}.",
   "@aboutThis.download.airDrop": {
     "sourceHash": "631d574"
   },
-  "aboutThis.download.inlineData": "{platform, select, macos {macOS recorded a source that holds the data itself, which Cmdr doesn’t show.} other {The browser recorded a source that holds the data itself, which Cmdr doesn’t show.}}",
+  "aboutThis.download.inlineData": "{platform, select, macos {macOS ghi nhận một nguồn chứa chính dữ liệu, và Cmdr không hiển thị nguồn đó.} other {Trình duyệt ghi nhận một nguồn chứa chính dữ liệu, và Cmdr không hiển thị nguồn đó.}}",
   "@aboutThis.download.inlineData": {
     "sourceHash": "ba0c417"
   },
-  "aboutThis.download.localFile": "{platform, select, macos {macOS recorded this as coming from a file on this computer.} other {The browser recorded this as coming from a file on this computer.}}",
+  "aboutThis.download.localFile": "{platform, select, macos {macOS ghi nhận mục này đến từ một tệp trên máy tính này.} other {Trình duyệt ghi nhận mục này đến từ một tệp trên máy tính này.}}",
   "@aboutThis.download.localFile": {
     "sourceHash": "857c940"
   },
-  "aboutThis.download.unrecognized": "{platform, select, macos {macOS recorded a source Cmdr can’t read as an address: {text}} other {The browser recorded a source Cmdr can’t read as an address: {text}}}",
+  "aboutThis.download.unrecognized": "{platform, select, macos {macOS ghi nhận một nguồn mà Cmdr không đọc được dưới dạng địa chỉ: {text}} other {Trình duyệt ghi nhận một nguồn mà Cmdr không đọc được dưới dạng địa chỉ: {text}}}",
   "@aboutThis.download.unrecognized": {
     "sourceHash": "5e9fa42"
   },
-  "aboutThis.download.noSource": "macOS recorded this as downloaded{hasApp, select, yes { with {app}} other {}}{hasDate, select, yes { on <date></date>} other {}}, without saying from where.",
+  "aboutThis.download.noSource": "macOS ghi nhận mục này đã được tải về{hasApp, select, yes { bằng {app}} other {}}{hasDate, select, yes { vào <date></date>} other {}}, nhưng không cho biết từ đâu.",
   "@aboutThis.download.noSource": {
     "sourceHash": "7edb92b"
   },
-  "aboutThis.cmdrOperation.noRecord": "No copy or move by Cmdr on record",
+  "aboutThis.cmdrOperation.noRecord": "Không có bản ghi nào về việc Cmdr sao chép hay di chuyển",
   "@aboutThis.cmdrOperation.noRecord": {
     "sourceHash": "53a886d"
   },
-  "aboutThis.cmdrOperation.done": "{who, select, you {You} askCmdr {Ask Cmdr} other {An AI client}} {kind, select, copy {copied this here} move {moved this here} rename {gave this its name} create {created this} extract {extracted this here} compress {made this archive} other {moved this here when deleting it}} with Cmdr on <date></date>.",
+  "aboutThis.cmdrOperation.done": "{who, select, you {Bạn} askCmdr {Ask Cmdr} other {Một máy khách AI}} {kind, select, copy {đã sao chép mục này tới đây} move {đã di chuyển mục này tới đây} rename {đã đặt cho mục này tên hiện tại} create {đã tạo mục này} extract {đã giải nén mục này ra đây} compress {đã tạo tệp nén này} other {đã chuyển mục này tới đây khi xóa}} bằng Cmdr vào <date></date>.",
   "@aboutThis.cmdrOperation.done": {
     "sourceHash": "10a4037"
   },
-  "aboutThis.cmdrOperation.datesChanged": "It’s the same item, though its dates have changed since.",
+  "aboutThis.cmdrOperation.datesChanged": "Vẫn là chính mục này, dù ngày tháng của mục đã thay đổi kể từ đó.",
   "@aboutThis.cmdrOperation.datesChanged": {
     "sourceHash": "df8f175"
   },
-  "aboutThis.cmdrOperation.from": "From <source></source>{hasVolume, select, yes { on {volume}} other {}}",
+  "aboutThis.cmdrOperation.from": "Từ <source></source>{hasVolume, select, yes { trên {volume}} other {}}",
   "@aboutThis.cmdrOperation.from": {
     "sourceHash": "2f4a492"
   },
-  "aboutThis.cmdrOperation.copySource": "Copy where it came from",
+  "aboutThis.cmdrOperation.copySource": "Sao chép vị trí gốc",
   "@aboutThis.cmdrOperation.copySource": {
     "sourceHash": "d18275b"
   },
-  "aboutThis.identity.onDisk": "<size></size> on disk",
+  "aboutThis.identity.onDisk": "<size></size> trên đĩa",
   "@aboutThis.identity.onDisk": {
     "sourceHash": "770fb3d"
   },
-  "aboutThis.identity.otherNames": "{count, plural, one {One other name points to the same contents} other {{countText} other names point to the same contents}}",
+  "aboutThis.identity.otherNames": "{count, plural, other {{countText} tên khác trỏ tới cùng nội dung}}",
   "@aboutThis.identity.otherNames": {
     "sourceHash": "c2277bc"
   },
-  "aboutThis.identity.copyLinkTarget": "Copy where it points",
+  "aboutThis.identity.copyLinkTarget": "Sao chép nơi liên kết trỏ tới",
   "@aboutThis.identity.copyLinkTarget": {
     "sourceHash": "58c4667"
   },
-  "aboutThis.realType.matches": "{kind}, checked against its contents",
+  "aboutThis.realType.matches": "{kind}, đã đối chiếu với nội dung",
   "@aboutThis.realType.matches": {
     "sourceHash": "c6166d0"
   },
-  "aboutThis.realType.mismatch": "The contents say {kind}, while the name ends in .{extension}.",
+  "aboutThis.realType.mismatch": "Nội dung cho thấy đây là {kind}, trong khi tên kết thúc bằng .{extension}.",
   "@aboutThis.realType.mismatch": {
     "sourceHash": "f50dfc4"
   },
-  "aboutThis.realType.unread": "{kind}, as its name says",
+  "aboutThis.realType.unread": "{kind}, như tên tệp cho biết",
   "@aboutThis.realType.unread": {
     "sourceHash": "e64a971"
   },
-  "aboutThis.realType.byName": "{kind}, going by its name",
+  "aboutThis.realType.byName": "{kind}, căn cứ theo tên tệp",
   "@aboutThis.realType.byName": {
     "sourceHash": "27a6e8a"
   },
-  "aboutThis.realType.unrecognized": "Cmdr doesn’t know this kind of contents",
+  "aboutThis.realType.unrecognized": "Cmdr không biết loại nội dung này",
   "@aboutThis.realType.unrecognized": {
     "sourceHash": "898feeb"
   },
-  "aboutThis.kind.diskImage": "Disk image",
+  "aboutThis.kind.diskImage": "Ảnh đĩa",
   "@aboutThis.kind.diskImage": {
     "sourceHash": "0f12c3a"
   },
-  "aboutThis.kind.installerPackage": "Installer package",
+  "aboutThis.kind.installerPackage": "Gói cài đặt",
   "@aboutThis.kind.installerPackage": {
     "sourceHash": "099eafc"
   },
-  "aboutThis.kind.machO": "Mac program",
+  "aboutThis.kind.machO": "Chương trình Mac",
   "@aboutThis.kind.machO": {
     "sourceHash": "3af0d6f"
   },
-  "aboutThis.kind.elf": "Linux program",
+  "aboutThis.kind.elf": "Chương trình Linux",
   "@aboutThis.kind.elf": {
     "sourceHash": "a382072"
   },
-  "aboutThis.kind.windowsProgram": "Windows program",
+  "aboutThis.kind.windowsProgram": "Chương trình Windows",
   "@aboutThis.kind.windowsProgram": {
     "sourceHash": "4f90175"
   },
-  "aboutThis.kind.otherCode": "Compiled code",
+  "aboutThis.kind.otherCode": "Mã đã biên dịch",
   "@aboutThis.kind.otherCode": {
     "sourceHash": "dafe5d2"
   },
-  "aboutThis.kind.script": "Script",
+  "aboutThis.kind.script": "Tập lệnh",
   "@aboutThis.kind.script": {
     "sourceHash": "102acc1"
   },
-  "aboutThis.kind.archive": "Archive",
+  "aboutThis.kind.archive": "Tệp nén",
   "@aboutThis.kind.archive": {
     "sourceHash": "66f4804"
   },
   "aboutThis.kind.pdf": "PDF",
   "@aboutThis.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "PDF is a file format name; the vi catalog and macOS vi keep it (ai.cloudConsent.askCmdr.item.contents: vài trang PDF)."
   },
-  "aboutThis.kind.image": "Image",
+  "aboutThis.kind.image": "Hình ảnh",
   "@aboutThis.kind.image": {
     "sourceHash": "1aa4cb0"
   },
   "aboutThis.kind.video": "Video",
   "@aboutThis.kind.video": {
-    "sourceHash": "d534be8"
+    "sourceHash": "d534be8",
+    "sameAsSourceJustification": "The vi term ruling for video is video (macOS Photos vi keeps it)."
   },
-  "aboutThis.kind.audio": "Sound file",
+  "aboutThis.kind.audio": "Tệp âm thanh",
   "@aboutThis.kind.audio": {
     "sourceHash": "fa4a396"
   },
-  "aboutThis.kind.font": "Font",
+  "aboutThis.kind.font": "Phông chữ",
   "@aboutThis.kind.font": {
     "sourceHash": "64d0b3a"
   },
-  "aboutThis.kind.document": "Document",
+  "aboutThis.kind.document": "Tài liệu",
   "@aboutThis.kind.document": {
     "sourceHash": "d6bd8c0"
   },
-  "aboutThis.kind.database": "Database",
+  "aboutThis.kind.database": "Cơ sở dữ liệu",
   "@aboutThis.kind.database": {
     "sourceHash": "fa7fe67"
   },
-  "aboutThis.kind.text": "Text",
+  "aboutThis.kind.text": "Văn bản",
   "@aboutThis.kind.text": {
     "sourceHash": "71988c4"
   },
-  "aboutThis.kind.other": "A known format",
+  "aboutThis.kind.other": "Một định dạng đã biết",
   "@aboutThis.kind.other": {
     "sourceHash": "4caa7ba"
   },
-  "aboutThis.kind.unrecognized": "Contents Cmdr doesn’t know",
+  "aboutThis.kind.unrecognized": "Nội dung Cmdr không biết",
   "@aboutThis.kind.unrecognized": {
     "sourceHash": "5b7ba60"
   },
-  "aboutThis.what.fileWithExtension": ".{extension} file",
+  "aboutThis.what.fileWithExtension": "Tệp .{extension}",
   "@aboutThis.what.fileWithExtension": {
     "sourceHash": "160a778"
   },
-  "aboutThis.what.file": "File",
+  "aboutThis.what.file": "Tệp",
   "@aboutThis.what.file": {
     "sourceHash": "50009ce"
   },
-  "aboutThis.what.folder": "Folder",
+  "aboutThis.what.folder": "Thư mục",
   "@aboutThis.what.folder": {
     "sourceHash": "74ccd43"
   },
-  "aboutThis.what.app": "{hasVersion, select, yes {App, version {version}} other {App}}",
+  "aboutThis.what.app": "{hasVersion, select, yes {Ứng dụng, phiên bản {version}} other {Ứng dụng}}",
   "@aboutThis.what.app": {
     "sourceHash": "1772290"
   },
-  "aboutThis.what.package": "Package",
+  "aboutThis.what.package": "Gói",
   "@aboutThis.what.package": {
     "sourceHash": "59de121"
   },
-  "aboutThis.what.symlink": "Link",
+  "aboutThis.what.symlink": "Liên kết",
   "@aboutThis.what.symlink": {
     "sourceHash": "a6a32db"
   },
-  "aboutThis.what.archiveEntry": "Item in an archive",
+  "aboutThis.what.archiveEntry": "Mục trong tệp nén",
   "@aboutThis.what.archiveEntry": {
     "sourceHash": "6c819c0"
   },
-  "aboutThis.headline.plain": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}",
+  "aboutThis.headline.plain": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}",
   "@aboutThis.headline.plain": {
     "sourceHash": "c316928"
   },
-  "aboutThis.headline.downloadedFrom": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as downloaded{hasApp, select, yes { with {app}} other {}} from {host}{hasDate, select, yes { on <date></date>} other {}}",
+  "aboutThis.headline.downloadedFrom": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, được ghi nhận là tải về{hasApp, select, yes { bằng {app}} other {}} từ {host}{hasDate, select, yes { vào <date></date>} other {}}",
   "@aboutThis.headline.downloadedFrom": {
     "sourceHash": "a46a4ac"
   },
-  "aboutThis.headline.putHereByCmdr": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {kind, select, copy {copied here} move {moved here} rename {renamed} create {created} extract {extracted here} compress {compressed} other {moved here when deleted}} with Cmdr{hasVolume, select, yes { from {volume}} other {}} on <date></date>",
+  "aboutThis.headline.putHereByCmdr": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, {kind, select, copy {được sao chép tới đây} move {được di chuyển tới đây} rename {được đổi tên} create {được tạo} extract {được giải nén ra đây} compress {được nén} other {được chuyển tới đây khi xóa}} bằng Cmdr{hasVolume, select, yes { từ {volume}} other {}} vào <date></date>",
   "@aboutThis.headline.putHereByCmdr": {
     "sourceHash": "e73b25d"
   },
-  "aboutThis.headline.receivedByMail": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as a Mail attachment{hasDate, select, yes { saved on <date></date>} other {}}",
+  "aboutThis.headline.receivedByMail": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, được ghi nhận là tệp đính kèm Mail{hasDate, select, yes {, đã lưu vào <date></date>} other {}}",
   "@aboutThis.headline.receivedByMail": {
     "sourceHash": "224c768"
   },
-  "aboutThis.headline.receivedByAirDrop": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as received over AirDrop{hasDate, select, yes { on <date></date>} other {}}",
+  "aboutThis.headline.receivedByAirDrop": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, được ghi nhận là nhận qua AirDrop{hasDate, select, yes { vào <date></date>} other {}}",
   "@aboutThis.headline.receivedByAirDrop": {
     "sourceHash": "f516160"
   },
-  "aboutThis.headline.dataOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {certainty, select, probable {probably {app}’s data} other {{app}’s data}}",
+  "aboutThis.headline.dataOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, {certainty, select, probable {có lẽ là dữ liệu của {app}} other {dữ liệu của {app}}}",
   "@aboutThis.headline.dataOfApp": {
     "sourceHash": "b4fbc49"
   },
-  "aboutThis.headline.cacheOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {certainty, select, probable {probably {app}’s cache} other {{app}’s cache}}",
+  "aboutThis.headline.cacheOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, {certainty, select, probable {có lẽ là bộ đệm của {app}} other {bộ đệm của {app}}}",
   "@aboutThis.headline.cacheOfApp": {
     "sourceHash": "1d671ae"
   },
-  "aboutThis.headline.dataOfMissingApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, named after {bundleId}, an app that isn’t installed",
+  "aboutThis.headline.dataOfMissingApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, được đặt tên theo {bundleId}, một ứng dụng không được cài đặt",
   "@aboutThis.headline.dataOfMissingApp": {
     "sourceHash": "05f42d2"
   },
-  "aboutThis.headline.downloadedBy": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as downloaded with {app}{hasDate, select, yes { on <date></date>} other {}}",
+  "aboutThis.headline.downloadedBy": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, được ghi nhận là tải về bằng {app}{hasDate, select, yes { vào <date></date>} other {}}",
   "@aboutThis.headline.downloadedBy": {
     "sourceHash": "9b4bf46"
   },
-  "aboutThis.headline.lastOpened": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, last opened <date></date>",
+  "aboutThis.headline.lastOpened": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, mở lần cuối vào <date></date>",
   "@aboutThis.headline.lastOpened": {
     "sourceHash": "7a37566"
   },
-  "aboutThis.bundle.named": "{hasVersion, select, yes {{name}, version {version}} other {{name}}}",
+  "aboutThis.bundle.named": "{hasVersion, select, yes {{name}, phiên bản {version}} other {{name}}}",
   "@aboutThis.bundle.named": {
     "sourceHash": "32cbc50"
   },
-  "aboutThis.bundle.unnamed": "{hasVersion, select, yes {No name stated, version {version}} other {No name or version stated}}",
+  "aboutThis.bundle.unnamed": "{hasVersion, select, yes {Không nêu tên, phiên bản {version}} other {Không nêu tên hay phiên bản}}",
   "@aboutThis.bundle.unnamed": {
     "sourceHash": "abe0e87"
   },
-  "aboutThis.signature.unsigned": "Not signed",
+  "aboutThis.signature.unsigned": "Không được ký",
   "@aboutThis.signature.unsigned": {
     "sourceHash": "c0f06f8"
   },
-  "aboutThis.signature.adHoc": "Signed without a developer’s identity, like a local build",
+  "aboutThis.signature.adHoc": "Được ký mà không có danh tính nhà phát triển, như một bản dựng cục bộ",
   "@aboutThis.signature.adHoc": {
     "sourceHash": "d6406a2"
   },
-  "aboutThis.signature.developerId": "{matches, select, yes {Signed by {org} (team {team})} other {Carries a signature from {org} (team {team})}}",
+  "aboutThis.signature.developerId": "{matches, select, yes {Được ký bởi {org} (nhóm {team})} other {Mang chữ ký của {org} (nhóm {team})}}",
   "@aboutThis.signature.developerId": {
     "sourceHash": "d6ff0dc"
   },
-  "aboutThis.signature.appStore": "{matches, select, yes {Signed by the Mac App Store} other {Carries the Mac App Store’s signature}}",
+  "aboutThis.signature.appStore": "{matches, select, yes {Được ký bởi Mac App Store} other {Mang chữ ký của Mac App Store}}",
   "@aboutThis.signature.appStore": {
     "sourceHash": "3348913"
   },
-  "aboutThis.signature.apple": "{matches, select, yes {Signed by Apple} other {Carries Apple’s signature}}",
+  "aboutThis.signature.apple": "{matches, select, yes {Được ký bởi Apple} other {Mang chữ ký của Apple}}",
   "@aboutThis.signature.apple": {
     "sourceHash": "bb76e30"
   },
-  "aboutThis.signature.unrecognized": "Carries a signature from an authority Cmdr doesn’t know",
+  "aboutThis.signature.unrecognized": "Mang chữ ký của một tổ chức cấp chứng chỉ mà Cmdr không biết",
   "@aboutThis.signature.unrecognized": {
     "sourceHash": "6fdda36"
   },
-  "aboutThis.signature.executableDiffers": "Its program doesn’t match the signature it carries.",
+  "aboutThis.signature.executableDiffers": "Chương trình bên trong không khớp với chữ ký đi kèm.",
   "@aboutThis.signature.executableDiffers": {
     "sourceHash": "cecae80"
   },
-  "aboutThis.signature.checkTimedOut": "Cmdr didn’t finish comparing its program with the signature.",
+  "aboutThis.signature.checkTimedOut": "Cmdr chưa so sánh xong chương trình với chữ ký.",
   "@aboutThis.signature.checkTimedOut": {
     "sourceHash": "3e01b68"
   },
-  "aboutThis.signature.checkUnavailable": "Cmdr couldn’t compare its program with the signature.",
+  "aboutThis.signature.checkUnavailable": "Cmdr không thể so sánh chương trình với chữ ký.",
   "@aboutThis.signature.checkUnavailable": {
     "sourceHash": "593adcf"
   },
-  "aboutThis.signature.ticketPresent": "A notarization ticket is stapled to it.",
+  "aboutThis.signature.ticketPresent": "Một phiếu công chứng được đính kèm vào mục này.",
   "@aboutThis.signature.ticketPresent": {
     "sourceHash": "45aef96"
   },
-  "aboutThis.signature.ticketAbsent": "No notarization ticket is stapled to it. macOS can also check with Apple online.",
+  "aboutThis.signature.ticketAbsent": "Không có phiếu công chứng nào được đính kèm vào mục này. macOS cũng có thể kiểm tra trực tuyến với Apple.",
   "@aboutThis.signature.ticketAbsent": {
     "sourceHash": "fb6efd9"
   },
-  "aboutThis.lastOpened.noRecord": "No last-opened record",
+  "aboutThis.lastOpened.noRecord": "Không có bản ghi lần mở cuối",
   "@aboutThis.lastOpened.noRecord": {
     "sourceHash": "6e28632"
   },
-  "aboutThis.lastOpened.known": "<date></date>{hasCount, select, yes {, {count, plural, one {opened once} other {opened {countText} times}}} other {}}",
+  "aboutThis.lastOpened.known": "<date></date>{hasCount, select, yes {, {count, plural, other {đã mở {countText} lần}}} other {}}",
   "@aboutThis.lastOpened.known": {
     "sourceHash": "d503f13"
   },
-  "aboutThis.importance.notScored": "Cmdr hasn’t scored how much this folder matters yet",
+  "aboutThis.importance.notScored": "Cmdr chưa đánh giá mức độ quan trọng của thư mục này",
   "@aboutThis.importance.notScored": {
     "sourceHash": "b095a21"
   },
-  "aboutThis.importance.band": "{band, select, high {High} medium {Medium} low {Low} other {Not ranked}}",
+  "aboutThis.importance.band": "{band, select, high {Cao} medium {Trung bình} low {Thấp} other {Không xếp hạng}}",
   "@aboutThis.importance.band": {
     "sourceHash": "e94498a"
   },
-  "aboutThis.importance.because": "Because of {reasons}",
+  "aboutThis.importance.because": "Do {reasons}",
   "@aboutThis.importance.because": {
     "sourceHash": "2d0b95d"
   },
-  "aboutThis.importance.reason.projectMarker": "a project file in it",
+  "aboutThis.importance.reason.projectMarker": "có tệp dự án bên trong",
   "@aboutThis.importance.reason.projectMarker": {
     "sourceHash": "1c3970a"
   },
-  "aboutThis.importance.reason.mtimeRecency": "recent changes",
+  "aboutThis.importance.reason.mtimeRecency": "các thay đổi gần đây",
   "@aboutThis.importance.reason.mtimeRecency": {
     "sourceHash": "ceb5e1c"
   },
-  "aboutThis.importance.reason.visitActivity": "your visits in Cmdr",
+  "aboutThis.importance.reason.visitActivity": "những lần bạn mở trong Cmdr",
   "@aboutThis.importance.reason.visitActivity": {
     "sourceHash": "628eb6f"
   },
-  "aboutThis.importance.reason.lastUsed": "recent use",
+  "aboutThis.importance.reason.lastUsed": "lần dùng gần đây",
   "@aboutThis.importance.reason.lastUsed": {
     "sourceHash": "f43c570"
   },
-  "aboutThis.importance.reason.extensionDiversity": "many kinds of files",
+  "aboutThis.importance.reason.extensionDiversity": "nhiều loại tệp",
   "@aboutThis.importance.reason.extensionDiversity": {
     "sourceHash": "2302631"
   },
-  "aboutThis.importance.reason.projectRoot": "being a project’s top folder",
+  "aboutThis.importance.reason.projectRoot": "là thư mục gốc của một dự án",
   "@aboutThis.importance.reason.projectRoot": {
     "sourceHash": "a6e90d7"
   },
-  "aboutThis.importance.reason.userContent": "holding your own files",
+  "aboutThis.importance.reason.userContent": "chứa tệp của chính bạn",
   "@aboutThis.importance.reason.userContent": {
     "sourceHash": "40bbc2a"
   },
-  "aboutThis.importance.floor.nameDenylisted": "Cmdr doesn’t rank folders whose name marks generated files",
+  "aboutThis.importance.floor.nameDenylisted": "Cmdr không xếp hạng các thư mục có tên cho thấy chứa tệp được tạo tự động",
   "@aboutThis.importance.floor.nameDenylisted": {
     "sourceHash": "fa12ecd"
   },
-  "aboutThis.importance.floor.hiddenOrSystem": "Cmdr doesn’t rank hidden, system, or temporary folders",
+  "aboutThis.importance.floor.hiddenOrSystem": "Cmdr không xếp hạng thư mục ẩn, thư mục hệ thống hoặc thư mục tạm",
   "@aboutThis.importance.floor.hiddenOrSystem": {
     "sourceHash": "1665ffd"
   },
-  "aboutThis.importance.floor.underFlooredAncestor": "Cmdr doesn’t rank folders inside one it leaves out",
+  "aboutThis.importance.floor.underFlooredAncestor": "Cmdr không xếp hạng các thư mục nằm trong một thư mục mà Cmdr đã loại ra",
   "@aboutThis.importance.floor.underFlooredAncestor": {
     "sourceHash": "61ab4a2"
   },
-  "aboutThis.importance.floor.other": "Cmdr leaves folders like this out of its ranking",
+  "aboutThis.importance.floor.other": "Cmdr loại những thư mục như thế này ra khỏi bảng xếp hạng",
   "@aboutThis.importance.floor.other": {
     "sourceHash": "872bc2a"
   },
-  "aboutThis.importance.reason.other": "other signals",
+  "aboutThis.importance.reason.other": "các tín hiệu khác",
   "@aboutThis.importance.reason.other": {
     "sourceHash": "7edd91c"
   },
-  "aboutThis.importance.visits": "{count, plural, one {Cmdr visited it once} other {Cmdr visited it {countText} times}}",
+  "aboutThis.importance.visits": "{count, plural, other {Cmdr đã mở thư mục này {countText} lần}}",
   "@aboutThis.importance.visits": {
     "sourceHash": "8753151"
   },
-  "aboutThis.importance.stale": "Scored before the latest changes",
+  "aboutThis.importance.stale": "Được đánh giá trước các thay đổi mới nhất",
   "@aboutThis.importance.stale": {
     "sourceHash": "996a6b2"
   },
   "aboutThis.owner.byBundleId": "{app}",
   "@aboutThis.owner.byBundleId": {
-    "sourceHash": "ab9f435"
+    "sourceHash": "ab9f435",
+    "sameAsSourceJustification": "Placeholder-only value: the app's name alone needs no words around it in Vietnamese."
   },
-  "aboutThis.owner.byBundleIdHow": "The folder carries the app’s identifier, {bundleId}.",
+  "aboutThis.owner.byBundleIdHow": "Thư mục mang mã định danh của ứng dụng: {bundleId}.",
   "@aboutThis.owner.byBundleIdHow": {
     "sourceHash": "30f6aa5"
   },
-  "aboutThis.owner.notInstalled": "Left over from an app that isn’t installed ({bundleId})",
+  "aboutThis.owner.notInstalled": "Còn sót lại từ một ứng dụng không được cài đặt ({bundleId})",
   "@aboutThis.owner.notInstalled": {
     "sourceHash": "0746a4a"
   },
-  "aboutThis.owner.byName": "Probably {app}",
+  "aboutThis.owner.byName": "Có lẽ là {app}",
   "@aboutThis.owner.byName": {
     "sourceHash": "e8a89fd"
   },
-  "aboutThis.owner.byNameHow": "Only this app has the folder’s name.",
+  "aboutThis.owner.byNameHow": "Chỉ ứng dụng này có tên trùng với tên thư mục.",
   "@aboutThis.owner.byNameHow": {
     "sourceHash": "be4f13c"
   },
-  "aboutThis.owner.partOfOs": "Part of macOS ({pkgId})",
+  "aboutThis.owner.partOfOs": "Một phần của macOS ({pkgId})",
   "@aboutThis.owner.partOfOs": {
     "sourceHash": "627aa11"
   },
-  "aboutThis.owner.installedBy": "Installed by the package {pkgId}",
+  "aboutThis.owner.installedBy": "Được cài đặt bởi gói {pkgId}",
   "@aboutThis.owner.installedBy": {
     "sourceHash": "c3271fd"
   },
-  "aboutThis.owner.homebrew": "Homebrew’s {kind, select, cask {cask} other {formula}} {name}",
+  "aboutThis.owner.homebrew": "{kind, select, cask {cask} other {formula}} {name} của Homebrew",
   "@aboutThis.owner.homebrew": {
     "sourceHash": "4a9fdea"
   },
-  "aboutThis.owner.standardFolder": "{folder}, set up by the system",
+  "aboutThis.owner.standardFolder": "{folder}, do hệ thống thiết lập",
   "@aboutThis.owner.standardFolder": {
     "sourceHash": "378b403"
   },
-  "aboutThis.standardFolder.home": "Your home folder",
+  "aboutThis.standardFolder.home": "Thư mục chính của bạn",
   "@aboutThis.standardFolder.home": {
     "sourceHash": "a0111e9"
   },
-  "aboutThis.standardFolder.desktop": "Your Desktop folder",
+  "aboutThis.standardFolder.desktop": "Thư mục Màn hình nền của bạn",
   "@aboutThis.standardFolder.desktop": {
     "sourceHash": "9b1dabb"
   },
-  "aboutThis.standardFolder.documents": "Your Documents folder",
+  "aboutThis.standardFolder.documents": "Thư mục Tài liệu của bạn",
   "@aboutThis.standardFolder.documents": {
     "sourceHash": "9ef28aa"
   },
-  "aboutThis.standardFolder.downloads": "Your Downloads folder",
+  "aboutThis.standardFolder.downloads": "Thư mục Tải về của bạn",
   "@aboutThis.standardFolder.downloads": {
     "sourceHash": "4bd179b"
   },
-  "aboutThis.standardFolder.movies": "Your Movies folder",
+  "aboutThis.standardFolder.movies": "Thư mục Phim của bạn",
   "@aboutThis.standardFolder.movies": {
     "sourceHash": "d28ecb9"
   },
-  "aboutThis.standardFolder.music": "Your Music folder",
+  "aboutThis.standardFolder.music": "Thư mục Nhạc của bạn",
   "@aboutThis.standardFolder.music": {
     "sourceHash": "c03e44f"
   },
-  "aboutThis.standardFolder.pictures": "Your Pictures folder",
+  "aboutThis.standardFolder.pictures": "Thư mục Ảnh của bạn",
   "@aboutThis.standardFolder.pictures": {
     "sourceHash": "c6b7545"
   },
-  "aboutThis.standardFolder.public": "Your Public folder",
+  "aboutThis.standardFolder.public": "Thư mục Chung của bạn",
   "@aboutThis.standardFolder.public": {
     "sourceHash": "c4d7b03"
   },
-  "aboutThis.standardFolder.homeLibrary": "Your Library folder",
+  "aboutThis.standardFolder.homeLibrary": "Thư mục Thư viện của bạn",
   "@aboutThis.standardFolder.homeLibrary": {
     "sourceHash": "bbce73c"
   },
-  "aboutThis.standardFolder.homeApplications": "Your own Applications folder",
+  "aboutThis.standardFolder.homeApplications": "Thư mục Ứng dụng riêng của bạn",
   "@aboutThis.standardFolder.homeApplications": {
     "sourceHash": "19a99a9"
   },
-  "aboutThis.standardFolder.applications": "The computer’s Applications folder",
+  "aboutThis.standardFolder.applications": "Thư mục Ứng dụng của máy tính",
   "@aboutThis.standardFolder.applications": {
     "sourceHash": "4735f61"
   },
-  "aboutThis.standardFolder.library": "The computer’s Library folder",
+  "aboutThis.standardFolder.library": "Thư mục Thư viện của máy tính",
   "@aboutThis.standardFolder.library": {
     "sourceHash": "4b8adf2"
   },
-  "aboutThis.standardFolder.system": "The System folder of macOS",
+  "aboutThis.standardFolder.system": "Thư mục Hệ thống của macOS",
   "@aboutThis.standardFolder.system": {
     "sourceHash": "b4b5daa"
   },
-  "aboutThis.standardFolder.users": "The Users folder",
+  "aboutThis.standardFolder.users": "Thư mục Người dùng",
   "@aboutThis.standardFolder.users": {
     "sourceHash": "955c56c"
   },
-  "aboutThis.standardFolder.startupDisk": "The top of the startup disk",
+  "aboutThis.standardFolder.startupDisk": "Thư mục gốc của ổ đĩa khởi động",
   "@aboutThis.standardFolder.startupDisk": {
     "sourceHash": "6e69278"
   },
-  "aboutThis.owner.insideApp": "Part of {app}",
+  "aboutThis.owner.insideApp": "Một phần của {app}",
   "@aboutThis.owner.insideApp": {
     "sourceHash": "5a318e6"
   },
-  "aboutThis.owner.noReceipt": "No installer record",
+  "aboutThis.owner.noReceipt": "Không có bản ghi cài đặt",
   "@aboutThis.owner.noReceipt": {
     "sourceHash": "b2f04b8"
   },
-  "aboutThis.owner.ambiguous": "Several installed apps could own this, so Cmdr doesn’t pick one.",
+  "aboutThis.owner.ambiguous": "Có vài ứng dụng đã cài đặt có thể sở hữu mục này, nên Cmdr không chọn cái nào.",
   "@aboutThis.owner.ambiguous": {
     "sourceHash": "e870bd3"
   },
-  "aboutThis.git.repo": "In <repo></repo>{hasBranch, select, yes {, on {branch}} other {, with no branch checked out}}",
+  "aboutThis.git.repo": "Trong <repo></repo>{hasBranch, select, yes {, trên nhánh {branch}} other {, không ở nhánh nào}}",
   "@aboutThis.git.repo": {
     "sourceHash": "a54b5fc"
   },
-  "aboutThis.git.copyRepo": "Copy the repository’s path",
+  "aboutThis.git.copyRepo": "Sao chép đường dẫn của kho",
   "@aboutThis.git.copyRepo": {
     "sourceHash": "79d4b93"
   },
-  "aboutThis.git.clean": "Committed, with no changes",
+  "aboutThis.git.clean": "Đã commit, không có thay đổi",
   "@aboutThis.git.clean": {
     "sourceHash": "0dc5b69"
   },
-  "aboutThis.git.modified": "Has changes no commit has",
+  "aboutThis.git.modified": "Có thay đổi chưa nằm trong commit nào",
   "@aboutThis.git.modified": {
     "sourceHash": "408d71e"
   },
-  "aboutThis.git.untracked": "Git doesn’t track it",
+  "aboutThis.git.untracked": "Git không theo dõi mục này",
   "@aboutThis.git.untracked": {
     "sourceHash": "db130db"
   },
-  "aboutThis.git.ignored": "Git ignores it",
+  "aboutThis.git.ignored": "Git bỏ qua mục này",
   "@aboutThis.git.ignored": {
     "sourceHash": "c5b9eb8"
   },
-  "aboutThis.folderSize.known": "{coverage, select, lowerBound {At least <size></size>} other {<size></size>}} in {files, plural, one {one file} other {{filesText} files}} and {folders, plural, one {one folder} other {{foldersText} folders}}",
+  "aboutThis.folderSize.known": "{coverage, select, lowerBound {Ít nhất <size></size>} other {<size></size>}} trong {files, plural, other {{filesText} tệp}} và {folders, plural, other {{foldersText} thư mục}}",
   "@aboutThis.folderSize.known": {
     "sourceHash": "be20154"
   },
-  "aboutThis.folderSize.stale": "From the drive index’s last pass, so it may have changed since",
+  "aboutThis.folderSize.stale": "Theo lượt quét gần nhất của chỉ mục ổ đĩa, nên có thể đã thay đổi từ đó",
   "@aboutThis.folderSize.stale": {
     "sourceHash": "338420a"
   },
-  "aboutThis.folderSize.updating": "The drive index is updating this folder right now",
+  "aboutThis.folderSize.updating": "Chỉ mục ổ đĩa đang cập nhật thư mục này",
   "@aboutThis.folderSize.updating": {
     "sourceHash": "ab2cbb7"
   },
-  "aboutThis.folderSize.symlinks": "Links to other places aren’t counted",
+  "aboutThis.folderSize.symlinks": "Không tính các liên kết tới nơi khác",
   "@aboutThis.folderSize.symlinks": {
     "sourceHash": "b6f82e9"
   },
-  "aboutThis.contents.summary": "{count, plural, =0 {Empty} one {One item} other {{countText} items: {kinds}}}",
+  "aboutThis.contents.summary": "{count, plural, =0 {Trống} other {{countText} mục: {kinds}}}",
   "@aboutThis.contents.summary": {
     "sourceHash": "12e1387"
   },
-  "aboutThis.childKind.folder": "{count, plural, one {{countText} folder} other {{countText} folders}}",
+  "aboutThis.childKind.folder": "{count, plural, other {{countText} thư mục}}",
   "@aboutThis.childKind.folder": {
     "sourceHash": "3c46f04"
   },
-  "aboutThis.childKind.image": "{count, plural, one {{countText} image} other {{countText} images}}",
+  "aboutThis.childKind.image": "{count, plural, other {{countText} ảnh}}",
   "@aboutThis.childKind.image": {
     "sourceHash": "ddc0659"
   },
-  "aboutThis.childKind.video": "{count, plural, one {{countText} video} other {{countText} videos}}",
+  "aboutThis.childKind.video": "{count, plural, other {{countText} video}}",
   "@aboutThis.childKind.video": {
-    "sourceHash": "1912484"
+    "sourceHash": "1912484",
+    "sameAsSourceJustification": "Vietnamese nouns don't inflect and the vi term ruling for video is video (macOS Photos vi), so {countText} video matches the English plural branch."
   },
-  "aboutThis.childKind.audio": "{count, plural, one {{countText} sound file} other {{countText} sound files}}",
+  "aboutThis.childKind.audio": "{count, plural, other {{countText} tệp âm thanh}}",
   "@aboutThis.childKind.audio": {
     "sourceHash": "930b7cc"
   },
-  "aboutThis.childKind.document": "{count, plural, one {{countText} document} other {{countText} documents}}",
+  "aboutThis.childKind.document": "{count, plural, other {{countText} tài liệu}}",
   "@aboutThis.childKind.document": {
     "sourceHash": "7e308f7"
   },
-  "aboutThis.childKind.archive": "{count, plural, one {{countText} archive or disk image} other {{countText} archives or disk images}}",
+  "aboutThis.childKind.archive": "{count, plural, other {{countText} tệp nén hoặc ảnh đĩa}}",
   "@aboutThis.childKind.archive": {
     "sourceHash": "7cb7114"
   },
-  "aboutThis.childKind.code": "{count, plural, one {{countText} code file} other {{countText} code files}}",
+  "aboutThis.childKind.code": "{count, plural, other {{countText} tệp mã}}",
   "@aboutThis.childKind.code": {
     "sourceHash": "d0b36f3"
   },
-  "aboutThis.childKind.app": "{count, plural, one {{countText} app or program} other {{countText} apps or programs}}",
+  "aboutThis.childKind.app": "{count, plural, other {{countText} ứng dụng hoặc chương trình}}",
   "@aboutThis.childKind.app": {
     "sourceHash": "a5e82a0"
   },
-  "aboutThis.childKind.other": "{count, plural, one {{countText} other file} other {{countText} other files}}",
+  "aboutThis.childKind.other": "{count, plural, other {{countText} tệp khác}}",
   "@aboutThis.childKind.other": {
     "sourceHash": "473df3e"
   },
-  "aboutThis.folderClass.dependencies": "Installed packages a package manager put here",
+  "aboutThis.folderClass.dependencies": "Các gói đã cài đặt do một trình quản lý gói đặt vào đây",
   "@aboutThis.folderClass.dependencies": {
     "sourceHash": "b4a2d34"
   },
-  "aboutThis.folderClass.buildOutput": "Output a build tool wrote",
+  "aboutThis.folderClass.buildOutput": "Kết quả do một công cụ dựng ghi ra",
   "@aboutThis.folderClass.buildOutput": {
     "sourceHash": "ff8c437"
   },
-  "aboutThis.folderClass.cache": "A cache",
+  "aboutThis.folderClass.cache": "Một bộ đệm",
   "@aboutThis.folderClass.cache": {
     "sourceHash": "843f82c"
   },
-  "aboutThis.folderClass.versionControl": "A repository’s history and settings",
+  "aboutThis.folderClass.versionControl": "Lịch sử và cài đặt của một kho",
   "@aboutThis.folderClass.versionControl": {
     "sourceHash": "9848335"
   },
-  "aboutThis.contents.atLeastSize": "at least <size></size>",
+  "aboutThis.contents.atLeastSize": "ít nhất <size></size>",
   "@aboutThis.contents.atLeastSize": {
     "sourceHash": "dfcd99e"
   },
-  "aboutThis.contents.noSize": "Not sized yet",
+  "aboutThis.contents.noSize": "Chưa tính kích cỡ",
   "@aboutThis.contents.noSize": {
     "sourceHash": "4bdd378"
   },
-  "aboutThis.contents.inFolder": "in {path}",
+  "aboutThis.contents.inFolder": "trong {path}",
   "@aboutThis.contents.inFolder": {
     "sourceHash": "7ac1b38"
   },
-  "aboutThis.contents.goTo": "Go to {name}",
+  "aboutThis.contents.goTo": "Đi tới {name}",
   "@aboutThis.contents.goTo": {
     "sourceHash": "5650d8d"
   },
-  "aboutThis.contents.notLoaded": "Cmdr lists these once Search has loaded this drive",
+  "aboutThis.contents.notLoaded": "Cmdr sẽ liệt kê các mục này khi Tìm kiếm đã tải ổ đĩa này",
   "@aboutThis.contents.notLoaded": {
     "sourceHash": "75b1252"
   },
-  "aboutThis.contents.unchanged": "{atLeast, select, yes {At least {percent} of it hasn’t changed in a year (<size></size>)} other {{percent} of it hasn’t changed in a year (<size></size>)}}",
+  "aboutThis.contents.unchanged": "{atLeast, select, yes {Ít nhất {percent} không thay đổi trong một năm qua (<size></size>)} other {{percent} không thay đổi trong một năm qua (<size></size>)}}",
   "@aboutThis.contents.unchanged": {
     "sourceHash": "811264b"
   },
-  "aboutThis.appData.summary": "{count, plural, =0 {None that Cmdr’s index knows of} one {{atLeast, select, yes {At least <size></size> in one folder} other {<size></size> in one folder}}} other {{atLeast, select, yes {At least <size></size> in {countText} folders} other {<size></size> in {countText} folders}}}}",
+  "aboutThis.appData.summary": "{count, plural, =0 {Chỉ mục của Cmdr không biết có thư mục nào} other {{atLeast, select, yes {Ít nhất <size></size> trong {countText} thư mục} other {<size></size> trong {countText} thư mục}}}}",
   "@aboutThis.appData.summary": {
     "sourceHash": "4688194"
   },
-  "aboutThis.appData.notLookedIn": "Cmdr’s index hasn’t listed {places} yet, so there may be more",
+  "aboutThis.appData.notLookedIn": "Chỉ mục của Cmdr chưa liệt kê {places}, nên có thể còn nhiều hơn",
   "@aboutThis.appData.notLookedIn": {
     "sourceHash": "40b9187"
   },
   "aboutThis.ownerPlace.caches": "Caches",
   "@aboutThis.ownerPlace.caches": {
-    "sourceHash": "c4d5ec9"
+    "sourceHash": "c4d5ec9",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.containers": "Containers",
   "@aboutThis.ownerPlace.containers": {
-    "sourceHash": "a22daa7"
+    "sourceHash": "a22daa7",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.groupContainers": "Group Containers",
   "@aboutThis.ownerPlace.groupContainers": {
-    "sourceHash": "33f3ee0"
+    "sourceHash": "33f3ee0",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.applicationSupport": "Application Support",
   "@aboutThis.ownerPlace.applicationSupport": {
-    "sourceHash": "7ef6ff2"
+    "sourceHash": "7ef6ff2",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.applicationScripts": "Application Scripts",
   "@aboutThis.ownerPlace.applicationScripts": {
-    "sourceHash": "4abecec"
+    "sourceHash": "4abecec",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.preferences": "Preferences",
   "@aboutThis.ownerPlace.preferences": {
-    "sourceHash": "66962f7"
+    "sourceHash": "66962f7",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.savedState": "Saved Application State",
   "@aboutThis.ownerPlace.savedState": {
-    "sourceHash": "d2c3ab9"
+    "sourceHash": "d2c3ab9",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.logs": "Logs",
   "@aboutThis.ownerPlace.logs": {
-    "sourceHash": "ea2100d"
+    "sourceHash": "ea2100d",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.webData": "HTTPStorages",
   "@aboutThis.ownerPlace.webData": {
-    "sourceHash": "0a2ea16"
+    "sourceHash": "0a2ea16",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
-  "aboutThis.ownerPlace.sandboxHome": "App home",
+  "aboutThis.ownerPlace.sandboxHome": "Thư mục chính của ứng dụng",
   "@aboutThis.ownerPlace.sandboxHome": {
     "sourceHash": "0548eba"
   },
-  "aboutThis.removal.standardFolder.home": "It’s your home folder: everything of yours on this computer is inside it, and the system and every app expect it.",
+  "aboutThis.removal.standardFolder.home": "Đây là thư mục chính của bạn: mọi thứ của bạn trên máy tính này đều nằm trong đó, và hệ thống cùng mọi ứng dụng đều cần đến thư mục này.",
   "@aboutThis.removal.standardFolder.home": {
     "sourceHash": "214ceb7"
   },
-  "aboutThis.removal.standardFolder.personal": "It’s one of your standard folders: the system and your apps expect to find it, and everything inside it goes with it.",
+  "aboutThis.removal.standardFolder.personal": "Đây là một trong các thư mục chuẩn của bạn: hệ thống và các ứng dụng của bạn đều trông đợi sẽ thấy thư mục này, và mọi thứ bên trong cũng mất theo.",
   "@aboutThis.removal.standardFolder.personal": {
     "sourceHash": "2702168"
   },
-  "aboutThis.removal.standardFolder.homeLibrary": "It holds the settings and data your apps keep for you, and they can stop working or start over without it.",
+  "aboutThis.removal.standardFolder.homeLibrary": "Thư mục này chứa cài đặt và dữ liệu mà các ứng dụng giữ cho bạn, và thiếu thư mục này, các ứng dụng có thể ngừng hoạt động hoặc phải bắt đầu lại từ đầu.",
   "@aboutThis.removal.standardFolder.homeLibrary": {
     "sourceHash": "1dfa0b3"
   },
-  "aboutThis.removal.standardFolder.homeApplications": "It holds apps installed for you alone, and the system looks for them here.",
+  "aboutThis.removal.standardFolder.homeApplications": "Thư mục này chứa các ứng dụng chỉ cài cho riêng bạn, và hệ thống tìm các ứng dụng đó ở đây.",
   "@aboutThis.removal.standardFolder.homeApplications": {
     "sourceHash": "9652169"
   },
-  "aboutThis.removal.standardFolder.applications": "It holds this computer’s apps, and the system looks for them here.",
+  "aboutThis.removal.standardFolder.applications": "Thư mục này chứa các ứng dụng của máy tính này, và hệ thống tìm các ứng dụng đó ở đây.",
   "@aboutThis.removal.standardFolder.applications": {
     "sourceHash": "2741b28"
   },
-  "aboutThis.removal.standardFolder.library": "It holds settings and data that apps and the system keep for everyone on this computer, and they can stop working without it.",
+  "aboutThis.removal.standardFolder.library": "Thư mục này chứa cài đặt và dữ liệu mà các ứng dụng và hệ thống giữ cho mọi người trên máy tính này, và thiếu thư mục này, chúng có thể ngừng hoạt động.",
   "@aboutThis.removal.standardFolder.library": {
     "sourceHash": "0fc06cf"
   },
-  "aboutThis.removal.standardFolder.system": "It’s macOS itself: the computer can’t start without it.",
+  "aboutThis.removal.standardFolder.system": "Đây chính là macOS: máy tính không thể khởi động nếu thiếu thư mục này.",
   "@aboutThis.removal.standardFolder.system": {
     "sourceHash": "e06bc7e"
   },
-  "aboutThis.removal.standardFolder.users": "It holds every account’s home folder on this computer.",
+  "aboutThis.removal.standardFolder.users": "Thư mục này chứa thư mục chính của mọi tài khoản trên máy tính này.",
   "@aboutThis.removal.standardFolder.users": {
     "sourceHash": "b72c1fe"
   },
-  "aboutThis.removal.standardFolder.startupDisk": "It holds everything on the startup disk, macOS included.",
+  "aboutThis.removal.standardFolder.startupDisk": "Thư mục này chứa mọi thứ trên ổ đĩa khởi động, kể cả macOS.",
   "@aboutThis.removal.standardFolder.startupDisk": {
     "sourceHash": "3f6c151"
   },
-  "aboutThis.removal.uncommittedWork": "It has changes no commit holds, so git can’t bring those back.",
+  "aboutThis.removal.uncommittedWork": "Mục này có thay đổi chưa nằm trong commit nào, nên git không thể lấy lại những thay đổi đó.",
   "@aboutThis.removal.uncommittedWork": {
     "sourceHash": "9fb3490"
   },
-  "aboutThis.removal.untrackedNotInGit": "Git doesn’t track it, so git can’t bring it back.",
+  "aboutThis.removal.untrackedNotInGit": "Git không theo dõi mục này, nên git không thể lấy lại mục này.",
   "@aboutThis.removal.untrackedNotInGit": {
     "sourceHash": "fd709a6"
   },
-  "aboutThis.removal.ignoredByGit": "Git ignores it, so git can’t bring it back.",
+  "aboutThis.removal.ignoredByGit": "Git bỏ qua mục này, nên git không thể lấy lại mục này.",
   "@aboutThis.removal.ignoredByGit": {
     "sourceHash": "bc86083"
   },
-  "aboutThis.removal.userDocument": "Nothing Cmdr knows of made this or could make it again.",
+  "aboutThis.removal.userDocument": "Không có gì mà Cmdr biết đã tạo ra mục này hay có thể tạo lại mục này.",
   "@aboutThis.removal.userDocument": {
     "sourceHash": "81982af"
   },
-  "aboutThis.removal.removesApp": "This removes the app. Cmdr can’t tell yet how much of its data stays in your Library.",
+  "aboutThis.removal.removesApp": "Việc này gỡ bỏ ứng dụng. Cmdr chưa biết bao nhiêu dữ liệu của ứng dụng sẽ còn lại trong Thư viện của bạn.",
   "@aboutThis.removal.removesApp": {
     "sourceHash": "7f8bfbe"
   },
-  "aboutThis.removal.removesAppDataLeft": "{count, plural, =0 {This removes the app. Cmdr’s index knows of none of its data in your Library.} one {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in one folder.} other {This removes the app. Its data in your Library stays: <size></size> in one folder.}}} other {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in {countText} folders.} other {This removes the app. Its data in your Library stays: <size></size> in {countText} folders.}}}}",
+  "aboutThis.removal.removesAppDataLeft": "{count, plural, =0 {Việc này gỡ bỏ ứng dụng. Chỉ mục của Cmdr không biết có dữ liệu nào của ứng dụng trong Thư viện của bạn.} other {{atLeast, select, yes {Việc này gỡ bỏ ứng dụng. Dữ liệu của ứng dụng trong Thư viện của bạn vẫn còn lại: ít nhất <size></size> trong {countText} thư mục.} other {Việc này gỡ bỏ ứng dụng. Dữ liệu của ứng dụng trong Thư viện của bạn vẫn còn lại: <size></size> trong {countText} thư mục.}}}}",
   "@aboutThis.removal.removesAppDataLeft": {
     "sourceHash": "9e527f8"
   },
-  "aboutThis.removal.appData": "{certainty, select, probable {It’s probably {app}’s data, and {app} may lose what it keeps here.} other {It’s {app}’s data, and {app} may lose what it keeps here.}}",
+  "aboutThis.removal.appData": "{certainty, select, probable {Có lẽ đây là dữ liệu của {app}, và {app} có thể mất những gì đang lưu ở đây.} other {Đây là dữ liệu của {app}, và {app} có thể mất những gì đang lưu ở đây.}}",
   "@aboutThis.removal.appData": {
     "sourceHash": "3571d95"
   },
-  "aboutThis.removal.installedByReceipt": "{partOfOs, select, yes {macOS installed it, and parts of macOS may need it.} other {The package {pkgId} installed it, and what it installed may need it.}}",
+  "aboutThis.removal.installedByReceipt": "{partOfOs, select, yes {macOS đã cài đặt mục này, và các phần của macOS có thể cần đến mục này.} other {Gói {pkgId} đã cài đặt mục này, và những gì gói đó cài có thể cần đến mục này.}}",
   "@aboutThis.removal.installedByReceipt": {
     "sourceHash": "ec4b768"
   },
-  "aboutThis.removal.installedByHomebrew": "Homebrew installed it as part of {name}, which may stop working.",
+  "aboutThis.removal.installedByHomebrew": "Homebrew đã cài đặt mục này như một phần của {name}, và {name} có thể ngừng hoạt động.",
   "@aboutThis.removal.installedByHomebrew": {
     "sourceHash": "caea929"
   },
-  "aboutThis.removal.leftoverOfUninstalledApp": "It’s named after {bundleId}, an app that isn’t installed. Cmdr can’t tell whether anything else uses it.",
+  "aboutThis.removal.leftoverOfUninstalledApp": "Mục này được đặt tên theo {bundleId}, một ứng dụng không được cài đặt. Cmdr không biết liệu còn thứ gì khác đang dùng mục này không.",
   "@aboutThis.removal.leftoverOfUninstalledApp": {
     "sourceHash": "0da2729"
   },
-  "aboutThis.removal.recordedDownload": "{platform, select, macos {macOS recorded this as downloaded from {host}. Cmdr can’t tell whether the site still has it.} other {Your browser recorded this as downloaded from {host}. Cmdr can’t tell whether the site still has it.}}",
+  "aboutThis.removal.recordedDownload": "{platform, select, macos {macOS ghi nhận mục này được tải về từ {host}. Cmdr không biết trang web đó có còn tệp này không.} other {Trình duyệt của bạn ghi nhận mục này được tải về từ {host}. Cmdr không biết trang web đó có còn tệp này không.}}",
   "@aboutThis.removal.recordedDownload": {
     "sourceHash": "389ab69"
   },
-  "aboutThis.removal.gitCanRestore": "Git can restore it from the last commit.",
+  "aboutThis.removal.gitCanRestore": "Git có thể khôi phục mục này từ commit gần nhất.",
   "@aboutThis.removal.gitCanRestore": {
     "sourceHash": "9d75b10"
   },
-  "aboutThis.removal.rebuildablePackageManager": "A package manager can fetch this again, which takes time and a network.",
+  "aboutThis.removal.rebuildablePackageManager": "Một trình quản lý gói có thể tải lại mục này, việc đó tốn thời gian và cần có mạng.",
   "@aboutThis.removal.rebuildablePackageManager": {
     "sourceHash": "2c0dd33"
   },
-  "aboutThis.removal.rebuildableBuildTool": "A build tool can make this again, which takes time.",
+  "aboutThis.removal.rebuildableBuildTool": "Một công cụ dựng có thể tạo lại mục này, việc đó tốn thời gian.",
   "@aboutThis.removal.rebuildableBuildTool": {
     "sourceHash": "b0b9b09"
   },
-  "aboutThis.removal.regeneratedCache": "{hasApp, select, yes {It’s {app}’s cache: {app} writes it again, and is slower until it has.} other {It’s a cache: whatever wrote it writes it again, and is slower until it has.}}",
+  "aboutThis.removal.regeneratedCache": "{hasApp, select, yes {Đây là bộ đệm của {app}: {app} sẽ ghi lại bộ đệm, và chạy chậm hơn cho đến khi ghi xong.} other {Đây là một bộ đệm: thứ đã ghi ra bộ đệm sẽ ghi lại, và chạy chậm hơn cho đến khi ghi xong.}}",
   "@aboutThis.removal.regeneratedCache": {
     "sourceHash": "9e428d5"
   },
-  "aboutThis.removal.otherNamesRemain": "{count, plural, one {One other name points to the same contents, which stays.} other {{countText} other names point to the same contents, which stays.}}",
+  "aboutThis.removal.otherNamesRemain": "{count, plural, other {{countText} tên khác trỏ tới cùng nội dung, và nội dung đó vẫn còn.}}",
   "@aboutThis.removal.otherNamesRemain": {
     "sourceHash": "c06d0b6"
   },
-  "aboutThis.removal.linkOnly": "It’s a link: removing it leaves what it points to.",
+  "aboutThis.removal.linkOnly": "Đây là một liên kết: gỡ bỏ liên kết thì thứ mà liên kết trỏ tới vẫn còn.",
   "@aboutThis.removal.linkOnly": {
     "sourceHash": "95cb310"
   },
-  "aboutThis.removal.cantTell": "Cmdr can’t tell what depends on this.",
+  "aboutThis.removal.cantTell": "Cmdr không biết những gì phụ thuộc vào mục này.",
   "@aboutThis.removal.cantTell": {
     "sourceHash": "c9900f8"
   },
-  "aboutThis.removal.more": "{count, plural, one {One more} other {{countText} more}}",
+  "aboutThis.removal.more": "{count, plural, other {Còn {countText} điều nữa}}",
   "@aboutThis.removal.more": {
     "sourceHash": "2daca20"
   },
-  "aboutThis.removal.less": "Show fewer",
+  "aboutThis.removal.less": "Thu gọn",
   "@aboutThis.removal.less": {
     "sourceHash": "255beb6"
   },
-  "aboutThis.label.gitSnapshot": "Git history",
+  "aboutThis.label.gitSnapshot": "Lịch sử git",
   "@aboutThis.label.gitSnapshot": {
     "sourceHash": "452144b"
   },
-  "aboutThis.unknown.volumeStoppedAnswering": "No answer from the drive",
+  "aboutThis.unknown.volumeStoppedAnswering": "Ổ đĩa không phản hồi",
   "@aboutThis.unknown.volumeStoppedAnswering": {
     "sourceHash": "a99c484"
   },
-  "aboutThis.unknown.notFound": "It isn’t there anymore.",
+  "aboutThis.unknown.notFound": "Mục này không còn ở đó nữa.",
   "@aboutThis.unknown.notFound": {
     "sourceHash": "8b3a5a7"
   },
-  "aboutThis.download.insideArchive": "Inside the archive “{archive}”.",
+  "aboutThis.download.insideArchive": "Nằm trong tệp nén “{archive}”.",
   "@aboutThis.download.insideArchive": {
     "sourceHash": "5b790df"
   },
-  "aboutThis.download.archiveRecord": "{platform, select, macos {What macOS recorded about the archive:} other {What your browser recorded about the archive:}}",
+  "aboutThis.download.archiveRecord": "{platform, select, macos {Những gì macOS ghi nhận về tệp nén:} other {Những gì trình duyệt của bạn ghi nhận về tệp nén:}}",
   "@aboutThis.download.archiveRecord": {
     "sourceHash": "8fd1b3b"
   },
-  "aboutThis.gitSnapshot.from": "{kind, select, branch {As the branch {name} has it in <repo></repo>} tag {As the tag {name} has it in <repo></repo>} commit {As commit {name} has it in <repo></repo>} other {As stash entry {name} has it in <repo></repo>}}",
+  "aboutThis.gitSnapshot.from": "{kind, select, branch {Bản trong nhánh {name} của <repo></repo>} tag {Bản trong tag {name} của <repo></repo>} commit {Bản trong commit {name} của <repo></repo>} other {Bản trong mục stash {name} của <repo></repo>}}",
   "@aboutThis.gitSnapshot.from": {
     "sourceHash": "aafff28"
   },
-  "aboutThis.gitSnapshot.lastChanged": "Last changed by a commit on <date></date>",
+  "aboutThis.gitSnapshot.lastChanged": "Lần cuối được một commit thay đổi vào <date></date>",
   "@aboutThis.gitSnapshot.lastChanged": {
     "sourceHash": "ed8a966"
   },
-  "aboutThis.gitSnapshot.copyCommit": "Copy the commit’s id",
+  "aboutThis.gitSnapshot.copyCommit": "Sao chép ID của commit",
   "@aboutThis.gitSnapshot.copyCommit": {
     "sourceHash": "22ce389"
   },
-  "aboutThis.headline.insideArchive": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, inside {archive}",
+  "aboutThis.headline.insideArchive": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, trong {archive}",
   "@aboutThis.headline.insideArchive": {
     "sourceHash": "36a16da"
   },
-  "aboutThis.headline.fromGitHistory": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {kind, select, branch {as the branch {name} has it} tag {as the tag {name} has it} commit {as commit {name} has it} other {as stash entry {name} has it}}",
+  "aboutThis.headline.fromGitHistory": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, ít nhất <size></size>} other {}}, {kind, select, branch {bản trong nhánh {name}} tag {bản trong tag {name}} commit {bản trong commit {name}} other {bản trong mục stash {name}}}",
   "@aboutThis.headline.fromGitHistory": {
     "sourceHash": "fb6543a"
   },
-  "aboutThis.removal.holdsRepoHistory": "It holds the repository’s whole history. Removing it leaves the files but drops every commit that isn’t pushed somewhere else, and Cmdr can’t tell what’s pushed.",
+  "aboutThis.removal.holdsRepoHistory": "Thư mục này chứa toàn bộ lịch sử của kho. Gỡ bỏ thư mục này vẫn để lại các tệp nhưng làm mất mọi commit chưa được đẩy lên nơi khác, và Cmdr không biết những gì đã được đẩy.",
   "@aboutThis.removal.holdsRepoHistory": {
     "sourceHash": "011304a"
   },
-  "aboutThis.removal.inGitHistory": "This is git’s record of it at that point in history, not a file on the disk, so there’s nothing to remove here.",
+  "aboutThis.removal.inGitHistory": "Đây là bản ghi của git về mục này tại thời điểm đó trong lịch sử, không phải một tệp trên ổ đĩa, nên ở đây không có gì để gỡ bỏ.",
   "@aboutThis.removal.inGitHistory": {
     "sourceHash": "5c3ab2e"
   },
-  "aboutThis.verdict.label": "AI wrote this",
+  "aboutThis.verdict.label": "Do AI viết",
   "@aboutThis.verdict.label": {
     "sourceHash": "8fe1d9b"
   },
-  "aboutThis.verdict.trust.oftenWrong": "This model, or a similar one, often got its take wrong when Cmdr tested it. Check it against the card’s facts, or switch to a stronger model.",
+  "aboutThis.verdict.trust.oftenWrong": "Mô hình này, hoặc một mô hình tương tự, thường nhận xét sai khi Cmdr thử nghiệm. Hãy đối chiếu nhận xét với các dữ kiện trên bảng thông tin, hoặc chuyển sang một mô hình mạnh hơn.",
   "@aboutThis.verdict.trust.oftenWrong": {
     "sourceHash": "ab85bab"
   },
-  "aboutThis.verdict.trust.changeModel": "Change the model",
+  "aboutThis.verdict.trust.changeModel": "Đổi mô hình",
   "@aboutThis.verdict.trust.changeModel": {
     "sourceHash": "c4f44ed"
   },
-  "aboutThis.verdict.trust.untested": "Cmdr hasn’t tested this model for these takes, so it can’t say whether to trust this one.",
+  "aboutThis.verdict.trust.untested": "Cmdr chưa thử nghiệm mô hình này cho những nhận xét như thế này, nên không thể nói có nên tin cậy nhận xét này không.",
   "@aboutThis.verdict.trust.untested": {
     "sourceHash": "d1174d9"
   },
-  "aboutThis.verdict.writing": "Writing a short take…",
+  "aboutThis.verdict.writing": "Đang viết một nhận xét ngắn…",
   "@aboutThis.verdict.writing": {
     "sourceHash": "fa632d5"
   },
-  "aboutThis.verdict.stop": "Stop",
+  "aboutThis.verdict.stop": "Dừng",
   "@aboutThis.verdict.stop": {
     "sourceHash": "cae7d57"
   },
-  "aboutThis.verdict.stopTooltip": "Stops the AI take. The facts and what it wrote so far stay.",
+  "aboutThis.verdict.stopTooltip": "Dừng nhận xét của AI. Các dữ kiện và phần đã viết vẫn được giữ lại.",
   "@aboutThis.verdict.stopTooltip": {
     "sourceHash": "f6dc700"
   },
-  "aboutThis.verdict.stopped": "Stopped",
+  "aboutThis.verdict.stopped": "Đã dừng",
   "@aboutThis.verdict.stopped": {
     "sourceHash": "1a4f630"
   },
-  "aboutThis.verdict.fromEarlier": "From earlier",
+  "aboutThis.verdict.fromEarlier": "Từ lúc trước",
   "@aboutThis.verdict.fromEarlier": {
     "sourceHash": "10d0e01"
   },
-  "aboutThis.verdict.announcement": "AI wrote this: {text}",
+  "aboutThis.verdict.announcement": "Do AI viết: {text}",
   "@aboutThis.verdict.announcement": {
     "sourceHash": "a2d0297"
   },
-  "aboutThis.verdict.given.none": "From the card’s facts. Cmdr didn’t look inside.",
+  "aboutThis.verdict.given.none": "Từ các dữ kiện trên bảng thông tin. Cmdr không xem bên trong.",
   "@aboutThis.verdict.given.none": {
     "sourceHash": "387fa5a"
   },
-  "aboutThis.verdict.given.firstLines": "From the card’s facts and its first lines.",
+  "aboutThis.verdict.given.firstLines": "Từ các dữ kiện trên bảng thông tin và những dòng đầu tiên của tệp.",
   "@aboutThis.verdict.given.firstLines": {
     "sourceHash": "daa8542"
   },
-  "aboutThis.verdict.given.firstPage": "From the card’s facts and the first page.",
+  "aboutThis.verdict.given.firstPage": "Từ các dữ kiện trên bảng thông tin và trang đầu tiên.",
   "@aboutThis.verdict.given.firstPage": {
     "sourceHash": "15b0aab"
   },
-  "aboutThis.verdict.given.entryNames": "From the card’s facts and the names of the first files inside.",
+  "aboutThis.verdict.given.entryNames": "Từ các dữ kiện trên bảng thông tin và tên của những tệp đầu tiên bên trong.",
   "@aboutThis.verdict.given.entryNames": {
     "sourceHash": "b32f391"
   },
-  "aboutThis.verdict.given.cameraDetails": "From the card’s facts and the photo’s camera details, without its location.",
+  "aboutThis.verdict.given.cameraDetails": "Từ các dữ kiện trên bảng thông tin và thông tin máy ảnh của bức ảnh, không kèm vị trí chụp.",
   "@aboutThis.verdict.given.cameraDetails": {
     "sourceHash": "a56e30c"
   },
-  "aboutThis.verdict.given.protected": "From the card’s facts. This is somewhere Cmdr keeps contents private, so it didn’t look inside.",
+  "aboutThis.verdict.given.protected": "Từ các dữ kiện trên bảng thông tin. Đây là nơi Cmdr giữ kín nội dung, nên Cmdr không xem bên trong.",
   "@aboutThis.verdict.given.protected": {
     "sourceHash": "0b846ce"
   },
-  "aboutThis.verdict.problem.authFailed": "Your AI provider didn’t accept the key.",
+  "aboutThis.verdict.problem.authFailed": "Nhà cung cấp AI của bạn không chấp nhận khóa.",
   "@aboutThis.verdict.problem.authFailed": {
     "sourceHash": "bac1177"
   },
-  "aboutThis.verdict.problem.rateLimited": "Your AI provider’s limit is reached for now.",
+  "aboutThis.verdict.problem.rateLimited": "Tạm thời bạn đã chạm giới hạn của nhà cung cấp AI.",
   "@aboutThis.verdict.problem.rateLimited": {
     "sourceHash": "301b2b9"
   },
-  "aboutThis.verdict.problem.unreachable": "Cmdr couldn’t reach your AI provider.",
+  "aboutThis.verdict.problem.unreachable": "Cmdr không kết nối được tới nhà cung cấp AI của bạn.",
   "@aboutThis.verdict.problem.unreachable": {
     "sourceHash": "818effd"
   },
-  "aboutThis.verdict.problem.overloaded": "Your AI provider is busy right now.",
+  "aboutThis.verdict.problem.overloaded": "Nhà cung cấp AI của bạn đang bận.",
   "@aboutThis.verdict.problem.overloaded": {
     "sourceHash": "7427168"
   },
-  "aboutThis.verdict.problem.managed": "Your IT team’s policy stopped this on its way out.",
+  "aboutThis.verdict.problem.managed": "Chính sách của nhóm IT bên bạn đã chặn yêu cầu này trước khi gửi đi.",
   "@aboutThis.verdict.problem.managed": {
     "sourceHash": "ec46e5e"
   },
-  "aboutThis.verdict.problem.noAnswer": "The AI didn’t write anything this time.",
+  "aboutThis.verdict.problem.noAnswer": "Lần này AI không viết gì cả.",
   "@aboutThis.verdict.problem.noAnswer": {
     "sourceHash": "7f4d4d3"
   },
-  "aboutThis.verdict.problem.other": "Your AI provider couldn’t answer this time.",
+  "aboutThis.verdict.problem.other": "Lần này nhà cung cấp AI của bạn không thể phản hồi.",
   "@aboutThis.verdict.problem.other": {
     "sourceHash": "dbc9df5"
   },
-  "aboutThis.verdict.unavailable.noCloudConsent": "Allow cloud AI for a deeper read of each item.",
+  "aboutThis.verdict.unavailable.noCloudConsent": "Cho phép AI đám mây để có cái nhìn sâu hơn về từng mục.",
   "@aboutThis.verdict.unavailable.noCloudConsent": {
     "sourceHash": "5dddcad"
   },
-  "aboutThis.verdict.unavailable.notConfigured": "Add your AI provider’s key for a deeper read of each item.",
+  "aboutThis.verdict.unavailable.notConfigured": "Thêm khóa của nhà cung cấp AI để có cái nhìn sâu hơn về từng mục.",
   "@aboutThis.verdict.unavailable.notConfigured": {
     "sourceHash": "39b54cd"
   },
-  "aboutThis.verdict.unavailable.notReady": "The local AI model isn’t running, so there’s no AI take this time.",
+  "aboutThis.verdict.unavailable.notReady": "Mô hình AI cục bộ không chạy, nên lần này không có nhận xét của AI.",
   "@aboutThis.verdict.unavailable.notReady": {
     "sourceHash": "4cf13bf"
   },
-  "aboutThis.verdict.unavailable.tooManyRequests": "That’s a lot of AI takes in a minute. Try again in a moment.",
+  "aboutThis.verdict.unavailable.tooManyRequests": "Một phút mà có nhiều nhận xét của AI quá. Hãy thử lại sau một lát.",
   "@aboutThis.verdict.unavailable.tooManyRequests": {
     "sourceHash": "888f933"
   },
-  "aboutThis.verdict.unavailable.openAiSettings": "Open AI settings",
+  "aboutThis.verdict.unavailable.openAiSettings": "Mở cài đặt AI",
   "@aboutThis.verdict.unavailable.openAiSettings": {
     "sourceHash": "edcc53b"
   },
-  "aboutThis.verdict.aiOffHint": "Turn on AI for a deeper read of each item.",
+  "aboutThis.verdict.aiOffHint": "Bật AI để có cái nhìn sâu hơn về từng mục.",
   "@aboutThis.verdict.aiOffHint": {
     "sourceHash": "08266ac"
   },
-  "aboutThis.verdict.column": "AI take",
+  "aboutThis.verdict.column": "Nhận xét của AI",
   "@aboutThis.verdict.column": {
     "sourceHash": "326481c"
   },
-  "aboutThis.verdict.hint.dismiss": "Hide this hint",
+  "aboutThis.verdict.hint.dismiss": "Ẩn gợi ý này",
   "@aboutThis.verdict.hint.dismiss": {
     "sourceHash": "f18aa5e"
   },
-  "aboutThis.verdict.hint.dismissTooltip": "Hide this hint. You can bring it back in Settings > Advanced.",
+  "aboutThis.verdict.hint.dismissTooltip": "Ẩn gợi ý này. Bạn có thể bật lại trong Cài đặt > Nâng cao.",
   "@aboutThis.verdict.hint.dismissTooltip": {
     "sourceHash": "6a3a4b3"
   },
-  "aboutThis.action.continueInAskCmdr": "Continue in Ask Cmdr",
+  "aboutThis.action.continueInAskCmdr": "Tiếp tục trong Ask Cmdr",
   "@aboutThis.action.continueInAskCmdr": {
     "sourceHash": "e9f482a"
   },
-  "aboutThis.action.continueInAskCmdrTooltip": "Opens a new Ask Cmdr chat about this item. Nothing is sent until you send it.",
+  "aboutThis.action.continueInAskCmdrTooltip": "Mở một cuộc trò chuyện Ask Cmdr mới về mục này. Không có gì được gửi đi cho đến khi bạn gửi.",
   "@aboutThis.action.continueInAskCmdrTooltip": {
     "sourceHash": "223ad10"
   },
-  "aboutThis.continueInAskCmdr.draft": "Tell me more about this.",
+  "aboutThis.continueInAskCmdr.draft": "Cho tôi biết thêm về mục này.",
   "@aboutThis.continueInAskCmdr.draft": {
     "sourceHash": "93b9cd7"
   },
-  "aboutThis.label.name": "Name",
+  "aboutThis.label.name": "Tên",
   "@aboutThis.label.name": {
     "sourceHash": "dcd1d52"
   },
-  "aboutThis.identity.nameHidReordering": "Its name hides a character that flips the text’s direction, so in other apps it can seem to end differently. Cmdr shows it without that character.",
+  "aboutThis.identity.nameHidReordering": "Tên của mục này ẩn một ký tự đảo chiều văn bản, nên trong các ứng dụng khác, phần cuối của tên có thể trông khác đi. Cmdr hiển thị tên mà không có ký tự đó.",
   "@aboutThis.identity.nameHidReordering": {
     "sourceHash": "408f58a"
   },
-  "aboutThis.identity.nameHidInvisible": "Its name holds characters you can’t see, so it can look like another name or carry hidden text. Cmdr shows it without them.",
+  "aboutThis.identity.nameHidInvisible": "Tên của mục này chứa những ký tự bạn không nhìn thấy, nên tên có thể trông giống một tên khác hoặc mang theo văn bản ẩn. Cmdr hiển thị tên mà không có các ký tự đó.",
   "@aboutThis.identity.nameHidInvisible": {
     "sourceHash": "1ba3066"
   },
-  "aboutThis.label.imageContents": "What it shows",
+  "aboutThis.label.imageContents": "Ảnh cho thấy gì",
   "@aboutThis.label.imageContents": {
     "sourceHash": "8e7ddf9"
   },
-  "aboutThis.imageContents.tags": "Tagged as {tags}",
+  "aboutThis.imageContents.tags": "Được gắn thẻ {tags}",
   "@aboutThis.imageContents.tags": {
     "sourceHash": "dc8ce45"
   },
-  "aboutThis.imageContents.textHeading": "Text in it:",
+  "aboutThis.imageContents.textHeading": "Văn bản trong ảnh:",
   "@aboutThis.imageContents.textHeading": {
     "sourceHash": "1a751be"
   },
   "aboutThis.imageContents.textLine": "“{text}”",
   "@aboutThis.imageContents.textLine": {
-    "sourceHash": "ce4c196"
+    "sourceHash": "ce4c196",
+    "sameAsSourceJustification": "Placeholder in quotation marks: vi uses the same curly “…” quotes as the English (vi/mechanics.json)."
   },
-  "aboutThis.imageContents.moreText": "And more text",
+  "aboutThis.imageContents.moreText": "Và còn văn bản khác",
   "@aboutThis.imageContents.moreText": {
     "sourceHash": "460d2ea"
   },
-  "aboutThis.imageContents.nothing": "No tags or text found",
+  "aboutThis.imageContents.nothing": "Không tìm thấy thẻ hay văn bản nào",
   "@aboutThis.imageContents.nothing": {
     "sourceHash": "80c55c4"
   },
-  "aboutThis.imageContents.notIndexed": "Not in Cmdr’s image index",
+  "aboutThis.imageContents.notIndexed": "Không có trong chỉ mục hình ảnh của Cmdr",
   "@aboutThis.imageContents.notIndexed": {
     "sourceHash": "3b8e22b"
   },
-  "aboutThis.imageContents.indexingOff": "Image indexing is off",
+  "aboutThis.imageContents.indexingOff": "Lập chỉ mục hình ảnh đang tắt",
   "@aboutThis.imageContents.indexingOff": {
     "sourceHash": "29b0990"
   },
-  "aboutThis.unknown.indexingOff": "Its index is turned off",
+  "aboutThis.unknown.indexingOff": "Chỉ mục cho thông tin này đang tắt",
   "@aboutThis.unknown.indexingOff": {
     "sourceHash": "f2c2c68"
   },
-  "aboutThis.unknown.onlineOnly": "Stored online only, so Cmdr didn’t download it to look",
+  "aboutThis.unknown.onlineOnly": "Chỉ được lưu trực tuyến, nên Cmdr không tải về để xem",
   "@aboutThis.unknown.onlineOnly": {
     "sourceHash": "347baa0"
   }

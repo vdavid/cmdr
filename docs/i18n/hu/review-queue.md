@@ -44,7 +44,16 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   ships Hungarian docs, so all three are built; confirm `Erőfeszítés` reads as the model’s work, not physical effort,
   and that `Érvelés mértéke` is the natural name for OpenAI’s reasoning effort.
 
+- **notarization ticket → `hitelesítési jegy`** (`aboutThis.signature.ticket*`,
+  `ai.cloudConsent.aboutThis.item.appAndSigner`): no Apple Hungarian term in the pile; confirm against Gatekeeper's own
+  Hungarian wording.
+- **AI take → `AI-vélemény`** and **Tell me about this → `Mesélj erről`**: built, no source; `vélemény` may read as
+  stronger than a short take.
+
 ## Wording
+
+- **`aboutThis.cmdrOperation.done`**: `Általad indított Cmdr-művelet: ide másolás, ekkor: …` is a label frame forced by
+  the shared `{who}` select; a native reviewer may prefer per-person verbs if the English ever splits the select.
 
 - **Multi-rename counter popover** (`multiRename.counterEditor.*`): `Kezdőérték` / `Lépésköz` / `Számjegyek` and the
   preview line `Így számol: 1, 3, 5…, a nevekben így látszik: 001, 003, 005` differ from Total Commander's `Első szám:`

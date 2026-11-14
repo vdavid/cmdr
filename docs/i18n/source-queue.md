@@ -8,6 +8,11 @@ Process feedback (a translator's homemade scripts and workarounds) goes under it
 
 ## Open
 
+- "AI take" (`aboutThis.verdict.*`, `commands.aboutThisStopVerdict.label`, `settings.aboutThis.aiVerdict.*`) has no
+  concept, so each language coins its own word and nothing keeps the card, the setting, and the shortcut list aligned.
+  Propose an `ai-take` concept. Also, `{kind}` / `{what}` in `aboutThis.realType.*` and `aboutThis.headline.*` render
+  either Latin ("PDF") or Han ("磁碟映像檔"), so CJK spacing around them can't be right for both; a note saying which
+  values are Latin would help. (zh-Hant)
 - Screenshots: `mtp-browse.png` doesn't show the `mtp.readiness.connecting` row, and the AI suggestions dialog keys ship
   without any (the pills and fact lines need them most). Needs a `pnpm i18n:shots` run with the Mac left alone. (all)
 - Counted nouns in the RAW `errors.*` family can't take an ICU plural, so Slavic locales still need a colon form:
@@ -112,11 +117,47 @@ Process feedback (a translator's homemade scripts and workarounds) goes under it
   as `fråga`. (sv, uk)
 - `aboutThis.what.file` ("File", the item kind) shares its English with `menu.bar.file`, which Apple localizes as a menu
   name (sv `Arkiv`, de `Ablage`), so `term-consistency` fails for every such locale. Needs a reasoned `reviewed` entry
-  (David's consent) or an `agreesWith`-style escape for menu-bar names. (sv)
+  (David's consent) or an `agreesWith`-style escape for menu-bar names. (sv, de: same `reviewed` entry added)
+- `aboutThis.standardFolder.*`: the descriptions say "use the name Finder shows", but the pile has no Finder folder
+  names; they live in macOS's `SystemFolderLocalizations/<lang>.lproj` (de Library stays `Library`, Users is
+  `Benutzer:innen`). Add that file to the pile and to `how-to-mine.md`. (de)
 - `aboutThis.ownerPlace.*`: the Library subfolder names are kept as on disk; give them a shared same-as-source rule (and
   `notMatch` for `group`/`log`/`save`, which sv added key-scoped) so 12 more locales don't each justify nine keys. (sv)
 - `aboutThis.signature.ticketPresent` / `.ticketAbsent`: "notarization ticket" has no hit in any pile; name Apple's
   localized term in the description, or say a plain coinage is fine. (sv)
+- `model-library` (Ollama's catalog) matches the macOS Library folder in `aboutThis.label.appData`,
+  `.standardFolder.homeLibrary`, `.removal.removesApp*`, and `ai.cloudConsent.aboutThis.item.appData`; give the Library
+  folder its own concept (Finder's name) or add these to `notMatch`. (fr; hu added `your library` and `library folder`
+  to its `notMatch` as the stopgap, plus key-scoped `notMatch` for `cache` and `preferences` on `ownerPlace.*`)
+- `aboutThis.cmdrOperation.done`: the `{who}` select (you / Ask Cmdr / an AI client) is followed by a separate `{kind}`
+  verb select, so a language that conjugates by person (hu `másoltad` vs `másolta`) can't agree; hu fell back to a label
+  frame (`Általad indított Cmdr-művelet: ide másolás`). Allow `{kind}` nested inside each `{who}` branch, or say so in
+  the description. (hu; es nested `{kind}` inside each `{who}` branch, which `i18n:apply` and every check accept, so the
+  description only needs to say it's allowed)
+- `aboutThis.headline.*`, `.realType.*`, `.owner.standardFolder`: `{what}` / `{kind}` / `{folder}` arrive with unknown
+  gender before an English participle ("copied here", "checked against"), so gendered languages must use nouns. Say so
+  in the descriptions, or pass a gender select. Same for `importance.because`: the reasons start with articles. (fr)
+- `aboutThis.headline.lastOpened` and `aboutThis.lastOpened.known` put a bare `<date></date>` ("last opened <date>"),
+  while every sibling says "on <date>". Say in the description whether the date can be relative ("yesterday"), so a
+  language knows whether it may add its "on" (nl `op`). nl left the preposition out to be safe. (nl)
+- `write` (data landing on a drive) matches the AI composing text in `aboutThis.verdict.writing`,
+  `.verdict.problem.noAnswer`, and `settings.aboutThis.aiVerdict.description`; add the AI sense to `notMatch` or give it
+  its own concept. cs carries three key exceptions. (cs)
+- `commands.fileTellMeAbout.label` and `aboutThis.continueInAskCmdr.draft` are the user speaking TO Cmdr, which no
+  formality ruling covers (de took du, fr vous). Decide per locale whether the app's own address register applies; cs
+  followed its vy-plural (`Povězte mi o tom`). (cs)
+- `quoted-labels` pairs Windows' own "Read-only" checkbox (quoted in `errors.write.permissionDenied.suggestion.delete`
+  and `errors.write.fileLocked.suggestion`) with Cmdr's unrelated `errors.listing.readOnly.title`, so cs fails on
+  correct text (Windows says `Jen pro čtení`, Cmdr's title `Jen ke čtení`). Exclude OS-quoted labels in platform
+  branches, or key-scope the pairing. (cs)
+- The `location` concept matches a photo's GPS place in `aboutThis.verdict.given.cameraDetails` and
+  `ai.cloudConsent.aboutThis.lookInside` (as it already did in `ai.cloudConsent.askCmdr.item.contents`), so every locale
+  that splits a photo's place from a file-system location carries per-key exceptions. Add a `notMatch` for the photo
+  sense ("photo’s … location", "without its location"). (zh)
+- The `desktop` concept matches the Linux desktop environment ("your desktop’s disk tool", "your desktop usually
+  mounts", "Your desktop may also") in four `errors.listing.*.suggestion` keys, `mtp.ptpcameradDialog.explanation`, and
+  `onboarding.stepOptional.mtp.desc`, so uk and vi each carry six exceptions. Add those as `notMatch` and drop them.
+  (vi)
 
 ## Process feedback
 
@@ -163,4 +204,35 @@ the entries (`docs/guides/multi-agent-refactors.md` § Fan-out sweeps).
   calls; sv: same)
 - A 353-key new-feature brief was 356 KB (3,751 lines, about 90k tokens): Keys took three paged reads, Terms one
   `sed | grep` for the rulings, and the 1,500-line Translation memory only a `grep`. Ship a keys-only first read for
-  new-key batches. One inline `node -e` edit of my own `values.json` to fix eight values after the check. (sv)
+  new-key batches. One inline `node -e` edit of my own `values.json` to fix eight values after the check. (sv; de: same
+  reads, no script)
+- The worktree guard refused a read-only `for` loop of `jq` lookups over the catalog and a two-command `jq` call ("names
+  git"/"too complex"); retried as one plain `grep`. A `pnpm i18n:grep` would save it. (de)
+- `apply-terms` refused a `learn-more` exception as stale because another translator's concurrent `notMatch` had already
+  excluded the key; `pnpm i18n:term --key` showed it. (de)
+- Read Finder's folder names straight from the live macOS `SystemFolderLocalizations` (plutil, read-only), since the
+  pile lacks them; widened `de/mechanics.json`'s gender-colon carve-out to the quoted folder name „Benutzer:innen“. (de)
+- The worktree guard refused a `python3` heredoc that patched my own `values.json` and a call using a shell variable for
+  the run directory ("names git" / "too complex"); redone as 12 `Edit` calls and full-path single commands. No script
+  written. Confirmed Finder folder names with a read-only `plutil` on `SystemFolderLocalizations` too. (fr)
+- One `python3` heredoc (five exact-string replacements in my own `values.json` after the termbase check) ran; a later
+  chain of two `apply-terms` calls was refused by the worktree guard and split. A `plutil` read of
+  `SystemFolderLocalizations` showed Finder's hu Desktop folder is `Íróasztal`, not the ruled `Asztal`: the pile should
+  carry that file. (hu)
+- `--dry-run` of `i18n:apply` passes values the termbase then flags; a `--check-terms` option on the dry run would catch
+  drift before writing. The termbase also flags a git tag as the Finder `tag` concept in every language whose two words
+  differ; a shared `git-tag` match would save per-locale exceptions. (pt)
+- Reworded four termbase-flagged values with one `sed` over my own `values.json` (no catalog touched); same wish as pt:
+  a term check on `i18n:apply --dry-run` would have caught them before writing. (nl)
+- For a "no ruling" term the brief shows only the pile, not how the catalog already words it: es coined `equipo de TI`
+  and `en el disco` (pile forms), and the termbase check then flagged 13 shipped keys that say `equipo de informática` /
+  `en disco`. Show the catalog's current words for each "no ruling" concept beside the pile. Two `sed -i` edits on my
+  own values files (three phrase swaps, a subjunctive fix in the es-419 forks), no catalog touched. (es)
+- The worktree guard refused `pnpm i18n:pile` because one `--term` value was the English word "alias" (it reads the word
+  as a shell alias); dropping that term worked. A pile lookup argument should never trip the guard. One `sed -i` on my
+  own `values.json` for a wording fix, no catalog touched. (uk)
+- `apply-terms --concepts` refused the `desktop` `notMatch` (Open above) because uk's exceptions for those keys would go
+  stale, and its hint `--drop-stale-exceptions` would edit another locale's file, so vi took six exceptions instead. A
+  new ruling for a no-ruling term (`on-disk-size`, `importance`, `desktop`) also flagged 15 shipped keys only at the
+  check; `apply-terms` could report a new ruling's catalog drift as it writes (same root as es above). No script; one
+  read-only `plutil` + `jq` over CoreServicesUIAgent's loctables hunting Apple's vi "notarization" (none found). (vi)

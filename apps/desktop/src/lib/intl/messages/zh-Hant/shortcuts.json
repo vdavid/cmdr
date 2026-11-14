@@ -43,7 +43,7 @@
   "@shortcuts.scope.operationLog": {
     "sourceHash": "2c97965"
   },
-  "shortcuts.scope.tellMeAbout": "Tell me about this",
+  "shortcuts.scope.tellMeAbout": "告訴我這是什麼",
   "@shortcuts.scope.tellMeAbout": {
     "sourceHash": "0d5deaf"
   },

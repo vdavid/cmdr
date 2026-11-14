@@ -91,67 +91,67 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.aboutThis.title": "<b>Tell me about this</b>, each time you open its card on a file or folder, with no further question:",
+  "ai.cloudConsent.aboutThis.title": "<b>Parlez-moi de ceci</b>, chaque fois que vous ouvrez sa fiche sur un fichier ou un dossier, sans autre question :",
   "@ai.cloudConsent.aboutThis.title": {
     "sourceHash": "b60933c"
   },
-  "ai.cloudConsent.aboutThis.item.identity": "What it is (a file, folder, app, or link), its name, path, size, and dates, how many files and folders a folder holds, how many other names point to it, where a link points, and whether its name hides a character that changes the order its letters show in",
+  "ai.cloudConsent.aboutThis.item.identity": "Ce que c’est (un fichier, un dossier, une app ou un lien), son nom, son chemin, sa taille et ses dates, le nombre de fichiers et de dossiers que contient un dossier, le nombre d’autres noms qui pointent vers l’élément, la cible d’un lien et si son nom contient un caractère masqué qui modifie l’ordre d’affichage de ses lettres",
   "@ai.cloudConsent.aboutThis.item.identity": {
     "sourceHash": "f01c726"
   },
-  "ai.cloudConsent.aboutThis.item.realType": "What kind of file its first bytes say it is, or its name where Cmdr didn’t read them",
+  "ai.cloudConsent.aboutThis.item.realType": "Le type de fichier qu’indiquent ses premiers octets, ou son nom là où Cmdr ne les a pas lus",
   "@ai.cloudConsent.aboutThis.item.realType": {
     "sourceHash": "55e97b9"
   },
-  "ai.cloudConsent.aboutThis.item.imageIndex": "For a picture, the labels Cmdr’s image index gave it and the first lines of text it found in it, read from Cmdr’s index, never the picture itself",
+  "ai.cloudConsent.aboutThis.item.imageIndex": "Pour une image, les tags que l’index d’images de Cmdr lui a donnés et les premières lignes de texte qu’il y a trouvées, le tout lu dans l’index de Cmdr, jamais dans l’image elle-même",
   "@ai.cloudConsent.aboutThis.item.imageIndex": {
     "sourceHash": "020f807"
   },
-  "ai.cloudConsent.aboutThis.item.download": "The website it was recorded as downloaded from (the site’s main address only, like github.com, never a subdomain or the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never who sent it",
+  "ai.cloudConsent.aboutThis.item.download": "Le site web d’où provient le téléchargement noté (uniquement l’adresse principale du site, comme github.com, jamais un sous-domaine ni le lien complet), sa date et l’app qui a téléchargé l’élément. Pour une pièce jointe de Mail ou un envoi AirDrop, uniquement ce fait, jamais qui l’a envoyé",
   "@ai.cloudConsent.aboutThis.item.download": {
     "sourceHash": "40d185c"
   },
-  "ai.cloudConsent.aboutThis.item.appAndSigner": "For an app or a program, its name, id, and version. For it or a disk image, the name and team id of whoever signed it, whether its code still matches that signature, and whether Apple’s notarization ticket is attached",
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "Pour une app ou un programme, son nom, son identifiant et sa version. Pour ceux-ci ou une image disque, le nom et l’identifiant d’équipe du signataire, si son code correspond toujours à cette signature et si le ticket de notarisation d’Apple y est joint",
   "@ai.cloudConsent.aboutThis.item.appAndSigner": {
     "sourceHash": "471891d"
   },
-  "ai.cloudConsent.aboutThis.item.use": "When you last opened it, how many times, and which app opens it",
+  "ai.cloudConsent.aboutThis.item.use": "La date de votre dernière ouverture, le nombre d’ouvertures et l’app qui ouvre l’élément",
   "@ai.cloudConsent.aboutThis.item.use": {
     "sourceHash": "9664a6e"
   },
-  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Where Cmdr copied, moved, or extracted it from and when, including that path, the drive or server name, and whether you or an AI assistant started it",
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Pour une copie, un déplacement ou une extraction par Cmdr, le chemin d’origine, le nom du disque ou du serveur, la date et si c’est vous ou un assistant IA qui a lancé l’opération",
   "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
     "sourceHash": "1d38db2"
   },
-  "ai.cloudConsent.aboutThis.item.git": "Its git repository’s folder, branch, and status, or for a file from git’s history, the commit, branch, or tag it’s from and when it last changed there",
+  "ai.cloudConsent.aboutThis.item.git": "Le dossier, la branche et l’état de son dépôt git, ou, pour un fichier issu de l’historique de git, le commit, la branche ou le tag d’où il vient et la date de sa dernière modification",
   "@ai.cloudConsent.aboutThis.item.git": {
     "sourceHash": "a06839e"
   },
-  "ai.cloudConsent.aboutThis.item.owner": "The app or installer it belongs to, or which standard folder of the system it is, and how Cmdr knows",
+  "ai.cloudConsent.aboutThis.item.owner": "L’app ou le programme d’installation auquel il appartient, ou de quel dossier standard du système il s’agit, et comment Cmdr le sait",
   "@ai.cloudConsent.aboutThis.item.owner": {
     "sourceHash": "f5d95a6"
   },
-  "ai.cloudConsent.aboutThis.item.importance": "For a folder, how much it matters by Cmdr’s ranking, and how often you open it in Cmdr",
+  "ai.cloudConsent.aboutThis.item.importance": "Pour un dossier, son importance selon le classement de Cmdr et la fréquence à laquelle vous l’ouvrez dans Cmdr",
   "@ai.cloudConsent.aboutThis.item.importance": {
     "sourceHash": "b358d29"
   },
-  "ai.cloudConsent.aboutThis.item.inside": "For a folder, what sort it is (like a cache or build output), how many things are in it, the names and sizes of the biggest ones and of its largest files, what kinds of files it holds, and how much of it hasn’t changed in a year",
+  "ai.cloudConsent.aboutThis.item.inside": "Pour un dossier, sa nature (comme un cache ou des fichiers produits par une compilation), le nombre d’éléments qu’il contient, les noms et tailles des plus gros d’entre eux et de ses plus gros fichiers, les types de fichiers qu’il contient et la part de son contenu qui n’a pas changé depuis un an",
   "@ai.cloudConsent.aboutThis.item.inside": {
     "sourceHash": "eb93c12"
   },
-  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {For an app, the names and sizes of the folders it keeps in your Library} other {For an app, the names and sizes of the data folders it keeps}}",
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {Pour une app, les noms et tailles des dossiers qu’elle conserve dans votre Bibliothèque} other {Pour une app, les noms et tailles des dossiers de données qu’elle conserve}}",
   "@ai.cloudConsent.aboutThis.item.appData": {
     "sourceHash": "d61ade2"
   },
-  "ai.cloudConsent.aboutThis.item.removal": "What removing it would mean, as Cmdr works it out from the facts above",
+  "ai.cloudConsent.aboutThis.item.removal": "Ce qu’impliquerait sa suppression, tel que Cmdr le déduit des faits ci-dessus",
   "@ai.cloudConsent.aboutThis.item.removal": {
     "sourceHash": "f7ad4bd"
   },
-  "ai.cloudConsent.aboutThis.item.contentsStayHome": "For an item whose contents stay home (listed under Ask Cmdr below), only its name, path, size, dates, and the app it belongs to",
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "Pour un élément dont le contenu reste chez vous (voir la liste sous Ask Cmdr plus bas), uniquement son nom, son chemin, sa taille, ses dates et l’app à laquelle il appartient",
   "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
     "sourceHash": "400db48"
   },
-  "ai.cloudConsent.aboutThis.lookInside": "A short look inside a file: some text, a PDF’s first page and title, the list of files in an archive, or a photo’s camera details without its location",
+  "ai.cloudConsent.aboutThis.lookInside": "Un bref regard à l’intérieur d’un fichier : un peu de texte, la première page et le titre d’un PDF, la liste des fichiers d’une archive ou, pour une photo, les détails de l’appareil photo sans la localisation",
   "@ai.cloudConsent.aboutThis.lookInside": {
     "sourceHash": "a78e673"
   },
@@ -183,7 +183,7 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.aboutThis": "When Cmdr looks up what a file or folder is, the same facts Tell me about this sends, without the look inside",
+  "ai.cloudConsent.askCmdr.item.aboutThis": "Quand Cmdr cherche ce qu’est un fichier ou un dossier, les mêmes faits qu’envoie « Parlez-moi de ceci », sans regarder à l’intérieur",
   "@ai.cloudConsent.askCmdr.item.aboutThis": {
     "sourceHash": "1c8e78d"
   },

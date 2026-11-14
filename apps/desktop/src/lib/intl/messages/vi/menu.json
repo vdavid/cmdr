@@ -160,7 +160,7 @@
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
-  "menu.file.tellMeAbout": "Tell me about this",
+  "menu.file.tellMeAbout": "Cho tôi biết về mục này",
   "@menu.file.tellMeAbout": {
     "sourceHash": "0d5deaf"
   },

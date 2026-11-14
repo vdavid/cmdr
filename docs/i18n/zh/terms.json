@@ -2036,7 +2036,9 @@
     "chosen": "位置",
     "confidence": "high",
     "exceptions": {
-      "ai.cloudConsent.askCmdr.item.contents": "A photo's location is 拍摄地点; 位置 is reserved for file-system locations."
+      "ai.cloudConsent.askCmdr.item.contents": "A photo's location is 拍摄地点; 位置 is reserved for file-system locations.",
+      "aboutThis.verdict.given.cameraDetails": "A photo's location is 拍摄地点; 位置 is reserved for file-system locations.",
+      "ai.cloudConsent.aboutThis.lookInside": "A photo's location is 拍摄地点; 位置 is reserved for file-system locations."
     },
     "note": "位置 is a file-system location only; a photo's place is 拍摄地点, the shortcut scope Places is 共享位置.",
     "sources": "macOS Finder"
@@ -2450,7 +2452,8 @@
     "confidence": "high",
     "exceptions": {
       "licensing.acknowledgements.jumpToNpm": "npm packages are 包 (npm 包), the JavaScript community's own word.",
-      "licensing.acknowledgements.npmHeading": "npm packages are 包 (npm 包), the JavaScript community's own word."
+      "licensing.acknowledgements.npmHeading": "npm packages are 包 (npm 包), the JavaScript community's own word.",
+      "aboutThis.notApplicable.notABundle": "Here \"package\" is the macOS package (a folder Finder shows as one item), Finder's 包 (显示包内容); see macos-package."
     },
     "forms": "a generic package 软件包; npm packages npm 包",
     "note": "Deliberately wider than the app-bundle word 应用程序包.",
@@ -3201,7 +3204,8 @@
       "settings.servers.trustedCertificates.empty": "\"shows you its certificate's fingerprint\" is the spoken 给你看, as in its host-key sibling.",
       "settings.servers.trustedHostKeys.confirm": "\"show you its key fingerprint\" is the spoken 给你看.",
       "settings.servers.trustedHostKeys.empty": "\"shows you its fingerprint\" is the spoken 给你看.",
-      "whatsNew.dialog.showLess": "\"Show less\" on a disclosure is the collapse verb 收起."
+      "whatsNew.dialog.showLess": "\"Show less\" on a disclosure is the collapse verb 收起.",
+      "aboutThis.removal.less": "\"Show fewer\" on a disclosure is the collapse verb 收起, as in whatsNew.dialog.showLess."
     },
     "forms": "Show X → 显示X (显示服务器, 显示个人收藏); Show in X → 在X中显示; Show less on a disclosure → 收起",
     "note": "See X (a look) is 查看.",
@@ -4294,5 +4298,33 @@
     "confidence": "high",
     "forms": "no system keyring detected → 未检测到系统钥匙串",
     "sources": "catalog fileExplorer.network.share.credentialsStoredLocally other branch"
+  },
+  "macos-package": {
+    "chosen": "包",
+    "confidence": "high",
+    "sources": "macOS Finder: Show Package Contents → 显示包内容",
+    "note": "The folder macOS shows as one item; an app bundle is 应用程序包 and a generic or installer package is 软件包."
+  },
+  "database": {
+    "chosen": "数据库",
+    "confidence": "high",
+    "sources": "Microsoft TBX database → 数据库; KDE Dolphin; the catalog's own 数据库 (licensing, settings keywords)"
+  },
+  "font": {
+    "chosen": "字体",
+    "confidence": "confirmed",
+    "sources": "macOS AppKit FontManager Font → 字体; Microsoft TBX; Nautilus; Double Commander"
+  },
+  "it-team": {
+    "chosen": "IT 团队",
+    "confidence": "high",
+    "sources": "The catalog's own IT 团队 (two AI-policy strings and the SMB sign-in tips); no pile hit",
+    "note": "A team at the user's employer or school; 管理员 is a single admin."
+  },
+  "generate": {
+    "chosen": "生成",
+    "confidence": "high",
+    "sources": "Microsoft TBX generated code → 生成的代码",
+    "forms": "files a tool generates → 生成的文件; a build tool makes it again → 重新生成"
   }
 }

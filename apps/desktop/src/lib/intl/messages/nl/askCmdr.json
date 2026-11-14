@@ -93,19 +93,19 @@
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "c7f397f"
   },
-  "askCmdr.tool.aboutItem.doing": "Looking up what an item is",
+  "askCmdr.tool.aboutItem.doing": "Zoekt op wat een onderdeel is",
   "@askCmdr.tool.aboutItem.doing": {
     "sourceHash": "dfc0d31"
   },
-  "askCmdr.tool.aboutItem.done": "Looked up what an item is",
+  "askCmdr.tool.aboutItem.done": "Opgezocht wat een onderdeel is",
   "@askCmdr.tool.aboutItem.done": {
     "sourceHash": "5370586"
   },
-  "askCmdr.tool.aboutItem.place.doing": "Looking up what <place>{name}</place> is",
+  "askCmdr.tool.aboutItem.place.doing": "Zoekt op wat <place>{name}</place> is",
   "@askCmdr.tool.aboutItem.place.doing": {
     "sourceHash": "06dadca"
   },
-  "askCmdr.tool.aboutItem.place.done": "Looked up what <place>{name}</place> is",
+  "askCmdr.tool.aboutItem.place.done": "Opgezocht wat <place>{name}</place> is",
   "@askCmdr.tool.aboutItem.place.done": {
     "sourceHash": "5c635d1"
   },

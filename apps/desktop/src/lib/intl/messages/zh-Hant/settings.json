@@ -1288,15 +1288,15 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
-  "settings.aboutThis.aiVerdict.label": "AI take in “Tell me about this”",
+  "settings.aboutThis.aiVerdict.label": "「告訴我這是什麼」中的 AI 看法",
   "@settings.aboutThis.aiVerdict.label": {
     "sourceHash": "4c84599"
   },
-  "settings.aboutThis.aiVerdict.description": "When you open the card, AI writes two or three sentences from the facts it shows. With cloud AI, the card’s facts and a short look inside the file go to your provider each time.",
+  "settings.aboutThis.aiVerdict.description": "你開啟卡片時，AI 會根據卡片顯示的事實寫兩三句話。使用雲端 AI 時，卡片上的事實，以及簡短查看檔案內容得到的片段，每次都會送到你的提供者。",
   "@settings.aboutThis.aiVerdict.description": {
     "sourceHash": "5dfb5f5"
   },
-  "settings.aboutThis.aiVerdict.keywords": "explain, verdict, summary, file info, what is this, describe",
+  "settings.aboutThis.aiVerdict.keywords": "解釋, 說明, 摘要, 檔案資訊, 這是什麼, 描述, 看法, 評語, 介紹",
   "@settings.aboutThis.aiVerdict.keywords": {
     "sourceHash": "56b9db5"
   },
@@ -2432,15 +2432,15 @@
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
   },
-  "settings.aboutThis.aiHintDismissed.label": "Suppress the AI hint on “Tell me about this”",
+  "settings.aboutThis.aiHintDismissed.label": "不顯示「告訴我這是什麼」的 AI 提示",
   "@settings.aboutThis.aiHintDismissed.label": {
     "sourceHash": "fd81e08"
   },
-  "settings.aboutThis.aiHintDismissed.description": "With AI off, or not set up yet, the “Tell me about this” card shows a line under its buttons saying AI adds a deeper read. Closing the line with its × turns this on. Turn this off to see the line again.",
+  "settings.aboutThis.aiHintDismissed.description": "AI 關閉或還沒設定好時，「告訴我這是什麼」卡片會在按鈕下方顯示一行字，說 AI 能加上更深入的解讀。用 × 關掉那一行，就會開啟這一項。關閉這一項，就能再看到那一行。",
   "@settings.aboutThis.aiHintDismissed.description": {
     "sourceHash": "7141d88"
   },
-  "settings.aboutThis.aiHintDismissed.keywords": "tip, hint, file info, card, deeper read, explain",
+  "settings.aboutThis.aiHintDismissed.keywords": "小提示, 提示, 檔案資訊, 卡片, 解讀, 說明",
   "@settings.aboutThis.aiHintDismissed.keywords": {
     "sourceHash": "2e77845"
   },

@@ -321,3 +321,8 @@ Short slots say `Regex` / `Hex` (`Регулярное выражение` is 20
 ## NFS export is `общая папка` (`servers.*xport*`, `*LockedNfs`, `*nfsStartFolderHelp`)
 
 Over `экспорт` (reads as exporting), as Synology DSM ru says (kb.synology.com/ru-ru, 2026-10-22).
+
+## Tell me about this card (`aboutThis.*`, `*TellMeAbout*`, `*aboutThis*`)
+
+Command `Расскажите об этом`: a polite request, as the English asks, over an infinitive. AI take → `комментарий ИИ`.
+`{what}`/`{kind}` rows take nouns (`записана загрузка`, `копирование сюда`), never a participle guessing the gender.

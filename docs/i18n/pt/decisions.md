@@ -308,3 +308,9 @@ The non-obvious why behind `terms.json` rulings. Forms: `terms.json`; voice: `st
 
 - `Sugestões da IA`, as `fileOperations.mkdir.aiSuggestions*`. `Por quê:` (tonic, as `Por quê?`); aria
   `Por quê, segundo a IA:`.
+
+## Tell me about this (`aboutThis.*`, `commands.fileTellMeAbout.*`, `ai.cloudConsent.aboutThis.*`)
+
+- `Fale sobre isto` (no clitic; `Fale-me` is stiff, `Me fale` proclisis); card → `ficha`, facts → `informações`, AI take
+  → `comentário`. Headlines dodge `{what}`'s gender with nouns (`cópia feita`, `última abertura`,
+  `com download registrado`).

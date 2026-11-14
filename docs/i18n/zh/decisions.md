@@ -549,3 +549,10 @@ Total Commander zh-CN labels: `批量重命名`, mask `名称规则` (TC `重命
 
 - Genuine `真正的` (`不是真正的 Cmdr 版本`): a real release, never `正版` (piracy). Guest session `客人会话`, pairing
   the shipped `以客人身份连接`. Both await a native read (`review-queue.md`).
+
+## Tell me about this (`aboutThis.*`, `commands.fileTellMeAbout.*`, `menu.file.tellMeAbout`, `ai.cloudConsent.aboutThis.*`)
+
+- Command `介绍一下这个` (a spoken request), its draft `再详细介绍一下这个。`; AI take and deeper read share `解读`; AI
+  wrote this `由 AI 写成`.
+- Recorded claims `据 macOS 记录，…`; Finder folder names quoted (`“资源库”`, `“图片”`); notarization ticket `公证票据`
+  (Apple CN developer docs), tentative.

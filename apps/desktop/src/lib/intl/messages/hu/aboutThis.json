@@ -1,1285 +1,1298 @@
 {
-  "aboutThis.dialog.title": "About “{name}”",
+  "aboutThis.dialog.title": "Tudnivalók: „{name}”",
   "@aboutThis.dialog.title": {
     "sourceHash": "3c5c0b4"
   },
-  "aboutThis.dialog.close": "Close",
+  "aboutThis.dialog.close": "Bezárás",
   "@aboutThis.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "aboutThis.action.open": "Open",
+  "aboutThis.action.open": "Megnyitás",
   "@aboutThis.action.open": {
     "sourceHash": "ed077f3"
   },
-  "aboutThis.action.openTooltip": "Opens it with {app}, as Enter does.",
+  "aboutThis.action.openTooltip": "Megnyitja ebben az appban: {app}. Ugyanaz, mint az Enter billentyű.",
   "@aboutThis.action.openTooltip": {
     "sourceHash": "4bbaa35"
   },
-  "aboutThis.action.showInFileManager": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "aboutThis.action.showInFileManager": "{platform, select, macos {Megjelenítés a Finderben} windows {Megjelenítés a Fájlkezelőben} other {Megjelenítés a fájlkezelőben}}",
   "@aboutThis.action.showInFileManager": {
     "sourceHash": "21f1ff1"
   },
-  "aboutThis.action.downloadPage": "Download page",
+  "aboutThis.action.downloadPage": "Letöltési oldal",
   "@aboutThis.action.downloadPage": {
     "sourceHash": "c2f0e5b"
   },
-  "aboutThis.action.downloadPageTooltip": "Opens {host} in your browser: the page this was recorded as downloaded from.",
+  "aboutThis.action.downloadPageTooltip": "Megnyitja a böngésződben azt az oldalt, ahonnan a feljegyzés szerint ez letöltődött: {host}",
   "@aboutThis.action.downloadPageTooltip": {
     "sourceHash": "ee94d9d"
   },
-  "aboutThis.action.revealOwner": "Show {app}",
+  "aboutThis.action.revealOwner": "{app} megjelenítése",
   "@aboutThis.action.revealOwner": {
     "sourceHash": "4d27c5e"
   },
-  "aboutThis.action.appFolder": "Go to {app}’s data",
+  "aboutThis.action.appFolder": "Ugrás az app adataihoz: {app}",
   "@aboutThis.action.appFolder": {
     "sourceHash": "43ea077"
   },
-  "aboutThis.action.appFolderUnnamed": "Go to the app’s data",
+  "aboutThis.action.appFolderUnnamed": "Ugrás az app adataihoz",
   "@aboutThis.action.appFolderUnnamed": {
     "sourceHash": "8d0aa42"
   },
-  "aboutThis.action.trash": "{platform, select, windows {Move to the Recycle Bin…} other {Move to trash…}}",
+  "aboutThis.action.trash": "{platform, select, windows {Áthelyezés a Lomtárba…} other {Áthelyezés a Kukába…}}",
   "@aboutThis.action.trash": {
     "sourceHash": "13ef52a"
   },
-  "aboutThis.action.delete": "Delete…",
+  "aboutThis.action.delete": "Törlés…",
   "@aboutThis.action.delete": {
     "sourceHash": "9ce78fe"
   },
-  "aboutThis.action.more": "More",
+  "aboutThis.action.more": "Továbbiak",
   "@aboutThis.action.more": {
     "sourceHash": "d47d7cb"
   },
-  "aboutThis.action.moreMenu": "More actions",
+  "aboutThis.action.moreMenu": "További műveletek",
   "@aboutThis.action.moreMenu": {
     "sourceHash": "f8d46c2"
   },
-  "aboutThis.dialog.lookingUp": "Looking this up",
+  "aboutThis.dialog.lookingUp": "Utánanézés folyamatban",
   "@aboutThis.dialog.lookingUp": {
     "sourceHash": "0962a61"
   },
-  "aboutThis.section.origin": "Where it came from",
+  "aboutThis.section.origin": "Honnan jött",
   "@aboutThis.section.origin": {
     "sourceHash": "8246c8b"
   },
-  "aboutThis.section.nature": "What it is",
+  "aboutThis.section.nature": "Mi ez",
   "@aboutThis.section.nature": {
     "sourceHash": "1f36bec"
   },
-  "aboutThis.section.use": "How it’s used",
+  "aboutThis.section.use": "Hogyan használják",
   "@aboutThis.section.use": {
     "sourceHash": "b4ae9f3"
   },
-  "aboutThis.section.context": "Where it sits",
+  "aboutThis.section.context": "Hová tartozik",
   "@aboutThis.section.context": {
     "sourceHash": "547244a"
   },
-  "aboutThis.section.contents": "What’s inside",
+  "aboutThis.section.contents": "Mi van benne",
   "@aboutThis.section.contents": {
     "sourceHash": "b9b9395"
   },
-  "aboutThis.section.removal": "What removing it means",
+  "aboutThis.section.removal": "Mit jelentene az eltávolítása",
   "@aboutThis.section.removal": {
     "sourceHash": "34b52a3"
   },
-  "aboutThis.section.nothingOnRecord": "Nothing on record",
+  "aboutThis.section.nothingOnRecord": "Nincs róla feljegyzés",
   "@aboutThis.section.nothingOnRecord": {
     "sourceHash": "7679180"
   },
-  "aboutThis.volumeNote.identityOnly": "On {volume}, Cmdr can see the name, size, and dates.",
+  "aboutThis.volumeNote.identityOnly": "Itt a Cmdr a nevet, a méretet és a dátumokat látja: {volume}.",
   "@aboutThis.volumeNote.identityOnly": {
     "sourceHash": "89b8563"
   },
-  "aboutThis.volumeNote.someFacts": "On {volume}, Cmdr can see only some of this.",
+  "aboutThis.volumeNote.someFacts": "Itt a Cmdr ennek csak egy részét látja: {volume}.",
   "@aboutThis.volumeNote.someFacts": {
     "sourceHash": "2e4ad33"
   },
-  "aboutThis.volumeNote.unreachable": "{volume} stopped answering, so Cmdr can’t tell more right now.",
+  "aboutThis.volumeNote.unreachable": "{volume} már nem válaszol, ezért a Cmdr most nem tud többet mondani.",
   "@aboutThis.volumeNote.unreachable": {
     "sourceHash": "cc9d168"
   },
-  "aboutThis.unavailable.unknownVolume": "Cmdr doesn’t know the drive this item is on anymore.",
+  "aboutThis.unavailable.unknownVolume": "A Cmdr már nem ismeri azt a meghajtót, amelyen ez az elem van.",
   "@aboutThis.unavailable.unknownVolume": {
     "sourceHash": "e5f9fa3"
   },
-  "aboutThis.unavailable.pathOutsideVolume": "Cmdr couldn’t place this item on its drive.",
+  "aboutThis.unavailable.pathOutsideVolume": "A Cmdr nem tudta elhelyezni ezt az elemet a meghajtóján.",
   "@aboutThis.unavailable.pathOutsideVolume": {
     "sourceHash": "0355842"
   },
-  "aboutThis.unavailable.noVolumeAtPath": "The drive this item was on isn’t connected.",
+  "aboutThis.unavailable.noVolumeAtPath": "Az a meghajtó, amelyen ez az elem volt, nincs csatlakoztatva.",
   "@aboutThis.unavailable.noVolumeAtPath": {
     "sourceHash": "d63b8da"
   },
-  "aboutThis.unavailable.notFound": "This item isn’t there anymore. It may have been moved or removed.",
+  "aboutThis.unavailable.notFound": "Ez az elem már nincs ott. Lehet, hogy áthelyezték vagy eltávolították.",
   "@aboutThis.unavailable.notFound": {
     "sourceHash": "60c881a"
   },
-  "aboutThis.unavailable.permissionDenied": "{platform, select, macos {macOS didn’t let Cmdr look at this item.} windows {Windows didn’t let Cmdr look at this item.} other {The system didn’t let Cmdr look at this item.}}",
+  "aboutThis.unavailable.permissionDenied": "{platform, select, macos {A macOS nem engedte, hogy a Cmdr megnézze ezt az elemet.} windows {A Windows nem engedte, hogy a Cmdr megnézze ezt az elemet.} other {A rendszer nem engedte, hogy a Cmdr megnézze ezt az elemet.}}",
   "@aboutThis.unavailable.permissionDenied": {
     "sourceHash": "81e217c"
   },
-  "aboutThis.unavailable.unreachable": "The drive didn’t answer in time. Give it another try in a moment.",
+  "aboutThis.unavailable.unreachable": "A meghajtó nem válaszolt időben. Próbáld újra egy pillanat múlva.",
   "@aboutThis.unavailable.unreachable": {
     "sourceHash": "8038ce3"
   },
-  "aboutThis.unavailable.unreadable": "Cmdr couldn’t read anything about this item.",
+  "aboutThis.unavailable.unreadable": "A Cmdr semmit sem tudott kiolvasni erről az elemről.",
   "@aboutThis.unavailable.unreadable": {
     "sourceHash": "7d7ab1f"
   },
-  "aboutThis.label.download": "Downloaded",
+  "aboutThis.label.download": "Letöltve",
   "@aboutThis.label.download": {
     "sourceHash": "f0b0738"
   },
-  "aboutThis.label.cmdrOperation": "Cmdr’s history",
+  "aboutThis.label.cmdrOperation": "A Cmdr előzményei",
   "@aboutThis.label.cmdrOperation": {
     "sourceHash": "eecea03"
   },
-  "aboutThis.label.size": "Size",
+  "aboutThis.label.size": "Méret",
   "@aboutThis.label.size": {
     "sourceHash": "1af8519"
   },
-  "aboutThis.label.created": "Created",
+  "aboutThis.label.created": "Létrehozva",
   "@aboutThis.label.created": {
     "sourceHash": "d70b9e2"
   },
-  "aboutThis.label.modified": "Modified",
+  "aboutThis.label.modified": "Módosítva",
   "@aboutThis.label.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "aboutThis.label.otherNames": "Other names",
+  "aboutThis.label.otherNames": "További nevek",
   "@aboutThis.label.otherNames": {
     "sourceHash": "df5ad6a"
   },
-  "aboutThis.label.pointsTo": "Points to",
+  "aboutThis.label.pointsTo": "Hová mutat",
   "@aboutThis.label.pointsTo": {
     "sourceHash": "6dca1c1"
   },
-  "aboutThis.label.realType": "Kind",
+  "aboutThis.label.realType": "Fajta",
   "@aboutThis.label.realType": {
     "sourceHash": "f5387f9"
   },
-  "aboutThis.label.bundle": "Bundle",
+  "aboutThis.label.bundle": "Csomag",
   "@aboutThis.label.bundle": {
     "sourceHash": "f2daa18"
   },
-  "aboutThis.label.signature": "Signature",
+  "aboutThis.label.signature": "Aláírás",
   "@aboutThis.label.signature": {
     "sourceHash": "f1a73e2"
   },
-  "aboutThis.label.lastOpened": "Last opened",
+  "aboutThis.label.lastOpened": "Utoljára megnyitva",
   "@aboutThis.label.lastOpened": {
     "sourceHash": "e300685"
   },
-  "aboutThis.label.defaultApp": "Opens with",
+  "aboutThis.label.defaultApp": "Ezzel nyílik meg",
   "@aboutThis.label.defaultApp": {
     "sourceHash": "cd1d8a1"
   },
-  "aboutThis.label.importance": "Importance",
+  "aboutThis.label.importance": "Fontosság",
   "@aboutThis.label.importance": {
     "sourceHash": "3fc78b5"
   },
-  "aboutThis.label.owner": "Belongs to",
+  "aboutThis.label.owner": "Tulajdonos",
   "@aboutThis.label.owner": {
     "sourceHash": "5c9c76c"
   },
   "aboutThis.label.git": "Git",
   "@aboutThis.label.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "Git is the version-control tool's name and stays as it is; the catalog's Git column and Settings section ship it unchanged (fileExplorer.columns.git, settings.section.git)."
   },
-  "aboutThis.label.contents": "Contents",
+  "aboutThis.label.contents": "Tartalom",
   "@aboutThis.label.contents": {
     "sourceHash": "437aea6"
   },
-  "aboutThis.label.appData": "Its data in your Library",
+  "aboutThis.label.appData": "Adatai a Könyvtár mappádban",
   "@aboutThis.label.appData": {
     "sourceHash": "bf02531"
   },
-  "aboutThis.label.biggest": "Biggest inside",
+  "aboutThis.label.biggest": "Legnagyobbak benne",
   "@aboutThis.label.biggest": {
     "sourceHash": "32c6992"
   },
-  "aboutThis.label.largestFiles": "Largest files",
+  "aboutThis.label.largestFiles": "Legnagyobb fájlok",
   "@aboutThis.label.largestFiles": {
     "sourceHash": "0255d17"
   },
-  "aboutThis.label.unchanged": "Untouched",
+  "aboutThis.label.unchanged": "Érintetlen",
   "@aboutThis.label.unchanged": {
     "sourceHash": "e9dc3b0"
   },
-  "aboutThis.unknown.noRecord": "Nothing on record",
+  "aboutThis.unknown.noRecord": "Nincs róla feljegyzés",
   "@aboutThis.unknown.noRecord": {
     "sourceHash": "7679180"
   },
-  "aboutThis.unknown.notInStatus": "No changes Cmdr can see",
+  "aboutThis.unknown.notInStatus": "A Cmdr nem lát változást",
   "@aboutThis.unknown.notInStatus": {
     "sourceHash": "c1e5f27"
   },
-  "aboutThis.unknown.noInstalledAppMatches": "No app Cmdr knows of",
+  "aboutThis.unknown.noInstalledAppMatches": "Nincs olyan app, amelyről a Cmdr tudna",
   "@aboutThis.unknown.noInstalledAppMatches": {
     "sourceHash": "3adc02b"
   },
-  "aboutThis.unknown.volumeCantTell": "Not on this drive",
+  "aboutThis.unknown.volumeCantTell": "Ez a meghajtó nem adja meg",
   "@aboutThis.unknown.volumeCantTell": {
     "sourceHash": "0e1edb4"
   },
-  "aboutThis.unknown.libraryNameMatchesNoApp": "No installed app has this folder’s name.",
+  "aboutThis.unknown.libraryNameMatchesNoApp": "Egyik telepített app neve sem egyezik ennek a mappának a nevével.",
   "@aboutThis.unknown.libraryNameMatchesNoApp": {
     "sourceHash": "d4b689c"
   },
-  "aboutThis.unknown.notIndexed": "Not indexed yet",
+  "aboutThis.unknown.notIndexed": "Még nincs indexelve",
   "@aboutThis.unknown.notIndexed": {
     "sourceHash": "808e81b"
   },
-  "aboutThis.unknown.timedOut": "Cmdr didn’t get an answer in time.",
+  "aboutThis.unknown.timedOut": "A Cmdr nem kapott választ időben.",
   "@aboutThis.unknown.timedOut": {
     "sourceHash": "332423d"
   },
-  "aboutThis.unknown.unreachable": "The drive stopped answering.",
+  "aboutThis.unknown.unreachable": "A meghajtó már nem válaszol.",
   "@aboutThis.unknown.unreachable": {
     "sourceHash": "eb590cc"
   },
-  "aboutThis.unknown.permissionDenied": "{platform, select, macos {macOS didn’t let Cmdr read this.} windows {Windows didn’t let Cmdr read this.} other {The system didn’t let Cmdr read this.}}",
+  "aboutThis.unknown.permissionDenied": "{platform, select, macos {A macOS nem engedte, hogy a Cmdr ezt kiolvassa.} windows {A Windows nem engedte, hogy a Cmdr ezt kiolvassa.} other {A rendszer nem engedte, hogy a Cmdr ezt kiolvassa.}}",
   "@aboutThis.unknown.permissionDenied": {
     "sourceHash": "0080525"
   },
-  "aboutThis.unknown.protected": "This is a private place, so Cmdr doesn’t look inside.",
+  "aboutThis.unknown.protected": "Ez egy privát hely, ezért a Cmdr nem néz bele.",
   "@aboutThis.unknown.protected": {
     "sourceHash": "f7003db"
   },
-  "aboutThis.unknown.nodeChangedSince": "Cmdr has a record for this name, and the file has been replaced since.",
+  "aboutThis.unknown.nodeChangedSince": "A Cmdr feljegyzése erre a névre szól, de a fájlt azóta lecserélték.",
   "@aboutThis.unknown.nodeChangedSince": {
     "sourceHash": "8988ec9"
   },
-  "aboutThis.unknown.ambiguous": "Several could fit, so Cmdr doesn’t pick one.",
+  "aboutThis.unknown.ambiguous": "Több is illhet rá, ezért a Cmdr nem választ.",
   "@aboutThis.unknown.ambiguous": {
     "sourceHash": "efce259"
   },
-  "aboutThis.unknown.unparseable": "There’s a record, and Cmdr can’t read it.",
+  "aboutThis.unknown.unparseable": "Van róla feljegyzés, de a Cmdr nem tudja kiolvasni.",
   "@aboutThis.unknown.unparseable": {
     "sourceHash": "2e59eac"
   },
-  "aboutThis.unknown.refusedInBackground": "Cmdr doesn’t reach this drive on its own.",
+  "aboutThis.unknown.refusedInBackground": "A Cmdr magától nem kapcsolódik ehhez a meghajtóhoz.",
   "@aboutThis.unknown.refusedInBackground": {
     "sourceHash": "ee95bef"
   },
-  "aboutThis.notApplicable.noCodeSigningOnThisOs": "This system doesn’t sign programs",
+  "aboutThis.notApplicable.noCodeSigningOnThisOs": "Ez a rendszer nem írja alá a programokat",
   "@aboutThis.notApplicable.noCodeSigningOnThisOs": {
     "sourceHash": "0315400"
   },
-  "aboutThis.notApplicable.notInARepo": "Not in a git repository",
+  "aboutThis.notApplicable.notInARepo": "Nem git-repóban van",
   "@aboutThis.notApplicable.notInARepo": {
     "sourceHash": "f68b8ba"
   },
-  "aboutThis.notApplicable.notABundle": "Not an app or package",
+  "aboutThis.notApplicable.notABundle": "Nem app és nem csomag",
   "@aboutThis.notApplicable.notABundle": {
     "sourceHash": "46581aa"
   },
-  "aboutThis.notApplicable.volumeHasNone": "This drive keeps no such record",
+  "aboutThis.notApplicable.volumeHasNone": "Ez a meghajtó nem vezet ilyen feljegyzést",
   "@aboutThis.notApplicable.volumeHasNone": {
     "sourceHash": "2d47613"
   },
-  "aboutThis.download.noRecord": "No download record",
+  "aboutThis.download.noRecord": "Nincs letöltési feljegyzés",
   "@aboutThis.download.noRecord": {
     "sourceHash": "f8cba1c"
   },
-  "aboutThis.download.fromSite": "{platform, select, macos {macOS recorded this as downloaded from {host}{hasApp, select, yes { with {app}} other {}}{hasDate, select, yes { on <date></date>} other {}}.} other {Your browser recorded this as downloaded from {host}{hasApp, select, yes { with {app}} other {}}{hasDate, select, yes { on <date></date>} other {}}.}}",
+  "aboutThis.download.fromSite": "{platform, select, macos {A macOS feljegyezte, hogy ezt innen töltötték le: {host}{hasApp, select, yes {, ezzel az appal: {app}} other {}}{hasDate, select, yes {, ekkor: <date></date>} other {}}.} other {A böngésződ feljegyezte, hogy ezt innen töltötték le: {host}{hasApp, select, yes {, ezzel az appal: {app}} other {}}{hasDate, select, yes {, ekkor: <date></date>} other {}}.}}",
   "@aboutThis.download.fromSite": {
     "sourceHash": "725c8d9"
   },
-  "aboutThis.download.fromAddress": "{platform, select, macos {macOS recorded this as downloaded from the address {address}.} other {Your browser recorded this as downloaded from the address {address}.}}",
+  "aboutThis.download.fromAddress": "{platform, select, macos {A macOS feljegyezte, hogy ezt erről a címről töltötték le: {address}.} other {A böngésződ feljegyezte, hogy ezt erről a címről töltötték le: {address}.}}",
   "@aboutThis.download.fromAddress": {
     "sourceHash": "1ac0da7"
   },
-  "aboutThis.download.linkedFrom": "The record also names a page on {host}.",
+  "aboutThis.download.linkedFrom": "A feljegyzés egy oldalt is megnevez ezen a webhelyen: {host}.",
   "@aboutThis.download.linkedFrom": {
     "sourceHash": "87708b2"
   },
-  "aboutThis.download.copyLink": "Copy the download link",
+  "aboutThis.download.copyLink": "A letöltési link másolása",
   "@aboutThis.download.copyLink": {
     "sourceHash": "bd3e47a"
   },
-  "aboutThis.download.copyPageLink": "Copy the page’s link",
+  "aboutThis.download.copyPageLink": "Az oldal linkjének másolása",
   "@aboutThis.download.copyPageLink": {
     "sourceHash": "404f4fb"
   },
-  "aboutThis.download.mail": "macOS recorded this as a Mail attachment{hasSender, select, yes {, from {sender}} other {}}.",
+  "aboutThis.download.mail": "A macOS feljegyezte, hogy ez egy Mail-melléklet{hasSender, select, yes {, feladó: {sender}} other {}}.",
   "@aboutThis.download.mail": {
     "sourceHash": "c6536ad"
   },
-  "aboutThis.download.mailSubject": "Subject: {subject}",
+  "aboutThis.download.mailSubject": "Tárgy: {subject}",
   "@aboutThis.download.mailSubject": {
     "sourceHash": "71de376"
   },
-  "aboutThis.download.airDrop": "macOS recorded this as received over AirDrop from {sender}.",
+  "aboutThis.download.airDrop": "A macOS feljegyezte, hogy ez AirDropon érkezett, feladó: {sender}.",
   "@aboutThis.download.airDrop": {
     "sourceHash": "631d574"
   },
-  "aboutThis.download.inlineData": "{platform, select, macos {macOS recorded a source that holds the data itself, which Cmdr doesn’t show.} other {The browser recorded a source that holds the data itself, which Cmdr doesn’t show.}}",
+  "aboutThis.download.inlineData": "{platform, select, macos {A macOS olyan forrást jegyzett fel, amely magát az adatot tartalmazza, és ezt a Cmdr nem jeleníti meg.} other {A böngésző olyan forrást jegyzett fel, amely magát az adatot tartalmazza, és ezt a Cmdr nem jeleníti meg.}}",
   "@aboutThis.download.inlineData": {
     "sourceHash": "ba0c417"
   },
-  "aboutThis.download.localFile": "{platform, select, macos {macOS recorded this as coming from a file on this computer.} other {The browser recorded this as coming from a file on this computer.}}",
+  "aboutThis.download.localFile": "{platform, select, macos {A macOS feljegyezte, hogy ez egy ezen a számítógépen lévő fájlból származik.} other {A böngésző feljegyezte, hogy ez egy ezen a számítógépen lévő fájlból származik.}}",
   "@aboutThis.download.localFile": {
     "sourceHash": "857c940"
   },
-  "aboutThis.download.unrecognized": "{platform, select, macos {macOS recorded a source Cmdr can’t read as an address: {text}} other {The browser recorded a source Cmdr can’t read as an address: {text}}}",
+  "aboutThis.download.unrecognized": "{platform, select, macos {A macOS olyan forrást jegyzett fel, amelyet a Cmdr nem tud címként értelmezni: {text}} other {A böngésző olyan forrást jegyzett fel, amelyet a Cmdr nem tud címként értelmezni: {text}}}",
   "@aboutThis.download.unrecognized": {
     "sourceHash": "5e9fa42"
   },
-  "aboutThis.download.noSource": "macOS recorded this as downloaded{hasApp, select, yes { with {app}} other {}}{hasDate, select, yes { on <date></date>} other {}}, without saying from where.",
+  "aboutThis.download.noSource": "A macOS feljegyezte, hogy ezt letöltötték{hasApp, select, yes {, ezzel az appal: {app}} other {}}{hasDate, select, yes {, ekkor: <date></date>} other {}}, de azt nem, hogy honnan.",
   "@aboutThis.download.noSource": {
     "sourceHash": "7edb92b"
   },
-  "aboutThis.cmdrOperation.noRecord": "No copy or move by Cmdr on record",
+  "aboutThis.cmdrOperation.noRecord": "A Cmdr nem jegyzett fel ide másolást vagy áthelyezést",
   "@aboutThis.cmdrOperation.noRecord": {
     "sourceHash": "53a886d"
   },
-  "aboutThis.cmdrOperation.done": "{who, select, you {You} askCmdr {Ask Cmdr} other {An AI client}} {kind, select, copy {copied this here} move {moved this here} rename {gave this its name} create {created this} extract {extracted this here} compress {made this archive} other {moved this here when deleting it}} with Cmdr on <date></date>.",
+  "aboutThis.cmdrOperation.done": "{who, select, you {Általad} askCmdr {Az Ask Cmdr által} other {Egy AI-kliens által}} indított Cmdr-művelet: {kind, select, copy {ide másolás} move {ide áthelyezés} rename {átnevezés erre a névre} create {létrehozás} extract {kicsomagolás ide} compress {ennek az archívumnak az elkészítése} other {áthelyezés ide törléskor}}, ekkor: <date></date>.",
   "@aboutThis.cmdrOperation.done": {
     "sourceHash": "10a4037"
   },
-  "aboutThis.cmdrOperation.datesChanged": "It’s the same item, though its dates have changed since.",
+  "aboutThis.cmdrOperation.datesChanged": "Ugyanaz az elem, bár a dátumai azóta módosultak.",
   "@aboutThis.cmdrOperation.datesChanged": {
     "sourceHash": "df8f175"
   },
-  "aboutThis.cmdrOperation.from": "From <source></source>{hasVolume, select, yes { on {volume}} other {}}",
+  "aboutThis.cmdrOperation.from": "Innen: <source></source>{hasVolume, select, yes { ({volume})} other {}}",
   "@aboutThis.cmdrOperation.from": {
     "sourceHash": "2f4a492"
   },
-  "aboutThis.cmdrOperation.copySource": "Copy where it came from",
+  "aboutThis.cmdrOperation.copySource": "Az eredeti útvonal másolása",
   "@aboutThis.cmdrOperation.copySource": {
     "sourceHash": "d18275b"
   },
-  "aboutThis.identity.onDisk": "<size></size> on disk",
+  "aboutThis.identity.onDisk": "lemezen: <size></size>",
   "@aboutThis.identity.onDisk": {
     "sourceHash": "770fb3d"
   },
-  "aboutThis.identity.otherNames": "{count, plural, one {One other name points to the same contents} other {{countText} other names point to the same contents}}",
+  "aboutThis.identity.otherNames": "{count, plural, one {Még egy név mutat ugyanerre a tartalomra} other {{countText} további név mutat ugyanerre a tartalomra}}",
   "@aboutThis.identity.otherNames": {
     "sourceHash": "c2277bc"
   },
-  "aboutThis.identity.copyLinkTarget": "Copy where it points",
+  "aboutThis.identity.copyLinkTarget": "A link céljának másolása",
   "@aboutThis.identity.copyLinkTarget": {
     "sourceHash": "58c4667"
   },
-  "aboutThis.realType.matches": "{kind}, checked against its contents",
+  "aboutThis.realType.matches": "{kind}, a tartalma alapján ellenőrizve",
   "@aboutThis.realType.matches": {
     "sourceHash": "c6166d0"
   },
-  "aboutThis.realType.mismatch": "The contents say {kind}, while the name ends in .{extension}.",
+  "aboutThis.realType.mismatch": "A tartalma szerint {kind}, a neve viszont .{extension} végű.",
   "@aboutThis.realType.mismatch": {
     "sourceHash": "f50dfc4"
   },
-  "aboutThis.realType.unread": "{kind}, as its name says",
+  "aboutThis.realType.unread": "{kind}, ahogy a neve állítja",
   "@aboutThis.realType.unread": {
     "sourceHash": "e64a971"
   },
-  "aboutThis.realType.byName": "{kind}, going by its name",
+  "aboutThis.realType.byName": "{kind}, a neve alapján",
   "@aboutThis.realType.byName": {
     "sourceHash": "27a6e8a"
   },
-  "aboutThis.realType.unrecognized": "Cmdr doesn’t know this kind of contents",
+  "aboutThis.realType.unrecognized": "A Cmdr nem ismeri ezt a fajta tartalmat",
   "@aboutThis.realType.unrecognized": {
     "sourceHash": "898feeb"
   },
-  "aboutThis.kind.diskImage": "Disk image",
+  "aboutThis.kind.diskImage": "Lemezkép",
   "@aboutThis.kind.diskImage": {
     "sourceHash": "0f12c3a"
   },
-  "aboutThis.kind.installerPackage": "Installer package",
+  "aboutThis.kind.installerPackage": "Telepítőcsomag",
   "@aboutThis.kind.installerPackage": {
     "sourceHash": "099eafc"
   },
-  "aboutThis.kind.machO": "Mac program",
+  "aboutThis.kind.machO": "Mac-program",
   "@aboutThis.kind.machO": {
     "sourceHash": "3af0d6f"
   },
-  "aboutThis.kind.elf": "Linux program",
+  "aboutThis.kind.elf": "Linux-program",
   "@aboutThis.kind.elf": {
     "sourceHash": "a382072"
   },
-  "aboutThis.kind.windowsProgram": "Windows program",
+  "aboutThis.kind.windowsProgram": "Windows-program",
   "@aboutThis.kind.windowsProgram": {
     "sourceHash": "4f90175"
   },
-  "aboutThis.kind.otherCode": "Compiled code",
+  "aboutThis.kind.otherCode": "Lefordított kód",
   "@aboutThis.kind.otherCode": {
     "sourceHash": "dafe5d2"
   },
-  "aboutThis.kind.script": "Script",
+  "aboutThis.kind.script": "Szkript",
   "@aboutThis.kind.script": {
     "sourceHash": "102acc1"
   },
-  "aboutThis.kind.archive": "Archive",
+  "aboutThis.kind.archive": "Archívum",
   "@aboutThis.kind.archive": {
     "sourceHash": "66f4804"
   },
   "aboutThis.kind.pdf": "PDF",
   "@aboutThis.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "PDF is the format's name, the same in Hungarian; the viewer's kind label ships it unchanged (viewer.kind.pdf)."
   },
-  "aboutThis.kind.image": "Image",
+  "aboutThis.kind.image": "Kép",
   "@aboutThis.kind.image": {
     "sourceHash": "1aa4cb0"
   },
-  "aboutThis.kind.video": "Video",
+  "aboutThis.kind.video": "Videó",
   "@aboutThis.kind.video": {
     "sourceHash": "d534be8"
   },
-  "aboutThis.kind.audio": "Sound file",
+  "aboutThis.kind.audio": "Hangfájl",
   "@aboutThis.kind.audio": {
     "sourceHash": "fa4a396"
   },
-  "aboutThis.kind.font": "Font",
+  "aboutThis.kind.font": "Betűtípus",
   "@aboutThis.kind.font": {
     "sourceHash": "64d0b3a"
   },
-  "aboutThis.kind.document": "Document",
+  "aboutThis.kind.document": "Dokumentum",
   "@aboutThis.kind.document": {
     "sourceHash": "d6bd8c0"
   },
-  "aboutThis.kind.database": "Database",
+  "aboutThis.kind.database": "Adatbázis",
   "@aboutThis.kind.database": {
     "sourceHash": "fa7fe67"
   },
-  "aboutThis.kind.text": "Text",
+  "aboutThis.kind.text": "Szöveg",
   "@aboutThis.kind.text": {
     "sourceHash": "71988c4"
   },
-  "aboutThis.kind.other": "A known format",
+  "aboutThis.kind.other": "Ismert formátum",
   "@aboutThis.kind.other": {
     "sourceHash": "4caa7ba"
   },
-  "aboutThis.kind.unrecognized": "Contents Cmdr doesn’t know",
+  "aboutThis.kind.unrecognized": "A Cmdr számára ismeretlen tartalom",
   "@aboutThis.kind.unrecognized": {
     "sourceHash": "5b7ba60"
   },
-  "aboutThis.what.fileWithExtension": ".{extension} file",
+  "aboutThis.what.fileWithExtension": ".{extension} fájl",
   "@aboutThis.what.fileWithExtension": {
     "sourceHash": "160a778"
   },
-  "aboutThis.what.file": "File",
+  "aboutThis.what.file": "Fájl",
   "@aboutThis.what.file": {
     "sourceHash": "50009ce"
   },
-  "aboutThis.what.folder": "Folder",
+  "aboutThis.what.folder": "Mappa",
   "@aboutThis.what.folder": {
     "sourceHash": "74ccd43"
   },
-  "aboutThis.what.app": "{hasVersion, select, yes {App, version {version}} other {App}}",
+  "aboutThis.what.app": "{hasVersion, select, yes {App, verzió: {version}} other {App}}",
   "@aboutThis.what.app": {
     "sourceHash": "1772290"
   },
-  "aboutThis.what.package": "Package",
+  "aboutThis.what.package": "Csomag",
   "@aboutThis.what.package": {
     "sourceHash": "59de121"
   },
   "aboutThis.what.symlink": "Link",
   "@aboutThis.what.symlink": {
-    "sourceHash": "a6a32db"
+    "sourceHash": "a6a32db",
+    "sameAsSourceJustification": "Link is the Hungarian word too (ruling link: link; the catalog ships it in Google Drive-link and webes link)."
   },
-  "aboutThis.what.archiveEntry": "Item in an archive",
+  "aboutThis.what.archiveEntry": "Elem egy archívumban",
   "@aboutThis.what.archiveEntry": {
     "sourceHash": "6c819c0"
   },
-  "aboutThis.headline.plain": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}",
+  "aboutThis.headline.plain": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}",
   "@aboutThis.headline.plain": {
     "sourceHash": "c316928"
   },
-  "aboutThis.headline.downloadedFrom": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as downloaded{hasApp, select, yes { with {app}} other {}} from {host}{hasDate, select, yes { on <date></date>} other {}}",
+  "aboutThis.headline.downloadedFrom": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, a feljegyzés szerint letöltve{hasApp, select, yes { ezzel az appal: {app},} other {}} innen: {host}{hasDate, select, yes {, ekkor: <date></date>} other {}}",
   "@aboutThis.headline.downloadedFrom": {
     "sourceHash": "a46a4ac"
   },
-  "aboutThis.headline.putHereByCmdr": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {kind, select, copy {copied here} move {moved here} rename {renamed} create {created} extract {extracted here} compress {compressed} other {moved here when deleted}} with Cmdr{hasVolume, select, yes { from {volume}} other {}} on <date></date>",
+  "aboutThis.headline.putHereByCmdr": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, {kind, select, copy {ide másolva} move {ide áthelyezve} rename {átnevezve} create {létrehozva} extract {ide kicsomagolva} compress {tömörítve} other {törléskor ide áthelyezve}} a Cmdrrel{hasVolume, select, yes {, innen: {volume}} other {}}, ekkor: <date></date>",
   "@aboutThis.headline.putHereByCmdr": {
     "sourceHash": "e73b25d"
   },
-  "aboutThis.headline.receivedByMail": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as a Mail attachment{hasDate, select, yes { saved on <date></date>} other {}}",
+  "aboutThis.headline.receivedByMail": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, a feljegyzés szerint Mail-melléklet{hasDate, select, yes {, mentve: <date></date>} other {}}",
   "@aboutThis.headline.receivedByMail": {
     "sourceHash": "224c768"
   },
-  "aboutThis.headline.receivedByAirDrop": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as received over AirDrop{hasDate, select, yes { on <date></date>} other {}}",
+  "aboutThis.headline.receivedByAirDrop": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, a feljegyzés szerint AirDropon érkezett{hasDate, select, yes {, ekkor: <date></date>} other {}}",
   "@aboutThis.headline.receivedByAirDrop": {
     "sourceHash": "f516160"
   },
-  "aboutThis.headline.dataOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {certainty, select, probable {probably {app}’s data} other {{app}’s data}}",
+  "aboutThis.headline.dataOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, {certainty, select, probable {valószínűleg {app} adatai} other {{app} adatai}}",
   "@aboutThis.headline.dataOfApp": {
     "sourceHash": "b4fbc49"
   },
-  "aboutThis.headline.cacheOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {certainty, select, probable {probably {app}’s cache} other {{app}’s cache}}",
+  "aboutThis.headline.cacheOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, {certainty, select, probable {valószínűleg {app} gyorsítótára} other {{app} gyorsítótára}}",
   "@aboutThis.headline.cacheOfApp": {
     "sourceHash": "1d671ae"
   },
-  "aboutThis.headline.dataOfMissingApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, named after {bundleId}, an app that isn’t installed",
+  "aboutThis.headline.dataOfMissingApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, egy nem telepített app azonosítójáról elnevezve: {bundleId}",
   "@aboutThis.headline.dataOfMissingApp": {
     "sourceHash": "05f42d2"
   },
-  "aboutThis.headline.downloadedBy": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as downloaded with {app}{hasDate, select, yes { on <date></date>} other {}}",
+  "aboutThis.headline.downloadedBy": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, a feljegyzés szerint letöltve ezzel az appal: {app}{hasDate, select, yes {, ekkor: <date></date>} other {}}",
   "@aboutThis.headline.downloadedBy": {
     "sourceHash": "9b4bf46"
   },
-  "aboutThis.headline.lastOpened": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, last opened <date></date>",
+  "aboutThis.headline.lastOpened": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, utoljára megnyitva: <date></date>",
   "@aboutThis.headline.lastOpened": {
     "sourceHash": "7a37566"
   },
-  "aboutThis.bundle.named": "{hasVersion, select, yes {{name}, version {version}} other {{name}}}",
+  "aboutThis.bundle.named": "{hasVersion, select, yes {{name}, verzió: {version}} other {{name}}}",
   "@aboutThis.bundle.named": {
     "sourceHash": "32cbc50"
   },
-  "aboutThis.bundle.unnamed": "{hasVersion, select, yes {No name stated, version {version}} other {No name or version stated}}",
+  "aboutThis.bundle.unnamed": "{hasVersion, select, yes {Nincs megadva név, verzió: {version}} other {Nincs megadva se név, se verzió}}",
   "@aboutThis.bundle.unnamed": {
     "sourceHash": "abe0e87"
   },
-  "aboutThis.signature.unsigned": "Not signed",
+  "aboutThis.signature.unsigned": "Nincs aláírva",
   "@aboutThis.signature.unsigned": {
     "sourceHash": "c0f06f8"
   },
-  "aboutThis.signature.adHoc": "Signed without a developer’s identity, like a local build",
+  "aboutThis.signature.adHoc": "Fejlesztői identitás nélkül aláírva, ahogy egy helyben fordított program",
   "@aboutThis.signature.adHoc": {
     "sourceHash": "d6406a2"
   },
-  "aboutThis.signature.developerId": "{matches, select, yes {Signed by {org} (team {team})} other {Carries a signature from {org} (team {team})}}",
+  "aboutThis.signature.developerId": "{matches, select, yes {Aláírta: {org} (csapat: {team})} other {Aláírást visel ettől: {org} (csapat: {team})}}",
   "@aboutThis.signature.developerId": {
     "sourceHash": "d6ff0dc"
   },
-  "aboutThis.signature.appStore": "{matches, select, yes {Signed by the Mac App Store} other {Carries the Mac App Store’s signature}}",
+  "aboutThis.signature.appStore": "{matches, select, yes {Aláírta a Mac App Store} other {A Mac App Store aláírását viseli}}",
   "@aboutThis.signature.appStore": {
     "sourceHash": "3348913"
   },
-  "aboutThis.signature.apple": "{matches, select, yes {Signed by Apple} other {Carries Apple’s signature}}",
+  "aboutThis.signature.apple": "{matches, select, yes {Aláírta az Apple} other {Az Apple aláírását viseli}}",
   "@aboutThis.signature.apple": {
     "sourceHash": "bb76e30"
   },
-  "aboutThis.signature.unrecognized": "Carries a signature from an authority Cmdr doesn’t know",
+  "aboutThis.signature.unrecognized": "Olyan kibocsátó aláírását viseli, amelyet a Cmdr nem ismer",
   "@aboutThis.signature.unrecognized": {
     "sourceHash": "6fdda36"
   },
-  "aboutThis.signature.executableDiffers": "Its program doesn’t match the signature it carries.",
+  "aboutThis.signature.executableDiffers": "A programja nem egyezik a rajta lévő aláírással.",
   "@aboutThis.signature.executableDiffers": {
     "sourceHash": "cecae80"
   },
-  "aboutThis.signature.checkTimedOut": "Cmdr didn’t finish comparing its program with the signature.",
+  "aboutThis.signature.checkTimedOut": "A Cmdr nem fejezte be a programja és az aláírás összevetését.",
   "@aboutThis.signature.checkTimedOut": {
     "sourceHash": "3e01b68"
   },
-  "aboutThis.signature.checkUnavailable": "Cmdr couldn’t compare its program with the signature.",
+  "aboutThis.signature.checkUnavailable": "A Cmdr nem tudta összevetni a programját az aláírással.",
   "@aboutThis.signature.checkUnavailable": {
     "sourceHash": "593adcf"
   },
-  "aboutThis.signature.ticketPresent": "A notarization ticket is stapled to it.",
+  "aboutThis.signature.ticketPresent": "Hitelesítési jegy van hozzá csatolva.",
   "@aboutThis.signature.ticketPresent": {
     "sourceHash": "45aef96"
   },
-  "aboutThis.signature.ticketAbsent": "No notarization ticket is stapled to it. macOS can also check with Apple online.",
+  "aboutThis.signature.ticketAbsent": "Nincs hozzá csatolva hitelesítési jegy. A macOS online, az Apple-nél is ellenőrizheti.",
   "@aboutThis.signature.ticketAbsent": {
     "sourceHash": "fb6efd9"
   },
-  "aboutThis.lastOpened.noRecord": "No last-opened record",
+  "aboutThis.lastOpened.noRecord": "Nincs feljegyzés a legutóbbi megnyitásról",
   "@aboutThis.lastOpened.noRecord": {
     "sourceHash": "6e28632"
   },
-  "aboutThis.lastOpened.known": "<date></date>{hasCount, select, yes {, {count, plural, one {opened once} other {opened {countText} times}}} other {}}",
+  "aboutThis.lastOpened.known": "<date></date>{hasCount, select, yes {, {count, plural, one {egyszer megnyitva} other {{countText} alkalommal megnyitva}}} other {}}",
   "@aboutThis.lastOpened.known": {
     "sourceHash": "d503f13"
   },
-  "aboutThis.importance.notScored": "Cmdr hasn’t scored how much this folder matters yet",
+  "aboutThis.importance.notScored": "A Cmdr még nem értékelte, mennyire fontos ez a mappa",
   "@aboutThis.importance.notScored": {
     "sourceHash": "b095a21"
   },
-  "aboutThis.importance.band": "{band, select, high {High} medium {Medium} low {Low} other {Not ranked}}",
+  "aboutThis.importance.band": "{band, select, high {Magas} medium {Közepes} low {Alacsony} other {Nincs rangsorolva}}",
   "@aboutThis.importance.band": {
     "sourceHash": "e94498a"
   },
-  "aboutThis.importance.because": "Because of {reasons}",
+  "aboutThis.importance.because": "Ennek alapján: {reasons}",
   "@aboutThis.importance.because": {
     "sourceHash": "2d0b95d"
   },
-  "aboutThis.importance.reason.projectMarker": "a project file in it",
+  "aboutThis.importance.reason.projectMarker": "a benne lévő projektfájl",
   "@aboutThis.importance.reason.projectMarker": {
     "sourceHash": "1c3970a"
   },
-  "aboutThis.importance.reason.mtimeRecency": "recent changes",
+  "aboutThis.importance.reason.mtimeRecency": "legutóbbi változások",
   "@aboutThis.importance.reason.mtimeRecency": {
     "sourceHash": "ceb5e1c"
   },
-  "aboutThis.importance.reason.visitActivity": "your visits in Cmdr",
+  "aboutThis.importance.reason.visitActivity": "a Cmdrben tett látogatásaid",
   "@aboutThis.importance.reason.visitActivity": {
     "sourceHash": "628eb6f"
   },
-  "aboutThis.importance.reason.lastUsed": "recent use",
+  "aboutThis.importance.reason.lastUsed": "legutóbbi használat",
   "@aboutThis.importance.reason.lastUsed": {
     "sourceHash": "f43c570"
   },
-  "aboutThis.importance.reason.extensionDiversity": "many kinds of files",
+  "aboutThis.importance.reason.extensionDiversity": "sokféle fájl",
   "@aboutThis.importance.reason.extensionDiversity": {
     "sourceHash": "2302631"
   },
-  "aboutThis.importance.reason.projectRoot": "being a project’s top folder",
+  "aboutThis.importance.reason.projectRoot": "egy projekt legfelső mappája",
   "@aboutThis.importance.reason.projectRoot": {
     "sourceHash": "a6e90d7"
   },
-  "aboutThis.importance.reason.userContent": "holding your own files",
+  "aboutThis.importance.reason.userContent": "a benne lévő saját fájljaid",
   "@aboutThis.importance.reason.userContent": {
     "sourceHash": "40bbc2a"
   },
-  "aboutThis.importance.floor.nameDenylisted": "Cmdr doesn’t rank folders whose name marks generated files",
+  "aboutThis.importance.floor.nameDenylisted": "A Cmdr nem rangsorolja azokat a mappákat, amelyek neve generált fájlokra utal",
   "@aboutThis.importance.floor.nameDenylisted": {
     "sourceHash": "fa12ecd"
   },
-  "aboutThis.importance.floor.hiddenOrSystem": "Cmdr doesn’t rank hidden, system, or temporary folders",
+  "aboutThis.importance.floor.hiddenOrSystem": "A Cmdr nem rangsorolja a rejtett, a rendszer- és az ideiglenes mappákat",
   "@aboutThis.importance.floor.hiddenOrSystem": {
     "sourceHash": "1665ffd"
   },
-  "aboutThis.importance.floor.underFlooredAncestor": "Cmdr doesn’t rank folders inside one it leaves out",
+  "aboutThis.importance.floor.underFlooredAncestor": "A Cmdr nem rangsorolja azokat a mappákat, amelyek egy általa kihagyott mappában vannak",
   "@aboutThis.importance.floor.underFlooredAncestor": {
     "sourceHash": "61ab4a2"
   },
-  "aboutThis.importance.floor.other": "Cmdr leaves folders like this out of its ranking",
+  "aboutThis.importance.floor.other": "A Cmdr kihagyja a rangsorolásából az ilyen mappákat",
   "@aboutThis.importance.floor.other": {
     "sourceHash": "872bc2a"
   },
-  "aboutThis.importance.reason.other": "other signals",
+  "aboutThis.importance.reason.other": "egyéb jelek",
   "@aboutThis.importance.reason.other": {
     "sourceHash": "7edd91c"
   },
-  "aboutThis.importance.visits": "{count, plural, one {Cmdr visited it once} other {Cmdr visited it {countText} times}}",
+  "aboutThis.importance.visits": "{count, plural, one {A Cmdr egyszer kereste fel} other {A Cmdr {countText} alkalommal kereste fel}}",
   "@aboutThis.importance.visits": {
     "sourceHash": "8753151"
   },
-  "aboutThis.importance.stale": "Scored before the latest changes",
+  "aboutThis.importance.stale": "A legutóbbi változások előtt értékelve",
   "@aboutThis.importance.stale": {
     "sourceHash": "996a6b2"
   },
   "aboutThis.owner.byBundleId": "{app}",
   "@aboutThis.owner.byBundleId": {
-    "sourceHash": "ab9f435"
+    "sourceHash": "ab9f435",
+    "sameAsSourceJustification": "Placeholder-only: the app's name stands alone on the row, and Hungarian needs no words around it."
   },
-  "aboutThis.owner.byBundleIdHow": "The folder carries the app’s identifier, {bundleId}.",
+  "aboutThis.owner.byBundleIdHow": "A mappa az app azonosítóját viseli: {bundleId}.",
   "@aboutThis.owner.byBundleIdHow": {
     "sourceHash": "30f6aa5"
   },
-  "aboutThis.owner.notInstalled": "Left over from an app that isn’t installed ({bundleId})",
+  "aboutThis.owner.notInstalled": "Egy nem telepített app maradványa ({bundleId})",
   "@aboutThis.owner.notInstalled": {
     "sourceHash": "0746a4a"
   },
-  "aboutThis.owner.byName": "Probably {app}",
+  "aboutThis.owner.byName": "Valószínűleg: {app}",
   "@aboutThis.owner.byName": {
     "sourceHash": "e8a89fd"
   },
-  "aboutThis.owner.byNameHow": "Only this app has the folder’s name.",
+  "aboutThis.owner.byNameHow": "Csak ennek az appnak egyezik a neve a mappáéval.",
   "@aboutThis.owner.byNameHow": {
     "sourceHash": "be4f13c"
   },
-  "aboutThis.owner.partOfOs": "Part of macOS ({pkgId})",
+  "aboutThis.owner.partOfOs": "A macOS része ({pkgId})",
   "@aboutThis.owner.partOfOs": {
     "sourceHash": "627aa11"
   },
-  "aboutThis.owner.installedBy": "Installed by the package {pkgId}",
+  "aboutThis.owner.installedBy": "Ez a csomag telepítette: {pkgId}",
   "@aboutThis.owner.installedBy": {
     "sourceHash": "c3271fd"
   },
-  "aboutThis.owner.homebrew": "Homebrew’s {kind, select, cask {cask} other {formula}} {name}",
+  "aboutThis.owner.homebrew": "Homebrew-{kind, select, cask {cask} other {formula}}: {name}",
   "@aboutThis.owner.homebrew": {
     "sourceHash": "4a9fdea"
   },
-  "aboutThis.owner.standardFolder": "{folder}, set up by the system",
+  "aboutThis.owner.standardFolder": "{folder}, a rendszer hozta létre",
   "@aboutThis.owner.standardFolder": {
     "sourceHash": "378b403"
   },
-  "aboutThis.standardFolder.home": "Your home folder",
+  "aboutThis.standardFolder.home": "A saját mappád",
   "@aboutThis.standardFolder.home": {
     "sourceHash": "a0111e9"
   },
-  "aboutThis.standardFolder.desktop": "Your Desktop folder",
+  "aboutThis.standardFolder.desktop": "Az Íróasztal mappád",
   "@aboutThis.standardFolder.desktop": {
     "sourceHash": "9b1dabb"
   },
-  "aboutThis.standardFolder.documents": "Your Documents folder",
+  "aboutThis.standardFolder.documents": "A Dokumentumok mappád",
   "@aboutThis.standardFolder.documents": {
     "sourceHash": "9ef28aa"
   },
-  "aboutThis.standardFolder.downloads": "Your Downloads folder",
+  "aboutThis.standardFolder.downloads": "A Letöltések mappád",
   "@aboutThis.standardFolder.downloads": {
     "sourceHash": "4bd179b"
   },
-  "aboutThis.standardFolder.movies": "Your Movies folder",
+  "aboutThis.standardFolder.movies": "A Filmek mappád",
   "@aboutThis.standardFolder.movies": {
     "sourceHash": "d28ecb9"
   },
-  "aboutThis.standardFolder.music": "Your Music folder",
+  "aboutThis.standardFolder.music": "A Zene mappád",
   "@aboutThis.standardFolder.music": {
     "sourceHash": "c03e44f"
   },
-  "aboutThis.standardFolder.pictures": "Your Pictures folder",
+  "aboutThis.standardFolder.pictures": "A Képek mappád",
   "@aboutThis.standardFolder.pictures": {
     "sourceHash": "c6b7545"
   },
-  "aboutThis.standardFolder.public": "Your Public folder",
+  "aboutThis.standardFolder.public": "A Nyilvános mappád",
   "@aboutThis.standardFolder.public": {
     "sourceHash": "c4d7b03"
   },
-  "aboutThis.standardFolder.homeLibrary": "Your Library folder",
+  "aboutThis.standardFolder.homeLibrary": "A Könyvtár mappád",
   "@aboutThis.standardFolder.homeLibrary": {
     "sourceHash": "bbce73c"
   },
-  "aboutThis.standardFolder.homeApplications": "Your own Applications folder",
+  "aboutThis.standardFolder.homeApplications": "A saját Alkalmazások mappád",
   "@aboutThis.standardFolder.homeApplications": {
     "sourceHash": "19a99a9"
   },
-  "aboutThis.standardFolder.applications": "The computer’s Applications folder",
+  "aboutThis.standardFolder.applications": "A számítógép Alkalmazások mappája",
   "@aboutThis.standardFolder.applications": {
     "sourceHash": "4735f61"
   },
-  "aboutThis.standardFolder.library": "The computer’s Library folder",
+  "aboutThis.standardFolder.library": "A számítógép Könyvtár mappája",
   "@aboutThis.standardFolder.library": {
     "sourceHash": "4b8adf2"
   },
-  "aboutThis.standardFolder.system": "The System folder of macOS",
+  "aboutThis.standardFolder.system": "A macOS Rendszer mappája",
   "@aboutThis.standardFolder.system": {
     "sourceHash": "b4b5daa"
   },
-  "aboutThis.standardFolder.users": "The Users folder",
+  "aboutThis.standardFolder.users": "A Felhasználók mappa",
   "@aboutThis.standardFolder.users": {
     "sourceHash": "955c56c"
   },
-  "aboutThis.standardFolder.startupDisk": "The top of the startup disk",
+  "aboutThis.standardFolder.startupDisk": "Az indítólemez legfelső szintje",
   "@aboutThis.standardFolder.startupDisk": {
     "sourceHash": "6e69278"
   },
-  "aboutThis.owner.insideApp": "Part of {app}",
+  "aboutThis.owner.insideApp": "{app} része",
   "@aboutThis.owner.insideApp": {
     "sourceHash": "5a318e6"
   },
-  "aboutThis.owner.noReceipt": "No installer record",
+  "aboutThis.owner.noReceipt": "Nincs telepítési feljegyzés",
   "@aboutThis.owner.noReceipt": {
     "sourceHash": "b2f04b8"
   },
-  "aboutThis.owner.ambiguous": "Several installed apps could own this, so Cmdr doesn’t pick one.",
+  "aboutThis.owner.ambiguous": "Több telepített apphoz is tartozhat, ezért a Cmdr nem választ.",
   "@aboutThis.owner.ambiguous": {
     "sourceHash": "e870bd3"
   },
-  "aboutThis.git.repo": "In <repo></repo>{hasBranch, select, yes {, on {branch}} other {, with no branch checked out}}",
+  "aboutThis.git.repo": "Repó: <repo></repo>{hasBranch, select, yes {, ág: {branch}} other {, nincs kicsekkolt ág}}",
   "@aboutThis.git.repo": {
     "sourceHash": "a54b5fc"
   },
-  "aboutThis.git.copyRepo": "Copy the repository’s path",
+  "aboutThis.git.copyRepo": "A repó útvonalának másolása",
   "@aboutThis.git.copyRepo": {
     "sourceHash": "79d4b93"
   },
-  "aboutThis.git.clean": "Committed, with no changes",
+  "aboutThis.git.clean": "Commitolva, változás nélkül",
   "@aboutThis.git.clean": {
     "sourceHash": "0dc5b69"
   },
-  "aboutThis.git.modified": "Has changes no commit has",
+  "aboutThis.git.modified": "Olyan változásai vannak, amelyek nincsenek commitban",
   "@aboutThis.git.modified": {
     "sourceHash": "408d71e"
   },
-  "aboutThis.git.untracked": "Git doesn’t track it",
+  "aboutThis.git.untracked": "A git nem követi",
   "@aboutThis.git.untracked": {
     "sourceHash": "db130db"
   },
-  "aboutThis.git.ignored": "Git ignores it",
+  "aboutThis.git.ignored": "A git figyelmen kívül hagyja",
   "@aboutThis.git.ignored": {
     "sourceHash": "c5b9eb8"
   },
-  "aboutThis.folderSize.known": "{coverage, select, lowerBound {At least <size></size>} other {<size></size>}} in {files, plural, one {one file} other {{filesText} files}} and {folders, plural, one {one folder} other {{foldersText} folders}}",
+  "aboutThis.folderSize.known": "{coverage, select, lowerBound {Legalább <size></size>} other {<size></size>}}, {files, plural, one {egy fájlban} other {{filesText} fájlban}} és {folders, plural, one {egy mappában} other {{foldersText} mappában}}",
   "@aboutThis.folderSize.known": {
     "sourceHash": "be20154"
   },
-  "aboutThis.folderSize.stale": "From the drive index’s last pass, so it may have changed since",
+  "aboutThis.folderSize.stale": "A meghajtó indexének legutóbbi átvizsgálásából, így azóta változhatott",
   "@aboutThis.folderSize.stale": {
     "sourceHash": "338420a"
   },
-  "aboutThis.folderSize.updating": "The drive index is updating this folder right now",
+  "aboutThis.folderSize.updating": "A meghajtó indexe épp most frissíti ezt a mappát",
   "@aboutThis.folderSize.updating": {
     "sourceHash": "ab2cbb7"
   },
-  "aboutThis.folderSize.symlinks": "Links to other places aren’t counted",
+  "aboutThis.folderSize.symlinks": "A más helyekre mutató linkek nem számítanak bele",
   "@aboutThis.folderSize.symlinks": {
     "sourceHash": "b6f82e9"
   },
-  "aboutThis.contents.summary": "{count, plural, =0 {Empty} one {One item} other {{countText} items: {kinds}}}",
+  "aboutThis.contents.summary": "{count, plural, =0 {Üres} one {Egy elem} other {{countText} elem: {kinds}}}",
   "@aboutThis.contents.summary": {
     "sourceHash": "12e1387"
   },
-  "aboutThis.childKind.folder": "{count, plural, one {{countText} folder} other {{countText} folders}}",
+  "aboutThis.childKind.folder": "{count, plural, one {{countText} mappa} other {{countText} mappa}}",
   "@aboutThis.childKind.folder": {
     "sourceHash": "3c46f04"
   },
-  "aboutThis.childKind.image": "{count, plural, one {{countText} image} other {{countText} images}}",
+  "aboutThis.childKind.image": "{count, plural, one {{countText} kép} other {{countText} kép}}",
   "@aboutThis.childKind.image": {
     "sourceHash": "ddc0659"
   },
-  "aboutThis.childKind.video": "{count, plural, one {{countText} video} other {{countText} videos}}",
+  "aboutThis.childKind.video": "{count, plural, one {{countText} videó} other {{countText} videó}}",
   "@aboutThis.childKind.video": {
     "sourceHash": "1912484"
   },
-  "aboutThis.childKind.audio": "{count, plural, one {{countText} sound file} other {{countText} sound files}}",
+  "aboutThis.childKind.audio": "{count, plural, one {{countText} hangfájl} other {{countText} hangfájl}}",
   "@aboutThis.childKind.audio": {
     "sourceHash": "930b7cc"
   },
-  "aboutThis.childKind.document": "{count, plural, one {{countText} document} other {{countText} documents}}",
+  "aboutThis.childKind.document": "{count, plural, one {{countText} dokumentum} other {{countText} dokumentum}}",
   "@aboutThis.childKind.document": {
     "sourceHash": "7e308f7"
   },
-  "aboutThis.childKind.archive": "{count, plural, one {{countText} archive or disk image} other {{countText} archives or disk images}}",
+  "aboutThis.childKind.archive": "{count, plural, one {{countText} archívum vagy lemezkép} other {{countText} archívum vagy lemezkép}}",
   "@aboutThis.childKind.archive": {
     "sourceHash": "7cb7114"
   },
-  "aboutThis.childKind.code": "{count, plural, one {{countText} code file} other {{countText} code files}}",
+  "aboutThis.childKind.code": "{count, plural, one {{countText} kódfájl} other {{countText} kódfájl}}",
   "@aboutThis.childKind.code": {
     "sourceHash": "d0b36f3"
   },
-  "aboutThis.childKind.app": "{count, plural, one {{countText} app or program} other {{countText} apps or programs}}",
+  "aboutThis.childKind.app": "{count, plural, one {{countText} app vagy program} other {{countText} app vagy program}}",
   "@aboutThis.childKind.app": {
     "sourceHash": "a5e82a0"
   },
-  "aboutThis.childKind.other": "{count, plural, one {{countText} other file} other {{countText} other files}}",
+  "aboutThis.childKind.other": "{count, plural, one {{countText} egyéb fájl} other {{countText} egyéb fájl}}",
   "@aboutThis.childKind.other": {
     "sourceHash": "473df3e"
   },
-  "aboutThis.folderClass.dependencies": "Installed packages a package manager put here",
+  "aboutThis.folderClass.dependencies": "Egy csomagkezelő által ide telepített csomagok",
   "@aboutThis.folderClass.dependencies": {
     "sourceHash": "b4a2d34"
   },
-  "aboutThis.folderClass.buildOutput": "Output a build tool wrote",
+  "aboutThis.folderClass.buildOutput": "Egy buildeszköz által írt kimenet",
   "@aboutThis.folderClass.buildOutput": {
     "sourceHash": "ff8c437"
   },
-  "aboutThis.folderClass.cache": "A cache",
+  "aboutThis.folderClass.cache": "Gyorsítótár",
   "@aboutThis.folderClass.cache": {
     "sourceHash": "843f82c"
   },
-  "aboutThis.folderClass.versionControl": "A repository’s history and settings",
+  "aboutThis.folderClass.versionControl": "Egy repó előzményei és beállításai",
   "@aboutThis.folderClass.versionControl": {
     "sourceHash": "9848335"
   },
-  "aboutThis.contents.atLeastSize": "at least <size></size>",
+  "aboutThis.contents.atLeastSize": "legalább <size></size>",
   "@aboutThis.contents.atLeastSize": {
     "sourceHash": "dfcd99e"
   },
-  "aboutThis.contents.noSize": "Not sized yet",
+  "aboutThis.contents.noSize": "Még nincs mérete",
   "@aboutThis.contents.noSize": {
     "sourceHash": "4bdd378"
   },
-  "aboutThis.contents.inFolder": "in {path}",
+  "aboutThis.contents.inFolder": "itt: {path}",
   "@aboutThis.contents.inFolder": {
     "sourceHash": "7ac1b38"
   },
-  "aboutThis.contents.goTo": "Go to {name}",
+  "aboutThis.contents.goTo": "Ugrás ide: {name}",
   "@aboutThis.contents.goTo": {
     "sourceHash": "5650d8d"
   },
-  "aboutThis.contents.notLoaded": "Cmdr lists these once Search has loaded this drive",
+  "aboutThis.contents.notLoaded": "A Cmdr akkor listázza ezeket, ha a Keresés már betöltötte ezt a meghajtót",
   "@aboutThis.contents.notLoaded": {
     "sourceHash": "75b1252"
   },
-  "aboutThis.contents.unchanged": "{atLeast, select, yes {At least {percent} of it hasn’t changed in a year (<size></size>)} other {{percent} of it hasn’t changed in a year (<size></size>)}}",
+  "aboutThis.contents.unchanged": "{atLeast, select, yes {Legalább {percent} belőle egy éve nem változott (<size></size>)} other {{percent} belőle egy éve nem változott (<size></size>)}}",
   "@aboutThis.contents.unchanged": {
     "sourceHash": "811264b"
   },
-  "aboutThis.appData.summary": "{count, plural, =0 {None that Cmdr’s index knows of} one {{atLeast, select, yes {At least <size></size> in one folder} other {<size></size> in one folder}}} other {{atLeast, select, yes {At least <size></size> in {countText} folders} other {<size></size> in {countText} folders}}}}",
+  "aboutThis.appData.summary": "{count, plural, =0 {Nincs olyan, amelyről a Cmdr indexe tudna} one {{atLeast, select, yes {Legalább <size></size> egy mappában} other {<size></size> egy mappában}}} other {{atLeast, select, yes {Legalább <size></size> {countText} mappában} other {<size></size> {countText} mappában}}}}",
   "@aboutThis.appData.summary": {
     "sourceHash": "4688194"
   },
-  "aboutThis.appData.notLookedIn": "Cmdr’s index hasn’t listed {places} yet, so there may be more",
+  "aboutThis.appData.notLookedIn": "A Cmdr indexe még nem listázta ezeket: {places}, így lehet több is",
   "@aboutThis.appData.notLookedIn": {
     "sourceHash": "40b9187"
   },
   "aboutThis.ownerPlace.caches": "Caches",
   "@aboutThis.ownerPlace.caches": {
-    "sourceHash": "c4d5ec9"
+    "sourceHash": "c4d5ec9",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.containers": "Containers",
   "@aboutThis.ownerPlace.containers": {
-    "sourceHash": "a22daa7"
+    "sourceHash": "a22daa7",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.groupContainers": "Group Containers",
   "@aboutThis.ownerPlace.groupContainers": {
-    "sourceHash": "33f3ee0"
+    "sourceHash": "33f3ee0",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.applicationSupport": "Application Support",
   "@aboutThis.ownerPlace.applicationSupport": {
-    "sourceHash": "7ef6ff2"
+    "sourceHash": "7ef6ff2",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.applicationScripts": "Application Scripts",
   "@aboutThis.ownerPlace.applicationScripts": {
-    "sourceHash": "4abecec"
+    "sourceHash": "4abecec",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.preferences": "Preferences",
   "@aboutThis.ownerPlace.preferences": {
-    "sourceHash": "66962f7"
+    "sourceHash": "66962f7",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.savedState": "Saved Application State",
   "@aboutThis.ownerPlace.savedState": {
-    "sourceHash": "d2c3ab9"
+    "sourceHash": "d2c3ab9",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.logs": "Logs",
   "@aboutThis.ownerPlace.logs": {
-    "sourceHash": "ea2100d"
+    "sourceHash": "ea2100d",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.webData": "HTTPStorages",
   "@aboutThis.ownerPlace.webData": {
-    "sourceHash": "0a2ea16"
+    "sourceHash": "0a2ea16",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
-  "aboutThis.ownerPlace.sandboxHome": "App home",
+  "aboutThis.ownerPlace.sandboxHome": "Az app saját mappája",
   "@aboutThis.ownerPlace.sandboxHome": {
     "sourceHash": "0548eba"
   },
-  "aboutThis.removal.standardFolder.home": "It’s your home folder: everything of yours on this computer is inside it, and the system and every app expect it.",
+  "aboutThis.removal.standardFolder.home": "Ez a saját mappád: minden, ami a tiéd ezen a számítógépen, benne van, és a rendszer meg minden app számít rá.",
   "@aboutThis.removal.standardFolder.home": {
     "sourceHash": "214ceb7"
   },
-  "aboutThis.removal.standardFolder.personal": "It’s one of your standard folders: the system and your apps expect to find it, and everything inside it goes with it.",
+  "aboutThis.removal.standardFolder.personal": "Ez az egyik szabványos mappád: a rendszer és az appjaid számítanak rá, hogy megtalálják, és ami benne van, az is vele megy.",
   "@aboutThis.removal.standardFolder.personal": {
     "sourceHash": "2702168"
   },
-  "aboutThis.removal.standardFolder.homeLibrary": "It holds the settings and data your apps keep for you, and they can stop working or start over without it.",
+  "aboutThis.removal.standardFolder.homeLibrary": "Ebben tartják az appjaid a neked szóló beállításokat és adatokat, és nélküle leállhatnak, vagy elölről kezdhetnek mindent.",
   "@aboutThis.removal.standardFolder.homeLibrary": {
     "sourceHash": "1dfa0b3"
   },
-  "aboutThis.removal.standardFolder.homeApplications": "It holds apps installed for you alone, and the system looks for them here.",
+  "aboutThis.removal.standardFolder.homeApplications": "Ebben vannak a csak neked telepített appok, és a rendszer itt keresi őket.",
   "@aboutThis.removal.standardFolder.homeApplications": {
     "sourceHash": "9652169"
   },
-  "aboutThis.removal.standardFolder.applications": "It holds this computer’s apps, and the system looks for them here.",
+  "aboutThis.removal.standardFolder.applications": "Ebben vannak ennek a számítógépnek az appjai, és a rendszer itt keresi őket.",
   "@aboutThis.removal.standardFolder.applications": {
     "sourceHash": "2741b28"
   },
-  "aboutThis.removal.standardFolder.library": "It holds settings and data that apps and the system keep for everyone on this computer, and they can stop working without it.",
+  "aboutThis.removal.standardFolder.library": "Ebben vannak azok a beállítások és adatok, amelyeket az appok és a rendszer ennek a számítógépnek minden felhasználója számára tárolnak, és nélküle leállhatnak.",
   "@aboutThis.removal.standardFolder.library": {
     "sourceHash": "0fc06cf"
   },
-  "aboutThis.removal.standardFolder.system": "It’s macOS itself: the computer can’t start without it.",
+  "aboutThis.removal.standardFolder.system": "Ez maga a macOS: a számítógép nem indul el nélküle.",
   "@aboutThis.removal.standardFolder.system": {
     "sourceHash": "e06bc7e"
   },
-  "aboutThis.removal.standardFolder.users": "It holds every account’s home folder on this computer.",
+  "aboutThis.removal.standardFolder.users": "Ebben van ennek a számítógépnek minden fiókjához a saját mappa.",
   "@aboutThis.removal.standardFolder.users": {
     "sourceHash": "b72c1fe"
   },
-  "aboutThis.removal.standardFolder.startupDisk": "It holds everything on the startup disk, macOS included.",
+  "aboutThis.removal.standardFolder.startupDisk": "Ebben van minden, ami az indítólemezen van, a macOS-t is beleértve.",
   "@aboutThis.removal.standardFolder.startupDisk": {
     "sourceHash": "3f6c151"
   },
-  "aboutThis.removal.uncommittedWork": "It has changes no commit holds, so git can’t bring those back.",
+  "aboutThis.removal.uncommittedWork": "Olyan változásai vannak, amelyek egyik commitban sincsenek benne, így ezeket a git nem tudja visszahozni.",
   "@aboutThis.removal.uncommittedWork": {
     "sourceHash": "9fb3490"
   },
-  "aboutThis.removal.untrackedNotInGit": "Git doesn’t track it, so git can’t bring it back.",
+  "aboutThis.removal.untrackedNotInGit": "A git nem követi, így a git nem tudja visszahozni.",
   "@aboutThis.removal.untrackedNotInGit": {
     "sourceHash": "fd709a6"
   },
-  "aboutThis.removal.ignoredByGit": "Git ignores it, so git can’t bring it back.",
+  "aboutThis.removal.ignoredByGit": "A git figyelmen kívül hagyja, így a git nem tudja visszahozni.",
   "@aboutThis.removal.ignoredByGit": {
     "sourceHash": "bc86083"
   },
-  "aboutThis.removal.userDocument": "Nothing Cmdr knows of made this or could make it again.",
+  "aboutThis.removal.userDocument": "Semmi, amiről a Cmdr tud, nem ezt hozta létre, és nem is tudná újra elkészíteni.",
   "@aboutThis.removal.userDocument": {
     "sourceHash": "81982af"
   },
-  "aboutThis.removal.removesApp": "This removes the app. Cmdr can’t tell yet how much of its data stays in your Library.",
+  "aboutThis.removal.removesApp": "Ez eltávolítja az appot. A Cmdr még nem tudja megmondani, mennyi adata marad a Könyvtár mappádban.",
   "@aboutThis.removal.removesApp": {
     "sourceHash": "7f8bfbe"
   },
-  "aboutThis.removal.removesAppDataLeft": "{count, plural, =0 {This removes the app. Cmdr’s index knows of none of its data in your Library.} one {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in one folder.} other {This removes the app. Its data in your Library stays: <size></size> in one folder.}}} other {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in {countText} folders.} other {This removes the app. Its data in your Library stays: <size></size> in {countText} folders.}}}}",
+  "aboutThis.removal.removesAppDataLeft": "{count, plural, =0 {Ez eltávolítja az appot. A Cmdr indexe nem tud egyetlen adatáról sem a Könyvtár mappádban.} one {{atLeast, select, yes {Ez eltávolítja az appot. Az adatai a Könyvtár mappádban maradnak: legalább <size></size> egy mappában.} other {Ez eltávolítja az appot. Az adatai a Könyvtár mappádban maradnak: <size></size> egy mappában.}}} other {{atLeast, select, yes {Ez eltávolítja az appot. Az adatai a Könyvtár mappádban maradnak: legalább <size></size> {countText} mappában.} other {Ez eltávolítja az appot. Az adatai a Könyvtár mappádban maradnak: <size></size> {countText} mappában.}}}}",
   "@aboutThis.removal.removesAppDataLeft": {
     "sourceHash": "9e527f8"
   },
-  "aboutThis.removal.appData": "{certainty, select, probable {It’s probably {app}’s data, and {app} may lose what it keeps here.} other {It’s {app}’s data, and {app} may lose what it keeps here.}}",
+  "aboutThis.removal.appData": "{certainty, select, probable {Valószínűleg ennek az appnak az adatai: {app}. Az app elveszítheti, amit itt tárol.} other {Ennek az appnak az adatai: {app}. Az app elveszítheti, amit itt tárol.}}",
   "@aboutThis.removal.appData": {
     "sourceHash": "3571d95"
   },
-  "aboutThis.removal.installedByReceipt": "{partOfOs, select, yes {macOS installed it, and parts of macOS may need it.} other {The package {pkgId} installed it, and what it installed may need it.}}",
+  "aboutThis.removal.installedByReceipt": "{partOfOs, select, yes {A macOS telepítette, és a macOS egyes részeinek szükségük lehet rá.} other {Ez a csomag telepítette: {pkgId}. Amit telepített, annak szüksége lehet rá.}}",
   "@aboutThis.removal.installedByReceipt": {
     "sourceHash": "ec4b768"
   },
-  "aboutThis.removal.installedByHomebrew": "Homebrew installed it as part of {name}, which may stop working.",
+  "aboutThis.removal.installedByHomebrew": "A Homebrew telepítette ennek a részeként: {name}. Lehet, hogy az nem működik tovább nélküle.",
   "@aboutThis.removal.installedByHomebrew": {
     "sourceHash": "caea929"
   },
-  "aboutThis.removal.leftoverOfUninstalledApp": "It’s named after {bundleId}, an app that isn’t installed. Cmdr can’t tell whether anything else uses it.",
+  "aboutThis.removal.leftoverOfUninstalledApp": "Egy nem telepített appról kapta a nevét: {bundleId}. A Cmdr nem tudja megmondani, használja-e még valami más.",
   "@aboutThis.removal.leftoverOfUninstalledApp": {
     "sourceHash": "0da2729"
   },
-  "aboutThis.removal.recordedDownload": "{platform, select, macos {macOS recorded this as downloaded from {host}. Cmdr can’t tell whether the site still has it.} other {Your browser recorded this as downloaded from {host}. Cmdr can’t tell whether the site still has it.}}",
+  "aboutThis.removal.recordedDownload": "{platform, select, macos {A macOS feljegyezte, hogy ezt innen töltötték le: {host}. A Cmdr nem tudja megmondani, megvan-e még ott.} other {A böngésződ feljegyezte, hogy ezt innen töltötték le: {host}. A Cmdr nem tudja megmondani, megvan-e még ott.}}",
   "@aboutThis.removal.recordedDownload": {
     "sourceHash": "389ab69"
   },
-  "aboutThis.removal.gitCanRestore": "Git can restore it from the last commit.",
+  "aboutThis.removal.gitCanRestore": "A git vissza tudja állítani a legutóbbi commitból.",
   "@aboutThis.removal.gitCanRestore": {
     "sourceHash": "9d75b10"
   },
-  "aboutThis.removal.rebuildablePackageManager": "A package manager can fetch this again, which takes time and a network.",
+  "aboutThis.removal.rebuildablePackageManager": "Egy csomagkezelő újra lekérheti, ami időbe telik, és hálózat kell hozzá.",
   "@aboutThis.removal.rebuildablePackageManager": {
     "sourceHash": "2c0dd33"
   },
-  "aboutThis.removal.rebuildableBuildTool": "A build tool can make this again, which takes time.",
+  "aboutThis.removal.rebuildableBuildTool": "Egy buildeszköz újra el tudja készíteni, ami időbe telik.",
   "@aboutThis.removal.rebuildableBuildTool": {
     "sourceHash": "b0b9b09"
   },
-  "aboutThis.removal.regeneratedCache": "{hasApp, select, yes {It’s {app}’s cache: {app} writes it again, and is slower until it has.} other {It’s a cache: whatever wrote it writes it again, and is slower until it has.}}",
+  "aboutThis.removal.regeneratedCache": "{hasApp, select, yes {Ez ennek az appnak a gyorsítótára: {app}. Az app újra megírja, és addig lassabb lesz.} other {Ez egy gyorsítótár: ami megírta, újra megírja, és addig lassabb lesz.}}",
   "@aboutThis.removal.regeneratedCache": {
     "sourceHash": "9e428d5"
   },
-  "aboutThis.removal.otherNamesRemain": "{count, plural, one {One other name points to the same contents, which stays.} other {{countText} other names point to the same contents, which stays.}}",
+  "aboutThis.removal.otherNamesRemain": "{count, plural, one {Még egy név mutat ugyanerre a tartalomra, így a tartalom megmarad.} other {{countText} további név mutat ugyanerre a tartalomra, így a tartalom megmarad.}}",
   "@aboutThis.removal.otherNamesRemain": {
     "sourceHash": "c06d0b6"
   },
-  "aboutThis.removal.linkOnly": "It’s a link: removing it leaves what it points to.",
+  "aboutThis.removal.linkOnly": "Ez egy link: az eltávolítása nem érinti azt, amire mutat.",
   "@aboutThis.removal.linkOnly": {
     "sourceHash": "95cb310"
   },
-  "aboutThis.removal.cantTell": "Cmdr can’t tell what depends on this.",
+  "aboutThis.removal.cantTell": "A Cmdr nem tudja megmondani, mi függ ettől.",
   "@aboutThis.removal.cantTell": {
     "sourceHash": "c9900f8"
   },
-  "aboutThis.removal.more": "{count, plural, one {One more} other {{countText} more}}",
+  "aboutThis.removal.more": "{count, plural, one {Még egy} other {Még {countText}}}",
   "@aboutThis.removal.more": {
     "sourceHash": "2daca20"
   },
-  "aboutThis.removal.less": "Show fewer",
+  "aboutThis.removal.less": "Kevesebb megjelenítése",
   "@aboutThis.removal.less": {
     "sourceHash": "255beb6"
   },
-  "aboutThis.label.gitSnapshot": "Git history",
+  "aboutThis.label.gitSnapshot": "Git-előzmények",
   "@aboutThis.label.gitSnapshot": {
     "sourceHash": "452144b"
   },
-  "aboutThis.unknown.volumeStoppedAnswering": "No answer from the drive",
+  "aboutThis.unknown.volumeStoppedAnswering": "Nincs válasz a meghajtótól",
   "@aboutThis.unknown.volumeStoppedAnswering": {
     "sourceHash": "a99c484"
   },
-  "aboutThis.unknown.notFound": "It isn’t there anymore.",
+  "aboutThis.unknown.notFound": "Már nincs ott.",
   "@aboutThis.unknown.notFound": {
     "sourceHash": "8b3a5a7"
   },
-  "aboutThis.download.insideArchive": "Inside the archive “{archive}”.",
+  "aboutThis.download.insideArchive": "Ebben az archívumban van: „{archive}”.",
   "@aboutThis.download.insideArchive": {
     "sourceHash": "5b790df"
   },
-  "aboutThis.download.archiveRecord": "{platform, select, macos {What macOS recorded about the archive:} other {What your browser recorded about the archive:}}",
+  "aboutThis.download.archiveRecord": "{platform, select, macos {Amit a macOS az archívumról feljegyzett:} other {Amit a böngésződ az archívumról feljegyzett:}}",
   "@aboutThis.download.archiveRecord": {
     "sourceHash": "8fd1b3b"
   },
-  "aboutThis.gitSnapshot.from": "{kind, select, branch {As the branch {name} has it in <repo></repo>} tag {As the tag {name} has it in <repo></repo>} commit {As commit {name} has it in <repo></repo>} other {As stash entry {name} has it in <repo></repo>}}",
+  "aboutThis.gitSnapshot.from": "{kind, select, branch {Ahogy ebben az ágban van: {name}, repó: <repo></repo>} tag {Ahogy ennél a címkénél van: {name}, repó: <repo></repo>} commit {Ahogy ebben a commitban van: {name}, repó: <repo></repo>} other {Ahogy ebben a stash-bejegyzésben van: {name}, repó: <repo></repo>}}",
   "@aboutThis.gitSnapshot.from": {
     "sourceHash": "aafff28"
   },
-  "aboutThis.gitSnapshot.lastChanged": "Last changed by a commit on <date></date>",
+  "aboutThis.gitSnapshot.lastChanged": "Utoljára egy commit módosította, ekkor: <date></date>",
   "@aboutThis.gitSnapshot.lastChanged": {
     "sourceHash": "ed8a966"
   },
-  "aboutThis.gitSnapshot.copyCommit": "Copy the commit’s id",
+  "aboutThis.gitSnapshot.copyCommit": "A commit azonosítójának másolása",
   "@aboutThis.gitSnapshot.copyCommit": {
     "sourceHash": "22ce389"
   },
-  "aboutThis.headline.insideArchive": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, inside {archive}",
+  "aboutThis.headline.insideArchive": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, ebben az archívumban: {archive}",
   "@aboutThis.headline.insideArchive": {
     "sourceHash": "36a16da"
   },
-  "aboutThis.headline.fromGitHistory": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {kind, select, branch {as the branch {name} has it} tag {as the tag {name} has it} commit {as commit {name} has it} other {as stash entry {name} has it}}",
+  "aboutThis.headline.fromGitHistory": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, legalább <size></size>} other {}}, {kind, select, branch {ahogy ebben az ágban van: {name}} tag {ahogy ennél a címkénél van: {name}} commit {ahogy ebben a commitban van: {name}} other {ahogy ebben a stash-bejegyzésben van: {name}}}",
   "@aboutThis.headline.fromGitHistory": {
     "sourceHash": "fb6543a"
   },
-  "aboutThis.removal.holdsRepoHistory": "It holds the repository’s whole history. Removing it leaves the files but drops every commit that isn’t pushed somewhere else, and Cmdr can’t tell what’s pushed.",
+  "aboutThis.removal.holdsRepoHistory": "Ebben van a repó teljes előzménye. Az eltávolítása megtartja a fájlokat, de elvész minden commit, amely nincs máshová feltöltve, és a Cmdr nem tudja megmondani, mi van feltöltve.",
   "@aboutThis.removal.holdsRepoHistory": {
     "sourceHash": "011304a"
   },
-  "aboutThis.removal.inGitHistory": "This is git’s record of it at that point in history, not a file on the disk, so there’s nothing to remove here.",
+  "aboutThis.removal.inGitHistory": "Ez a git előzményeiben őrzött korábbi állapota, nem egy fájl a lemezen, így itt nincs mit eltávolítani.",
   "@aboutThis.removal.inGitHistory": {
     "sourceHash": "5c3ab2e"
   },
-  "aboutThis.verdict.label": "AI wrote this",
+  "aboutThis.verdict.label": "Ezt az AI írta",
   "@aboutThis.verdict.label": {
     "sourceHash": "8fe1d9b"
   },
-  "aboutThis.verdict.trust.oftenWrong": "This model, or a similar one, often got its take wrong when Cmdr tested it. Check it against the card’s facts, or switch to a stronger model.",
+  "aboutThis.verdict.trust.oftenWrong": "Ez a modell, vagy egy hasonló, gyakran tévedett a véleményében, amikor a Cmdr tesztelte. Vesd össze a kártya tényeivel, vagy válts erősebb modellre.",
   "@aboutThis.verdict.trust.oftenWrong": {
     "sourceHash": "ab85bab"
   },
-  "aboutThis.verdict.trust.changeModel": "Change the model",
+  "aboutThis.verdict.trust.changeModel": "Modell módosítása",
   "@aboutThis.verdict.trust.changeModel": {
     "sourceHash": "c4f44ed"
   },
-  "aboutThis.verdict.trust.untested": "Cmdr hasn’t tested this model for these takes, so it can’t say whether to trust this one.",
+  "aboutThis.verdict.trust.untested": "A Cmdr nem tesztelte ezt a modellt ilyen véleményekre, így nem tudja megmondani, megbízhatsz-e ebben.",
   "@aboutThis.verdict.trust.untested": {
     "sourceHash": "d1174d9"
   },
-  "aboutThis.verdict.writing": "Writing a short take…",
+  "aboutThis.verdict.writing": "Rövid vélemény írása…",
   "@aboutThis.verdict.writing": {
     "sourceHash": "fa632d5"
   },
-  "aboutThis.verdict.stop": "Stop",
+  "aboutThis.verdict.stop": "Leállítás",
   "@aboutThis.verdict.stop": {
     "sourceHash": "cae7d57"
   },
-  "aboutThis.verdict.stopTooltip": "Stops the AI take. The facts and what it wrote so far stay.",
+  "aboutThis.verdict.stopTooltip": "Leállítja az AI-véleményt. A tények és az eddig megírt szöveg megmaradnak.",
   "@aboutThis.verdict.stopTooltip": {
     "sourceHash": "f6dc700"
   },
-  "aboutThis.verdict.stopped": "Stopped",
+  "aboutThis.verdict.stopped": "Leállítva",
   "@aboutThis.verdict.stopped": {
     "sourceHash": "1a4f630"
   },
-  "aboutThis.verdict.fromEarlier": "From earlier",
+  "aboutThis.verdict.fromEarlier": "Korábbról",
   "@aboutThis.verdict.fromEarlier": {
     "sourceHash": "10d0e01"
   },
-  "aboutThis.verdict.announcement": "AI wrote this: {text}",
+  "aboutThis.verdict.announcement": "Ezt az AI írta: {text}",
   "@aboutThis.verdict.announcement": {
     "sourceHash": "a2d0297"
   },
-  "aboutThis.verdict.given.none": "From the card’s facts. Cmdr didn’t look inside.",
+  "aboutThis.verdict.given.none": "A kártya tényei alapján. A Cmdr nem nézett bele.",
   "@aboutThis.verdict.given.none": {
     "sourceHash": "387fa5a"
   },
-  "aboutThis.verdict.given.firstLines": "From the card’s facts and its first lines.",
+  "aboutThis.verdict.given.firstLines": "A kártya tényei és az első sorai alapján.",
   "@aboutThis.verdict.given.firstLines": {
     "sourceHash": "daa8542"
   },
-  "aboutThis.verdict.given.firstPage": "From the card’s facts and the first page.",
+  "aboutThis.verdict.given.firstPage": "A kártya tényei és az első oldal alapján.",
   "@aboutThis.verdict.given.firstPage": {
     "sourceHash": "15b0aab"
   },
-  "aboutThis.verdict.given.entryNames": "From the card’s facts and the names of the first files inside.",
+  "aboutThis.verdict.given.entryNames": "A kártya tényei és a benne lévő első fájlok nevei alapján.",
   "@aboutThis.verdict.given.entryNames": {
     "sourceHash": "b32f391"
   },
-  "aboutThis.verdict.given.cameraDetails": "From the card’s facts and the photo’s camera details, without its location.",
+  "aboutThis.verdict.given.cameraDetails": "A kártya tényei és a fotó kameraadatai alapján, a készítési helye nélkül.",
   "@aboutThis.verdict.given.cameraDetails": {
     "sourceHash": "a56e30c"
   },
-  "aboutThis.verdict.given.protected": "From the card’s facts. This is somewhere Cmdr keeps contents private, so it didn’t look inside.",
+  "aboutThis.verdict.given.protected": "A kártya tényei alapján. Ez egy olyan hely, amelynek a tartalmát a Cmdr privátként kezeli, ezért nem nézett bele.",
   "@aboutThis.verdict.given.protected": {
     "sourceHash": "0b846ce"
   },
-  "aboutThis.verdict.problem.authFailed": "Your AI provider didn’t accept the key.",
+  "aboutThis.verdict.problem.authFailed": "Az AI-szolgáltatód nem fogadta el a kulcsot.",
   "@aboutThis.verdict.problem.authFailed": {
     "sourceHash": "bac1177"
   },
-  "aboutThis.verdict.problem.rateLimited": "Your AI provider’s limit is reached for now.",
+  "aboutThis.verdict.problem.rateLimited": "Egyelőre elérted az AI-szolgáltatód korlátját.",
   "@aboutThis.verdict.problem.rateLimited": {
     "sourceHash": "301b2b9"
   },
-  "aboutThis.verdict.problem.unreachable": "Cmdr couldn’t reach your AI provider.",
+  "aboutThis.verdict.problem.unreachable": "A Cmdr nem tudta elérni az AI-szolgáltatódat.",
   "@aboutThis.verdict.problem.unreachable": {
     "sourceHash": "818effd"
   },
-  "aboutThis.verdict.problem.overloaded": "Your AI provider is busy right now.",
+  "aboutThis.verdict.problem.overloaded": "Az AI-szolgáltatód most elfoglalt.",
   "@aboutThis.verdict.problem.overloaded": {
     "sourceHash": "7427168"
   },
-  "aboutThis.verdict.problem.managed": "Your IT team’s policy stopped this on its way out.",
+  "aboutThis.verdict.problem.managed": "Az IT-csapatod házirendje még kifelé menet leállította ezt.",
   "@aboutThis.verdict.problem.managed": {
     "sourceHash": "ec46e5e"
   },
-  "aboutThis.verdict.problem.noAnswer": "The AI didn’t write anything this time.",
+  "aboutThis.verdict.problem.noAnswer": "Az AI ezúttal nem írt semmit.",
   "@aboutThis.verdict.problem.noAnswer": {
     "sourceHash": "7f4d4d3"
   },
-  "aboutThis.verdict.problem.other": "Your AI provider couldn’t answer this time.",
+  "aboutThis.verdict.problem.other": "Az AI-szolgáltatód ezúttal nem tudott válaszolni.",
   "@aboutThis.verdict.problem.other": {
     "sourceHash": "dbc9df5"
   },
-  "aboutThis.verdict.unavailable.noCloudConsent": "Allow cloud AI for a deeper read of each item.",
+  "aboutThis.verdict.unavailable.noCloudConsent": "Engedélyezd a felhő-AI-t, hogy minden elemről alaposabb áttekintést kapj.",
   "@aboutThis.verdict.unavailable.noCloudConsent": {
     "sourceHash": "5dddcad"
   },
-  "aboutThis.verdict.unavailable.notConfigured": "Add your AI provider’s key for a deeper read of each item.",
+  "aboutThis.verdict.unavailable.notConfigured": "Add meg az AI-szolgáltatód kulcsát, hogy minden elemről alaposabb áttekintést kapj.",
   "@aboutThis.verdict.unavailable.notConfigured": {
     "sourceHash": "39b54cd"
   },
-  "aboutThis.verdict.unavailable.notReady": "The local AI model isn’t running, so there’s no AI take this time.",
+  "aboutThis.verdict.unavailable.notReady": "A helyi AI-modell nem fut, így ezúttal nincs AI-vélemény.",
   "@aboutThis.verdict.unavailable.notReady": {
     "sourceHash": "4cf13bf"
   },
-  "aboutThis.verdict.unavailable.tooManyRequests": "That’s a lot of AI takes in a minute. Try again in a moment.",
+  "aboutThis.verdict.unavailable.tooManyRequests": "Ez sok AI-vélemény egy perc alatt. Próbáld újra egy pillanat múlva.",
   "@aboutThis.verdict.unavailable.tooManyRequests": {
     "sourceHash": "888f933"
   },
-  "aboutThis.verdict.unavailable.openAiSettings": "Open AI settings",
+  "aboutThis.verdict.unavailable.openAiSettings": "AI-beállítások megnyitása",
   "@aboutThis.verdict.unavailable.openAiSettings": {
     "sourceHash": "edcc53b"
   },
-  "aboutThis.verdict.aiOffHint": "Turn on AI for a deeper read of each item.",
+  "aboutThis.verdict.aiOffHint": "Kapcsold be az AI-t, hogy minden elemről alaposabb áttekintést kapj.",
   "@aboutThis.verdict.aiOffHint": {
     "sourceHash": "08266ac"
   },
-  "aboutThis.verdict.column": "AI take",
+  "aboutThis.verdict.column": "AI-vélemény",
   "@aboutThis.verdict.column": {
     "sourceHash": "326481c"
   },
-  "aboutThis.verdict.hint.dismiss": "Hide this hint",
+  "aboutThis.verdict.hint.dismiss": "A tipp elrejtése",
   "@aboutThis.verdict.hint.dismiss": {
     "sourceHash": "f18aa5e"
   },
-  "aboutThis.verdict.hint.dismissTooltip": "Hide this hint. You can bring it back in Settings > Advanced.",
+  "aboutThis.verdict.hint.dismissTooltip": "A tipp elrejtése. Visszahozhatod itt: Beállítások > Speciális.",
   "@aboutThis.verdict.hint.dismissTooltip": {
     "sourceHash": "6a3a4b3"
   },
-  "aboutThis.action.continueInAskCmdr": "Continue in Ask Cmdr",
+  "aboutThis.action.continueInAskCmdr": "Folytatás az Ask Cmdrben",
   "@aboutThis.action.continueInAskCmdr": {
     "sourceHash": "e9f482a"
   },
-  "aboutThis.action.continueInAskCmdrTooltip": "Opens a new Ask Cmdr chat about this item. Nothing is sent until you send it.",
+  "aboutThis.action.continueInAskCmdrTooltip": "Új Ask Cmdr-csevegést nyit erről az elemről. Semmi sem megy el, amíg el nem küldöd.",
   "@aboutThis.action.continueInAskCmdrTooltip": {
     "sourceHash": "223ad10"
   },
-  "aboutThis.continueInAskCmdr.draft": "Tell me more about this.",
+  "aboutThis.continueInAskCmdr.draft": "Mesélj többet erről.",
   "@aboutThis.continueInAskCmdr.draft": {
     "sourceHash": "93b9cd7"
   },
-  "aboutThis.label.name": "Name",
+  "aboutThis.label.name": "Név",
   "@aboutThis.label.name": {
     "sourceHash": "dcd1d52"
   },
-  "aboutThis.identity.nameHidReordering": "Its name hides a character that flips the text’s direction, so in other apps it can seem to end differently. Cmdr shows it without that character.",
+  "aboutThis.identity.nameHidReordering": "A neve egy olyan karaktert rejt, amely megfordítja a szöveg irányát, így más appokban másképp végződőnek tűnhet. A Cmdr e karakter nélkül jeleníti meg.",
   "@aboutThis.identity.nameHidReordering": {
     "sourceHash": "408f58a"
   },
-  "aboutThis.identity.nameHidInvisible": "Its name holds characters you can’t see, so it can look like another name or carry hidden text. Cmdr shows it without them.",
+  "aboutThis.identity.nameHidInvisible": "A neve láthatatlan karaktereket tartalmaz, így egy másik névnek tűnhet, vagy rejtett szöveget hordozhat. A Cmdr ezek nélkül jeleníti meg.",
   "@aboutThis.identity.nameHidInvisible": {
     "sourceHash": "1ba3066"
   },
-  "aboutThis.label.imageContents": "What it shows",
+  "aboutThis.label.imageContents": "Mi látható rajta",
   "@aboutThis.label.imageContents": {
     "sourceHash": "8e7ddf9"
   },
-  "aboutThis.imageContents.tags": "Tagged as {tags}",
+  "aboutThis.imageContents.tags": "Címkék: {tags}",
   "@aboutThis.imageContents.tags": {
     "sourceHash": "dc8ce45"
   },
-  "aboutThis.imageContents.textHeading": "Text in it:",
+  "aboutThis.imageContents.textHeading": "Szöveg rajta:",
   "@aboutThis.imageContents.textHeading": {
     "sourceHash": "1a751be"
   },
-  "aboutThis.imageContents.textLine": "“{text}”",
+  "aboutThis.imageContents.textLine": "„{text}”",
   "@aboutThis.imageContents.textLine": {
     "sourceHash": "ce4c196"
   },
-  "aboutThis.imageContents.moreText": "And more text",
+  "aboutThis.imageContents.moreText": "És még több szöveg",
   "@aboutThis.imageContents.moreText": {
     "sourceHash": "460d2ea"
   },
-  "aboutThis.imageContents.nothing": "No tags or text found",
+  "aboutThis.imageContents.nothing": "Nem található címke vagy szöveg",
   "@aboutThis.imageContents.nothing": {
     "sourceHash": "80c55c4"
   },
-  "aboutThis.imageContents.notIndexed": "Not in Cmdr’s image index",
+  "aboutThis.imageContents.notIndexed": "Nincs benne a Cmdr képindexében",
   "@aboutThis.imageContents.notIndexed": {
     "sourceHash": "3b8e22b"
   },
-  "aboutThis.imageContents.indexingOff": "Image indexing is off",
+  "aboutThis.imageContents.indexingOff": "A képek indexelése ki van kapcsolva",
   "@aboutThis.imageContents.indexingOff": {
     "sourceHash": "29b0990"
   },
-  "aboutThis.unknown.indexingOff": "Its index is turned off",
+  "aboutThis.unknown.indexingOff": "A hozzá tartozó index ki van kapcsolva",
   "@aboutThis.unknown.indexingOff": {
     "sourceHash": "f2c2c68"
   },
-  "aboutThis.unknown.onlineOnly": "Stored online only, so Cmdr didn’t download it to look",
+  "aboutThis.unknown.onlineOnly": "Csak online érhető el, ezért a Cmdr nem töltötte le, hogy belenézzen",
   "@aboutThis.unknown.onlineOnly": {
     "sourceHash": "347baa0"
   }

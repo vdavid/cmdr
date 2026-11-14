@@ -575,3 +575,9 @@ queue and log words.
 - PC → `a géped` / `ez a gép`, user folder → `felhasználói mappa` (tentative), `Windows-fiók`, `hálózati adapter`.
 - Linux: `egy terminálban`, `a fájlkezelődben`, `rendszerfigyelő app`, `Jogosultságok` lap (GNOME, KDE, Xfce), unmount →
   `leválaszt`, mount → `csatol`, `GNOME Lemezek`, `a számítógéped`.
+
+## Mesélj erről (`aboutThis.*`, `commands.fileTellMeAbout.*`, `menu.file.tellMeAbout`, `settings.aboutThis.*`)
+
+- `Mesélj erről` (a `te` request, as English asks), title `Tudnivalók: „{name}”`, AI take → `AI-vélemény`, record →
+  `feljegyzés` / `feljegyezte`. Folder names from macOS `SystemFolderLocalizations` (`Íróasztal`, `Könyvtár`, `Filmek`).
+- `cmdrOperation.done`: `Általad / … által indított Cmdr-művelet:`, since one `{who}` select can't carry verb agreement.

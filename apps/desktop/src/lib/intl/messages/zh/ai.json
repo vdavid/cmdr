@@ -91,67 +91,67 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.aboutThis.title": "<b>Tell me about this</b>, each time you open its card on a file or folder, with no further question:",
+  "ai.cloudConsent.aboutThis.title": "<b>介绍一下这个</b>，每次你在文件或文件夹上打开它的卡片时，不会再额外询问：",
   "@ai.cloudConsent.aboutThis.title": {
     "sourceHash": "b60933c"
   },
-  "ai.cloudConsent.aboutThis.item.identity": "What it is (a file, folder, app, or link), its name, path, size, and dates, how many files and folders a folder holds, how many other names point to it, where a link points, and whether its name hides a character that changes the order its letters show in",
+  "ai.cloudConsent.aboutThis.item.identity": "它是什么（文件、文件夹、App 或链接）、名称、路径、大小和日期、文件夹里有多少文件和文件夹、有多少其他名称指向它、链接指向哪里，以及它的名称里是否隐藏着会改变字母显示顺序的字符",
   "@ai.cloudConsent.aboutThis.item.identity": {
     "sourceHash": "f01c726"
   },
-  "ai.cloudConsent.aboutThis.item.realType": "What kind of file its first bytes say it is, or its name where Cmdr didn’t read them",
+  "ai.cloudConsent.aboutThis.item.realType": "根据开头几个字节判断它是哪种文件，Cmdr 没有读取时则根据名称判断",
   "@ai.cloudConsent.aboutThis.item.realType": {
     "sourceHash": "55e97b9"
   },
-  "ai.cloudConsent.aboutThis.item.imageIndex": "For a picture, the labels Cmdr’s image index gave it and the first lines of text it found in it, read from Cmdr’s index, never the picture itself",
+  "ai.cloudConsent.aboutThis.item.imageIndex": "对于图像，Cmdr 的图像索引给它加的标签，以及在其中找到的前几行文字，都从 Cmdr 的索引中读取，从不发送图像本身",
   "@ai.cloudConsent.aboutThis.item.imageIndex": {
     "sourceHash": "020f807"
   },
-  "ai.cloudConsent.aboutThis.item.download": "The website it was recorded as downloaded from (the site’s main address only, like github.com, never a subdomain or the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never who sent it",
+  "ai.cloudConsent.aboutThis.item.download": "据记录下载它的网站（只有网站的主地址，比如 github.com，从不包括子域名或完整链接）、下载时间，以及下载它的 App。如果是“邮件”附件或隔空投送，只说明它是这类文件，从不说明是谁发送的",
   "@ai.cloudConsent.aboutThis.item.download": {
     "sourceHash": "40d185c"
   },
-  "ai.cloudConsent.aboutThis.item.appAndSigner": "For an app or a program, its name, id, and version. For it or a disk image, the name and team id of whoever signed it, whether its code still matches that signature, and whether Apple’s notarization ticket is attached",
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "对于 App 或程序，它的名称、ID 和版本。对于它或磁盘映像，签名者的名称和团队 ID、它的代码是否仍与这个签名一致，以及是否附加了 Apple 的公证票据",
   "@ai.cloudConsent.aboutThis.item.appAndSigner": {
     "sourceHash": "471891d"
   },
-  "ai.cloudConsent.aboutThis.item.use": "When you last opened it, how many times, and which app opens it",
+  "ai.cloudConsent.aboutThis.item.use": "你上次打开它的时间、打开过几次，以及用哪个 App 打开它",
   "@ai.cloudConsent.aboutThis.item.use": {
     "sourceHash": "9664a6e"
   },
-  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Where Cmdr copied, moved, or extracted it from and when, including that path, the drive or server name, and whether you or an AI assistant started it",
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Cmdr 从哪里、在什么时候拷贝、移动或解压了它，包括那个路径、驱动器或服务器名称，以及是你还是 AI 助手发起的",
   "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
     "sourceHash": "1d38db2"
   },
-  "ai.cloudConsent.aboutThis.item.git": "Its git repository’s folder, branch, and status, or for a file from git’s history, the commit, branch, or tag it’s from and when it last changed there",
+  "ai.cloudConsent.aboutThis.item.git": "它所在 git 仓库的文件夹、分支和状态；如果是来自 git 历史的文件，则是它所在的提交、分支或标签，以及它在那里最后一次改动的时间",
   "@ai.cloudConsent.aboutThis.item.git": {
     "sourceHash": "a06839e"
   },
-  "ai.cloudConsent.aboutThis.item.owner": "The app or installer it belongs to, or which standard folder of the system it is, and how Cmdr knows",
+  "ai.cloudConsent.aboutThis.item.owner": "它属于哪个 App 或安装器，或者它是系统的哪个标准文件夹，以及 Cmdr 是怎么知道的",
   "@ai.cloudConsent.aboutThis.item.owner": {
     "sourceHash": "f5d95a6"
   },
-  "ai.cloudConsent.aboutThis.item.importance": "For a folder, how much it matters by Cmdr’s ranking, and how often you open it in Cmdr",
+  "ai.cloudConsent.aboutThis.item.importance": "对于文件夹，按 Cmdr 的排名它有多重要，以及你在 Cmdr 中打开它的频率",
   "@ai.cloudConsent.aboutThis.item.importance": {
     "sourceHash": "b358d29"
   },
-  "ai.cloudConsent.aboutThis.item.inside": "For a folder, what sort it is (like a cache or build output), how many things are in it, the names and sizes of the biggest ones and of its largest files, what kinds of files it holds, and how much of it hasn’t changed in a year",
+  "ai.cloudConsent.aboutThis.item.inside": "对于文件夹，它属于哪一类（比如缓存或构建输出）、里面有多少东西、其中最大的几项以及最大的文件的名称和大小、它包含哪些种类的文件，以及其中有多少一年内没有改动",
   "@ai.cloudConsent.aboutThis.item.inside": {
     "sourceHash": "eb93c12"
   },
-  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {For an app, the names and sizes of the folders it keeps in your Library} other {For an app, the names and sizes of the data folders it keeps}}",
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {对于 App，它在你的资源库中保存数据的文件夹的名称和大小} other {对于 App，它保存的数据文件夹的名称和大小}}",
   "@ai.cloudConsent.aboutThis.item.appData": {
     "sourceHash": "d61ade2"
   },
-  "ai.cloudConsent.aboutThis.item.removal": "What removing it would mean, as Cmdr works it out from the facts above",
+  "ai.cloudConsent.aboutThis.item.removal": "移除它意味着什么，由 Cmdr 根据上面的信息推断",
   "@ai.cloudConsent.aboutThis.item.removal": {
     "sourceHash": "f7ad4bd"
   },
-  "ai.cloudConsent.aboutThis.item.contentsStayHome": "For an item whose contents stay home (listed under Ask Cmdr below), only its name, path, size, dates, and the app it belongs to",
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "对于内容不会离开本机的项目（列在下方 Ask Cmdr 部分），只发送它的名称、路径、大小、日期，以及它所属的 App",
   "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
     "sourceHash": "400db48"
   },
-  "ai.cloudConsent.aboutThis.lookInside": "A short look inside a file: some text, a PDF’s first page and title, the list of files in an archive, or a photo’s camera details without its location",
+  "ai.cloudConsent.aboutThis.lookInside": "简短查看文件内部：一些文本、PDF 的第一页和标题、压缩文件里的文件列表，或照片的相机信息（不含拍摄地点）",
   "@ai.cloudConsent.aboutThis.lookInside": {
     "sourceHash": "a78e673"
   },
@@ -183,7 +183,7 @@
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
   },
-  "ai.cloudConsent.askCmdr.item.aboutThis": "When Cmdr looks up what a file or folder is, the same facts Tell me about this sends, without the look inside",
+  "ai.cloudConsent.askCmdr.item.aboutThis": "Cmdr 查询某个文件或文件夹是什么时，会发送和“介绍一下这个”相同的信息，但不查看内部",
   "@ai.cloudConsent.askCmdr.item.aboutThis": {
     "sourceHash": "1c8e78d"
   },

@@ -2,6 +2,10 @@
   "reviewed": {
     "de": [
       {
+        "source": "File",
+        "reason": "Two senses: the menu-bar File menu (`menu.bar.file`) is Apple's name `Ablage` (Finder's own German menu bar), while the Tell me about this card's item kind (`aboutThis.what.file`) is the noun `Datei` (ruling `file`). A file kind can't read `Ablage`, which means a filing tray."
+      },
+      {
         "source": "Browse",
         "reason": "Two senses of one English word, split into the `browse-file-picker` and `browse` rulings in `docs/i18n/de/terms.json`. `Durchsuchen…` is the button that opens the system file picker (`servers.sheet.browse`, `settings.adb.browse`), taken from Finder's own `ConnectToWindow.strings` `48.title`. `Durchsehen` is the archives segmented cell (`settings.archives.opt.browse`), which means step INTO the archive and list it like a folder (KDE Dolphin, \"Archive durchsehen\"). The archive sense cannot take `Durchsuchen`: that is the settled scan/search verb (\"Laufwerk wird durchsucht …\"), so merging them would tell the reader the app is searching the archive."
       },
@@ -196,6 +200,10 @@
     ],
     "nl": [
       {
+        "source": "File",
+        "reason": "Two senses: the menu-bar File menu (`menu.bar.file`) is Apple's name `Archief` (Finder's own Dutch menu bar), while the Tell me about this card's item kind (`aboutThis.what.file`) is the noun `Bestand` (ruling `file`). A file kind can't read `Archief`, which means an archive."
+      },
+      {
         "source": "Added",
         "reason": "Two senses of one English word. `fileExplorer.columns.added` is a date column header, so it takes Finder's date label `Toevoegingsdatum` (LocalizableMerged N169.38), parallel with its siblings `Aanmaakdatum` and `Bewerkingsdatum`. `Toegevoegd` is a state: a file git added (`fileExplorer.git.status.added`) and a shortcut the user added (`shortcuts.list.addedTooltip`)."
       },
@@ -305,6 +313,10 @@
       }
     ],
     "pt": [
+      {
+        "source": "Stopped",
+        "reason": "Two states: `Parado` is a local AI server that isn't running (`ai.local.statusStopped`), `Interrompido` is an AI take the person cut off mid-sentence, its text kept (`aboutThis.verdict.stopped`), agreeing with `comentário`. A cut-off text reads `interrompido`, never `parado`."
+      },
       {
         "source": "Unknown",
         "reason": "Gender agreement, not drift: `Desconhecido` agrees with a size or a model (`suggestedOps.factUnknownSize`, `ai.local.modelUnknown`), `Desconhecida` with a date (`suggestedOps.factUnknownDate`), as the @key asks."
@@ -842,6 +854,10 @@
       {
         "source": "Background",
         "reason": "`fileOperations.transferProgress.background` sends a running operation away (`Přesunout na pozadí`). `fileOperations.backgroundStart.background` confirms and STARTS one, in the copy, move, compress, and trash dialogs, where `Přesunout` beside `Kopírovat` would read as moving the files, so it says `Spustit na pozadí`."
+      },
+      {
+        "source": "Created",
+        "reason": "The file list's column header and date tooltip (`fileExplorer.columns.created`, `fileExplorer.dateTooltip.created`) name the date (`Datum vytvoření`, Finder's column); the Tell me about this card's row label (`aboutThis.label.created`) sits beside `Změněno` as a Get Info–style label (`Vytvořeno`), the two forms the `create` ruling lists."
       }
     ]
   },

@@ -874,15 +874,15 @@
   "@commands.fileGetInfo.label": {
     "sourceHash": "da65a65"
   },
-  "commands.fileTellMeAbout.label": "Tell me about this",
+  "commands.fileTellMeAbout.label": "Vertel me hierover",
   "@commands.fileTellMeAbout.label": {
     "sourceHash": "0d5deaf"
   },
-  "commands.fileTellMeAbout.description": "Shows where the item came from, what it is, and what removing it would mean",
+  "commands.fileTellMeAbout.description": "Toont waar het onderdeel vandaan komt, wat het is en wat verwijderen zou betekenen",
   "@commands.fileTellMeAbout.description": {
     "sourceHash": "66f0488"
   },
-  "commands.aboutThisStopVerdict.label": "Stop the AI take",
+  "commands.aboutThisStopVerdict.label": "Stop het AI-commentaar",
   "@commands.aboutThisStopVerdict.label": {
     "sourceHash": "0ffd7ae"
   },

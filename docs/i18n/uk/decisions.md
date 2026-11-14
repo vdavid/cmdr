@@ -209,3 +209,8 @@ writes «1 січня».
 ### Drop hint (`askCmdr.composer.dropHint`)
 
 «Відпустіть» over «Перетягніть»: the hint shows mid-drag.
+
+### "Tell me about this" (`commands.fileTellMeAbout.label`, `menu.file.tellMeAbout`, `aboutThis.verdict.*`)
+
+«Розкажи про це» (the user speaking to Cmdr, ти like a request to an assistant) over a ви imperative or an infinitive;
+the AI take is «коментар ШІ». Library folder names stay «папка «Бібліотека»», standard folders quote Finder's names.

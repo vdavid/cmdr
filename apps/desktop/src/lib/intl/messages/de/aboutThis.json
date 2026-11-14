@@ -1,1285 +1,1303 @@
 {
-  "aboutThis.dialog.title": "About “{name}”",
+  "aboutThis.dialog.title": "Über „{name}“",
   "@aboutThis.dialog.title": {
     "sourceHash": "3c5c0b4"
   },
-  "aboutThis.dialog.close": "Close",
+  "aboutThis.dialog.close": "Schließen",
   "@aboutThis.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "aboutThis.action.open": "Open",
+  "aboutThis.action.open": "Öffnen",
   "@aboutThis.action.open": {
     "sourceHash": "ed077f3"
   },
-  "aboutThis.action.openTooltip": "Opens it with {app}, as Enter does.",
+  "aboutThis.action.openTooltip": "Öffnet das Objekt mit {app}, wie die Eingabetaste.",
   "@aboutThis.action.openTooltip": {
     "sourceHash": "4bbaa35"
   },
-  "aboutThis.action.showInFileManager": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "aboutThis.action.showInFileManager": "{platform, select, macos {Im Finder anzeigen} windows {Im Datei-Explorer anzeigen} other {Im Dateimanager anzeigen}}",
   "@aboutThis.action.showInFileManager": {
     "sourceHash": "21f1ff1"
   },
-  "aboutThis.action.downloadPage": "Download page",
+  "aboutThis.action.downloadPage": "Download-Seite",
   "@aboutThis.action.downloadPage": {
     "sourceHash": "c2f0e5b"
   },
-  "aboutThis.action.downloadPageTooltip": "Opens {host} in your browser: the page this was recorded as downloaded from.",
+  "aboutThis.action.downloadPageTooltip": "Öffnet {host} in deinem Browser: die Seite, von der das Objekt laut Vermerk heruntergeladen wurde.",
   "@aboutThis.action.downloadPageTooltip": {
     "sourceHash": "ee94d9d"
   },
-  "aboutThis.action.revealOwner": "Show {app}",
+  "aboutThis.action.revealOwner": "{app} anzeigen",
   "@aboutThis.action.revealOwner": {
     "sourceHash": "4d27c5e"
   },
-  "aboutThis.action.appFolder": "Go to {app}’s data",
+  "aboutThis.action.appFolder": "Zu den Daten von {app} gehen",
   "@aboutThis.action.appFolder": {
     "sourceHash": "43ea077"
   },
-  "aboutThis.action.appFolderUnnamed": "Go to the app’s data",
+  "aboutThis.action.appFolderUnnamed": "Zu den Daten der App gehen",
   "@aboutThis.action.appFolderUnnamed": {
     "sourceHash": "8d0aa42"
   },
-  "aboutThis.action.trash": "{platform, select, windows {Move to the Recycle Bin…} other {Move to trash…}}",
+  "aboutThis.action.trash": "{platform, select, windows {In den Papierkorb bewegen …} other {In den Papierkorb bewegen …}}",
   "@aboutThis.action.trash": {
     "sourceHash": "13ef52a"
   },
-  "aboutThis.action.delete": "Delete…",
+  "aboutThis.action.delete": "Löschen …",
   "@aboutThis.action.delete": {
     "sourceHash": "9ce78fe"
   },
-  "aboutThis.action.more": "More",
+  "aboutThis.action.more": "Mehr",
   "@aboutThis.action.more": {
     "sourceHash": "d47d7cb"
   },
-  "aboutThis.action.moreMenu": "More actions",
+  "aboutThis.action.moreMenu": "Weitere Aktionen",
   "@aboutThis.action.moreMenu": {
     "sourceHash": "f8d46c2"
   },
-  "aboutThis.dialog.lookingUp": "Looking this up",
+  "aboutThis.dialog.lookingUp": "Wird nachgeschlagen",
   "@aboutThis.dialog.lookingUp": {
     "sourceHash": "0962a61"
   },
-  "aboutThis.section.origin": "Where it came from",
+  "aboutThis.section.origin": "Woher es kommt",
   "@aboutThis.section.origin": {
     "sourceHash": "8246c8b"
   },
-  "aboutThis.section.nature": "What it is",
+  "aboutThis.section.nature": "Was es ist",
   "@aboutThis.section.nature": {
     "sourceHash": "1f36bec"
   },
-  "aboutThis.section.use": "How it’s used",
+  "aboutThis.section.use": "Wie es genutzt wird",
   "@aboutThis.section.use": {
     "sourceHash": "b4ae9f3"
   },
-  "aboutThis.section.context": "Where it sits",
+  "aboutThis.section.context": "Wozu es gehört",
   "@aboutThis.section.context": {
     "sourceHash": "547244a"
   },
-  "aboutThis.section.contents": "What’s inside",
+  "aboutThis.section.contents": "Was darin steckt",
   "@aboutThis.section.contents": {
     "sourceHash": "b9b9395"
   },
-  "aboutThis.section.removal": "What removing it means",
+  "aboutThis.section.removal": "Was das Entfernen bedeutet",
   "@aboutThis.section.removal": {
     "sourceHash": "34b52a3"
   },
-  "aboutThis.section.nothingOnRecord": "Nothing on record",
+  "aboutThis.section.nothingOnRecord": "Nichts vermerkt",
   "@aboutThis.section.nothingOnRecord": {
     "sourceHash": "7679180"
   },
-  "aboutThis.volumeNote.identityOnly": "On {volume}, Cmdr can see the name, size, and dates.",
+  "aboutThis.volumeNote.identityOnly": "Auf {volume} sieht Cmdr Name, Größe und Datumsangaben.",
   "@aboutThis.volumeNote.identityOnly": {
     "sourceHash": "89b8563"
   },
-  "aboutThis.volumeNote.someFacts": "On {volume}, Cmdr can see only some of this.",
+  "aboutThis.volumeNote.someFacts": "Auf {volume} sieht Cmdr nur einen Teil davon.",
   "@aboutThis.volumeNote.someFacts": {
     "sourceHash": "2e4ad33"
   },
-  "aboutThis.volumeNote.unreachable": "{volume} stopped answering, so Cmdr can’t tell more right now.",
+  "aboutThis.volumeNote.unreachable": "{volume} antwortet nicht mehr, deshalb kann Cmdr gerade nicht mehr sagen.",
   "@aboutThis.volumeNote.unreachable": {
     "sourceHash": "cc9d168"
   },
-  "aboutThis.unavailable.unknownVolume": "Cmdr doesn’t know the drive this item is on anymore.",
+  "aboutThis.unavailable.unknownVolume": "Cmdr kennt das Laufwerk dieses Objekts nicht mehr.",
   "@aboutThis.unavailable.unknownVolume": {
     "sourceHash": "e5f9fa3"
   },
-  "aboutThis.unavailable.pathOutsideVolume": "Cmdr couldn’t place this item on its drive.",
+  "aboutThis.unavailable.pathOutsideVolume": "Cmdr konnte dieses Objekt auf seinem Laufwerk nicht verorten.",
   "@aboutThis.unavailable.pathOutsideVolume": {
     "sourceHash": "0355842"
   },
-  "aboutThis.unavailable.noVolumeAtPath": "The drive this item was on isn’t connected.",
+  "aboutThis.unavailable.noVolumeAtPath": "Das Laufwerk, auf dem dieses Objekt lag, ist nicht verbunden.",
   "@aboutThis.unavailable.noVolumeAtPath": {
     "sourceHash": "d63b8da"
   },
-  "aboutThis.unavailable.notFound": "This item isn’t there anymore. It may have been moved or removed.",
+  "aboutThis.unavailable.notFound": "Dieses Objekt ist nicht mehr da. Vielleicht wurde es bewegt oder entfernt.",
   "@aboutThis.unavailable.notFound": {
     "sourceHash": "60c881a"
   },
-  "aboutThis.unavailable.permissionDenied": "{platform, select, macos {macOS didn’t let Cmdr look at this item.} windows {Windows didn’t let Cmdr look at this item.} other {The system didn’t let Cmdr look at this item.}}",
+  "aboutThis.unavailable.permissionDenied": "{platform, select, macos {macOS hat Cmdr nicht erlaubt, sich dieses Objekt anzusehen.} windows {Windows hat Cmdr nicht erlaubt, sich dieses Objekt anzusehen.} other {Das System hat Cmdr nicht erlaubt, sich dieses Objekt anzusehen.}}",
   "@aboutThis.unavailable.permissionDenied": {
     "sourceHash": "81e217c"
   },
-  "aboutThis.unavailable.unreachable": "The drive didn’t answer in time. Give it another try in a moment.",
+  "aboutThis.unavailable.unreachable": "Das Laufwerk hat nicht rechtzeitig geantwortet. Versuche es gleich noch einmal.",
   "@aboutThis.unavailable.unreachable": {
     "sourceHash": "8038ce3"
   },
-  "aboutThis.unavailable.unreadable": "Cmdr couldn’t read anything about this item.",
+  "aboutThis.unavailable.unreadable": "Cmdr konnte nichts über dieses Objekt lesen.",
   "@aboutThis.unavailable.unreadable": {
     "sourceHash": "7d7ab1f"
   },
-  "aboutThis.label.download": "Downloaded",
+  "aboutThis.label.download": "Heruntergeladen",
   "@aboutThis.label.download": {
     "sourceHash": "f0b0738"
   },
-  "aboutThis.label.cmdrOperation": "Cmdr’s history",
+  "aboutThis.label.cmdrOperation": "Verlauf von Cmdr",
   "@aboutThis.label.cmdrOperation": {
     "sourceHash": "eecea03"
   },
-  "aboutThis.label.size": "Size",
+  "aboutThis.label.size": "Größe",
   "@aboutThis.label.size": {
     "sourceHash": "1af8519"
   },
-  "aboutThis.label.created": "Created",
+  "aboutThis.label.created": "Erstellt",
   "@aboutThis.label.created": {
     "sourceHash": "d70b9e2"
   },
-  "aboutThis.label.modified": "Modified",
+  "aboutThis.label.modified": "Geändert",
   "@aboutThis.label.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "aboutThis.label.otherNames": "Other names",
+  "aboutThis.label.otherNames": "Weitere Namen",
   "@aboutThis.label.otherNames": {
     "sourceHash": "df5ad6a"
   },
-  "aboutThis.label.pointsTo": "Points to",
+  "aboutThis.label.pointsTo": "Verweist auf",
   "@aboutThis.label.pointsTo": {
     "sourceHash": "6dca1c1"
   },
-  "aboutThis.label.realType": "Kind",
+  "aboutThis.label.realType": "Art",
   "@aboutThis.label.realType": {
     "sourceHash": "f5387f9"
   },
   "aboutThis.label.bundle": "Bundle",
   "@aboutThis.label.bundle": {
-    "sourceHash": "f2daa18"
+    "sourceHash": "f2daa18",
+    "sameAsSourceJustification": "Apple's German developer vocabulary keeps Bundle (Bundle-ID, App-Bundle); German has no everyday noun for an app's or package's self-description, and Paket already names the package kind on this card."
   },
-  "aboutThis.label.signature": "Signature",
+  "aboutThis.label.signature": "Signatur",
   "@aboutThis.label.signature": {
     "sourceHash": "f1a73e2"
   },
-  "aboutThis.label.lastOpened": "Last opened",
+  "aboutThis.label.lastOpened": "Zuletzt geöffnet",
   "@aboutThis.label.lastOpened": {
     "sourceHash": "e300685"
   },
-  "aboutThis.label.defaultApp": "Opens with",
+  "aboutThis.label.defaultApp": "Öffnen mit",
   "@aboutThis.label.defaultApp": {
     "sourceHash": "cd1d8a1"
   },
-  "aboutThis.label.importance": "Importance",
+  "aboutThis.label.importance": "Wichtigkeit",
   "@aboutThis.label.importance": {
     "sourceHash": "3fc78b5"
   },
-  "aboutThis.label.owner": "Belongs to",
+  "aboutThis.label.owner": "Gehört zu",
   "@aboutThis.label.owner": {
     "sourceHash": "5c9c76c"
   },
   "aboutThis.label.git": "Git",
   "@aboutThis.label.git": {
-    "sourceHash": "b949c92"
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "Git is the version-control tool's name; the description says keep it."
   },
-  "aboutThis.label.contents": "Contents",
+  "aboutThis.label.contents": "Inhalt",
   "@aboutThis.label.contents": {
     "sourceHash": "437aea6"
   },
-  "aboutThis.label.appData": "Its data in your Library",
+  "aboutThis.label.appData": "Daten in deinem Ordner „Library“",
   "@aboutThis.label.appData": {
     "sourceHash": "bf02531"
   },
-  "aboutThis.label.biggest": "Biggest inside",
+  "aboutThis.label.biggest": "Größte Objekte darin",
   "@aboutThis.label.biggest": {
     "sourceHash": "32c6992"
   },
-  "aboutThis.label.largestFiles": "Largest files",
+  "aboutThis.label.largestFiles": "Größte Dateien",
   "@aboutThis.label.largestFiles": {
     "sourceHash": "0255d17"
   },
-  "aboutThis.label.unchanged": "Untouched",
+  "aboutThis.label.unchanged": "Unberührt",
   "@aboutThis.label.unchanged": {
     "sourceHash": "e9dc3b0"
   },
-  "aboutThis.unknown.noRecord": "Nothing on record",
+  "aboutThis.unknown.noRecord": "Nichts vermerkt",
   "@aboutThis.unknown.noRecord": {
     "sourceHash": "7679180"
   },
-  "aboutThis.unknown.notInStatus": "No changes Cmdr can see",
+  "aboutThis.unknown.notInStatus": "Keine Änderungen, die Cmdr sieht",
   "@aboutThis.unknown.notInStatus": {
     "sourceHash": "c1e5f27"
   },
-  "aboutThis.unknown.noInstalledAppMatches": "No app Cmdr knows of",
+  "aboutThis.unknown.noInstalledAppMatches": "Keine App, die Cmdr kennt",
   "@aboutThis.unknown.noInstalledAppMatches": {
     "sourceHash": "3adc02b"
   },
-  "aboutThis.unknown.volumeCantTell": "Not on this drive",
+  "aboutThis.unknown.volumeCantTell": "Auf diesem Laufwerk nicht verfügbar",
   "@aboutThis.unknown.volumeCantTell": {
     "sourceHash": "0e1edb4"
   },
-  "aboutThis.unknown.libraryNameMatchesNoApp": "No installed app has this folder’s name.",
+  "aboutThis.unknown.libraryNameMatchesNoApp": "Keine installierte App trägt den Namen dieses Ordners.",
   "@aboutThis.unknown.libraryNameMatchesNoApp": {
     "sourceHash": "d4b689c"
   },
-  "aboutThis.unknown.notIndexed": "Not indexed yet",
+  "aboutThis.unknown.notIndexed": "Noch nicht indiziert",
   "@aboutThis.unknown.notIndexed": {
     "sourceHash": "808e81b"
   },
-  "aboutThis.unknown.timedOut": "Cmdr didn’t get an answer in time.",
+  "aboutThis.unknown.timedOut": "Cmdr hat nicht rechtzeitig eine Antwort bekommen.",
   "@aboutThis.unknown.timedOut": {
     "sourceHash": "332423d"
   },
-  "aboutThis.unknown.unreachable": "The drive stopped answering.",
+  "aboutThis.unknown.unreachable": "Das Laufwerk antwortet nicht mehr.",
   "@aboutThis.unknown.unreachable": {
     "sourceHash": "eb590cc"
   },
-  "aboutThis.unknown.permissionDenied": "{platform, select, macos {macOS didn’t let Cmdr read this.} windows {Windows didn’t let Cmdr read this.} other {The system didn’t let Cmdr read this.}}",
+  "aboutThis.unknown.permissionDenied": "{platform, select, macos {macOS hat Cmdr nicht erlaubt, das zu lesen.} windows {Windows hat Cmdr nicht erlaubt, das zu lesen.} other {Das System hat Cmdr nicht erlaubt, das zu lesen.}}",
   "@aboutThis.unknown.permissionDenied": {
     "sourceHash": "0080525"
   },
-  "aboutThis.unknown.protected": "This is a private place, so Cmdr doesn’t look inside.",
+  "aboutThis.unknown.protected": "Das ist ein privater Ort, deshalb schaut Cmdr nicht hinein.",
   "@aboutThis.unknown.protected": {
     "sourceHash": "f7003db"
   },
-  "aboutThis.unknown.nodeChangedSince": "Cmdr has a record for this name, and the file has been replaced since.",
+  "aboutThis.unknown.nodeChangedSince": "Cmdr hat einen Vermerk zu diesem Namen, aber die Datei wurde seitdem ersetzt.",
   "@aboutThis.unknown.nodeChangedSince": {
     "sourceHash": "8988ec9"
   },
-  "aboutThis.unknown.ambiguous": "Several could fit, so Cmdr doesn’t pick one.",
+  "aboutThis.unknown.ambiguous": "Mehrere Antworten könnten passen, deshalb wählt Cmdr keine aus.",
   "@aboutThis.unknown.ambiguous": {
     "sourceHash": "efce259"
   },
-  "aboutThis.unknown.unparseable": "There’s a record, and Cmdr can’t read it.",
+  "aboutThis.unknown.unparseable": "Es gibt einen Vermerk, aber Cmdr kann ihn nicht lesen.",
   "@aboutThis.unknown.unparseable": {
     "sourceHash": "2e59eac"
   },
-  "aboutThis.unknown.refusedInBackground": "Cmdr doesn’t reach this drive on its own.",
+  "aboutThis.unknown.refusedInBackground": "Cmdr verbindet sich nicht von selbst mit diesem Laufwerk.",
   "@aboutThis.unknown.refusedInBackground": {
     "sourceHash": "ee95bef"
   },
-  "aboutThis.notApplicable.noCodeSigningOnThisOs": "This system doesn’t sign programs",
+  "aboutThis.notApplicable.noCodeSigningOnThisOs": "Dieses System signiert keine Programme",
   "@aboutThis.notApplicable.noCodeSigningOnThisOs": {
     "sourceHash": "0315400"
   },
-  "aboutThis.notApplicable.notInARepo": "Not in a git repository",
+  "aboutThis.notApplicable.notInARepo": "Nicht in einem git-Repo",
   "@aboutThis.notApplicable.notInARepo": {
     "sourceHash": "f68b8ba"
   },
-  "aboutThis.notApplicable.notABundle": "Not an app or package",
+  "aboutThis.notApplicable.notABundle": "Keine App und kein Paket",
   "@aboutThis.notApplicable.notABundle": {
     "sourceHash": "46581aa"
   },
-  "aboutThis.notApplicable.volumeHasNone": "This drive keeps no such record",
+  "aboutThis.notApplicable.volumeHasNone": "Dieses Laufwerk führt keine solchen Vermerke",
   "@aboutThis.notApplicable.volumeHasNone": {
     "sourceHash": "2d47613"
   },
-  "aboutThis.download.noRecord": "No download record",
+  "aboutThis.download.noRecord": "Kein Download vermerkt",
   "@aboutThis.download.noRecord": {
     "sourceHash": "f8cba1c"
   },
-  "aboutThis.download.fromSite": "{platform, select, macos {macOS recorded this as downloaded from {host}{hasApp, select, yes { with {app}} other {}}{hasDate, select, yes { on <date></date>} other {}}.} other {Your browser recorded this as downloaded from {host}{hasApp, select, yes { with {app}} other {}}{hasDate, select, yes { on <date></date>} other {}}.}}",
+  "aboutThis.download.fromSite": "{platform, select, macos {macOS hat vermerkt: von {host} heruntergeladen{hasApp, select, yes {, mit {app}} other {}}{hasDate, select, yes {, am <date></date>} other {}}.} other {Dein Browser hat vermerkt: von {host} heruntergeladen{hasApp, select, yes {, mit {app}} other {}}{hasDate, select, yes {, am <date></date>} other {}}.}}",
   "@aboutThis.download.fromSite": {
     "sourceHash": "725c8d9"
   },
-  "aboutThis.download.fromAddress": "{platform, select, macos {macOS recorded this as downloaded from the address {address}.} other {Your browser recorded this as downloaded from the address {address}.}}",
+  "aboutThis.download.fromAddress": "{platform, select, macos {macOS hat vermerkt: von der Adresse {address} heruntergeladen.} other {Dein Browser hat vermerkt: von der Adresse {address} heruntergeladen.}}",
   "@aboutThis.download.fromAddress": {
     "sourceHash": "1ac0da7"
   },
-  "aboutThis.download.linkedFrom": "The record also names a page on {host}.",
+  "aboutThis.download.linkedFrom": "Der Vermerk nennt außerdem eine Seite auf {host}.",
   "@aboutThis.download.linkedFrom": {
     "sourceHash": "87708b2"
   },
-  "aboutThis.download.copyLink": "Copy the download link",
+  "aboutThis.download.copyLink": "Download-Link kopieren",
   "@aboutThis.download.copyLink": {
     "sourceHash": "bd3e47a"
   },
-  "aboutThis.download.copyPageLink": "Copy the page’s link",
+  "aboutThis.download.copyPageLink": "Link der Seite kopieren",
   "@aboutThis.download.copyPageLink": {
     "sourceHash": "404f4fb"
   },
-  "aboutThis.download.mail": "macOS recorded this as a Mail attachment{hasSender, select, yes {, from {sender}} other {}}.",
+  "aboutThis.download.mail": "macOS hat vermerkt: ein Mail-Anhang{hasSender, select, yes {, von {sender}} other {}}.",
   "@aboutThis.download.mail": {
     "sourceHash": "c6536ad"
   },
-  "aboutThis.download.mailSubject": "Subject: {subject}",
+  "aboutThis.download.mailSubject": "Betreff: {subject}",
   "@aboutThis.download.mailSubject": {
     "sourceHash": "71de376"
   },
-  "aboutThis.download.airDrop": "macOS recorded this as received over AirDrop from {sender}.",
+  "aboutThis.download.airDrop": "macOS hat vermerkt: per AirDrop von {sender} empfangen.",
   "@aboutThis.download.airDrop": {
     "sourceHash": "631d574"
   },
-  "aboutThis.download.inlineData": "{platform, select, macos {macOS recorded a source that holds the data itself, which Cmdr doesn’t show.} other {The browser recorded a source that holds the data itself, which Cmdr doesn’t show.}}",
+  "aboutThis.download.inlineData": "{platform, select, macos {macOS hat eine Quelle vermerkt, die die Daten selbst enthält. Cmdr zeigt sie nicht an.} other {Der Browser hat eine Quelle vermerkt, die die Daten selbst enthält. Cmdr zeigt sie nicht an.}}",
   "@aboutThis.download.inlineData": {
     "sourceHash": "ba0c417"
   },
-  "aboutThis.download.localFile": "{platform, select, macos {macOS recorded this as coming from a file on this computer.} other {The browser recorded this as coming from a file on this computer.}}",
+  "aboutThis.download.localFile": "{platform, select, macos {macOS hat vermerkt: aus einer Datei auf diesem Computer.} other {Der Browser hat vermerkt: aus einer Datei auf diesem Computer.}}",
   "@aboutThis.download.localFile": {
     "sourceHash": "857c940"
   },
-  "aboutThis.download.unrecognized": "{platform, select, macos {macOS recorded a source Cmdr can’t read as an address: {text}} other {The browser recorded a source Cmdr can’t read as an address: {text}}}",
+  "aboutThis.download.unrecognized": "{platform, select, macos {macOS hat eine Quelle vermerkt, die Cmdr nicht als Adresse lesen kann: {text}} other {Der Browser hat eine Quelle vermerkt, die Cmdr nicht als Adresse lesen kann: {text}}}",
   "@aboutThis.download.unrecognized": {
     "sourceHash": "5e9fa42"
   },
-  "aboutThis.download.noSource": "macOS recorded this as downloaded{hasApp, select, yes { with {app}} other {}}{hasDate, select, yes { on <date></date>} other {}}, without saying from where.",
+  "aboutThis.download.noSource": "macOS hat vermerkt: heruntergeladen{hasApp, select, yes {, mit {app}} other {}}{hasDate, select, yes {, am <date></date>} other {}}, aber nicht, von wo.",
   "@aboutThis.download.noSource": {
     "sourceHash": "7edb92b"
   },
-  "aboutThis.cmdrOperation.noRecord": "No copy or move by Cmdr on record",
+  "aboutThis.cmdrOperation.noRecord": "Kein Kopieren oder Bewegen durch Cmdr vermerkt",
   "@aboutThis.cmdrOperation.noRecord": {
     "sourceHash": "53a886d"
   },
-  "aboutThis.cmdrOperation.done": "{who, select, you {You} askCmdr {Ask Cmdr} other {An AI client}} {kind, select, copy {copied this here} move {moved this here} rename {gave this its name} create {created this} extract {extracted this here} compress {made this archive} other {moved this here when deleting it}} with Cmdr on <date></date>.",
+  "aboutThis.cmdrOperation.done": "{who, select, you {Du hast} askCmdr {Ask Cmdr hat} other {Ein KI-Client hat}} das am <date></date> mit Cmdr {kind, select, copy {hierher kopiert} move {hierher bewegt} rename {auf diesen Namen umbenannt} create {erstellt} extract {hierher entpackt} compress {als Archiv erstellt} other {beim Löschen hierher bewegt}}.",
   "@aboutThis.cmdrOperation.done": {
     "sourceHash": "10a4037"
   },
-  "aboutThis.cmdrOperation.datesChanged": "It’s the same item, though its dates have changed since.",
+  "aboutThis.cmdrOperation.datesChanged": "Es ist dasselbe Objekt, auch wenn sich seine Datumsangaben seitdem geändert haben.",
   "@aboutThis.cmdrOperation.datesChanged": {
     "sourceHash": "df8f175"
   },
-  "aboutThis.cmdrOperation.from": "From <source></source>{hasVolume, select, yes { on {volume}} other {}}",
+  "aboutThis.cmdrOperation.from": "Von <source></source>{hasVolume, select, yes { auf {volume}} other {}}",
   "@aboutThis.cmdrOperation.from": {
     "sourceHash": "2f4a492"
   },
-  "aboutThis.cmdrOperation.copySource": "Copy where it came from",
+  "aboutThis.cmdrOperation.copySource": "Herkunftspfad kopieren",
   "@aboutThis.cmdrOperation.copySource": {
     "sourceHash": "d18275b"
   },
-  "aboutThis.identity.onDisk": "<size></size> on disk",
+  "aboutThis.identity.onDisk": "<size></size> auf dem Datenträger",
   "@aboutThis.identity.onDisk": {
     "sourceHash": "770fb3d"
   },
-  "aboutThis.identity.otherNames": "{count, plural, one {One other name points to the same contents} other {{countText} other names point to the same contents}}",
+  "aboutThis.identity.otherNames": "{count, plural, one {Ein weiterer Name verweist auf denselben Inhalt} other {{countText} weitere Namen verweisen auf denselben Inhalt}}",
   "@aboutThis.identity.otherNames": {
     "sourceHash": "c2277bc"
   },
-  "aboutThis.identity.copyLinkTarget": "Copy where it points",
+  "aboutThis.identity.copyLinkTarget": "Linkziel kopieren",
   "@aboutThis.identity.copyLinkTarget": {
     "sourceHash": "58c4667"
   },
-  "aboutThis.realType.matches": "{kind}, checked against its contents",
+  "aboutThis.realType.matches": "{kind}, am Inhalt geprüft",
   "@aboutThis.realType.matches": {
     "sourceHash": "c6166d0"
   },
-  "aboutThis.realType.mismatch": "The contents say {kind}, while the name ends in .{extension}.",
+  "aboutThis.realType.mismatch": "Laut Inhalt: {kind}, aber der Name endet auf .{extension}.",
   "@aboutThis.realType.mismatch": {
     "sourceHash": "f50dfc4"
   },
-  "aboutThis.realType.unread": "{kind}, as its name says",
+  "aboutThis.realType.unread": "{kind}, wie der Name sagt",
   "@aboutThis.realType.unread": {
     "sourceHash": "e64a971"
   },
-  "aboutThis.realType.byName": "{kind}, going by its name",
+  "aboutThis.realType.byName": "{kind}, dem Namen nach",
   "@aboutThis.realType.byName": {
     "sourceHash": "27a6e8a"
   },
-  "aboutThis.realType.unrecognized": "Cmdr doesn’t know this kind of contents",
+  "aboutThis.realType.unrecognized": "Cmdr kennt diese Art von Inhalt nicht",
   "@aboutThis.realType.unrecognized": {
     "sourceHash": "898feeb"
   },
-  "aboutThis.kind.diskImage": "Disk image",
+  "aboutThis.kind.diskImage": "Image",
   "@aboutThis.kind.diskImage": {
     "sourceHash": "0f12c3a"
   },
-  "aboutThis.kind.installerPackage": "Installer package",
+  "aboutThis.kind.installerPackage": "Installationspaket",
   "@aboutThis.kind.installerPackage": {
     "sourceHash": "099eafc"
   },
-  "aboutThis.kind.machO": "Mac program",
+  "aboutThis.kind.machO": "Mac-Programm",
   "@aboutThis.kind.machO": {
     "sourceHash": "3af0d6f"
   },
-  "aboutThis.kind.elf": "Linux program",
+  "aboutThis.kind.elf": "Linux-Programm",
   "@aboutThis.kind.elf": {
     "sourceHash": "a382072"
   },
-  "aboutThis.kind.windowsProgram": "Windows program",
+  "aboutThis.kind.windowsProgram": "Windows-Programm",
   "@aboutThis.kind.windowsProgram": {
     "sourceHash": "4f90175"
   },
-  "aboutThis.kind.otherCode": "Compiled code",
+  "aboutThis.kind.otherCode": "Kompilierter Code",
   "@aboutThis.kind.otherCode": {
     "sourceHash": "dafe5d2"
   },
-  "aboutThis.kind.script": "Script",
+  "aboutThis.kind.script": "Skript",
   "@aboutThis.kind.script": {
     "sourceHash": "102acc1"
   },
-  "aboutThis.kind.archive": "Archive",
+  "aboutThis.kind.archive": "Archiv",
   "@aboutThis.kind.archive": {
     "sourceHash": "66f4804"
   },
   "aboutThis.kind.pdf": "PDF",
   "@aboutThis.kind.pdf": {
-    "sourceHash": "1d393b0"
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "PDF is the format's name in German too (catalog: PDF-Seiten, einige Seiten eines PDFs)."
   },
-  "aboutThis.kind.image": "Image",
+  "aboutThis.kind.image": "Bild",
   "@aboutThis.kind.image": {
     "sourceHash": "1aa4cb0"
   },
   "aboutThis.kind.video": "Video",
   "@aboutThis.kind.video": {
-    "sourceHash": "d534be8"
+    "sourceHash": "d534be8",
+    "sameAsSourceJustification": "German says Video (term ruling video → Video; macOS de Fotos und Videos)."
   },
-  "aboutThis.kind.audio": "Sound file",
+  "aboutThis.kind.audio": "Audiodatei",
   "@aboutThis.kind.audio": {
     "sourceHash": "fa4a396"
   },
-  "aboutThis.kind.font": "Font",
+  "aboutThis.kind.font": "Schrift",
   "@aboutThis.kind.font": {
     "sourceHash": "64d0b3a"
   },
-  "aboutThis.kind.document": "Document",
+  "aboutThis.kind.document": "Dokument",
   "@aboutThis.kind.document": {
     "sourceHash": "d6bd8c0"
   },
-  "aboutThis.kind.database": "Database",
+  "aboutThis.kind.database": "Datenbank",
   "@aboutThis.kind.database": {
     "sourceHash": "fa7fe67"
   },
   "aboutThis.kind.text": "Text",
   "@aboutThis.kind.text": {
-    "sourceHash": "71988c4"
+    "sourceHash": "71988c4",
+    "sameAsSourceJustification": "German says Text for plain text (catalog: etwas Text, Text darin)."
   },
-  "aboutThis.kind.other": "A known format",
+  "aboutThis.kind.other": "Ein bekanntes Format",
   "@aboutThis.kind.other": {
     "sourceHash": "4caa7ba"
   },
-  "aboutThis.kind.unrecognized": "Contents Cmdr doesn’t know",
+  "aboutThis.kind.unrecognized": "Inhalt, den Cmdr nicht kennt",
   "@aboutThis.kind.unrecognized": {
     "sourceHash": "5b7ba60"
   },
-  "aboutThis.what.fileWithExtension": ".{extension} file",
+  "aboutThis.what.fileWithExtension": ".{extension}-Datei",
   "@aboutThis.what.fileWithExtension": {
     "sourceHash": "160a778"
   },
-  "aboutThis.what.file": "File",
+  "aboutThis.what.file": "Datei",
   "@aboutThis.what.file": {
     "sourceHash": "50009ce"
   },
-  "aboutThis.what.folder": "Folder",
+  "aboutThis.what.folder": "Ordner",
   "@aboutThis.what.folder": {
     "sourceHash": "74ccd43"
   },
-  "aboutThis.what.app": "{hasVersion, select, yes {App, version {version}} other {App}}",
+  "aboutThis.what.app": "{hasVersion, select, yes {App, Version {version}} other {App}}",
   "@aboutThis.what.app": {
     "sourceHash": "1772290"
   },
-  "aboutThis.what.package": "Package",
+  "aboutThis.what.package": "Paket",
   "@aboutThis.what.package": {
     "sourceHash": "59de121"
   },
   "aboutThis.what.symlink": "Link",
   "@aboutThis.what.symlink": {
-    "sourceHash": "a6a32db"
+    "sourceHash": "a6a32db",
+    "sameAsSourceJustification": "German says Link (term ruling link → Link)."
   },
-  "aboutThis.what.archiveEntry": "Item in an archive",
+  "aboutThis.what.archiveEntry": "Objekt in einem Archiv",
   "@aboutThis.what.archiveEntry": {
     "sourceHash": "6c819c0"
   },
-  "aboutThis.headline.plain": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}",
+  "aboutThis.headline.plain": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}",
   "@aboutThis.headline.plain": {
     "sourceHash": "c316928"
   },
-  "aboutThis.headline.downloadedFrom": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as downloaded{hasApp, select, yes { with {app}} other {}} from {host}{hasDate, select, yes { on <date></date>} other {}}",
+  "aboutThis.headline.downloadedFrom": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, laut Vermerk{hasDate, select, yes { am <date></date>} other {}} von {host}{hasApp, select, yes { mit {app}} other {}} heruntergeladen",
   "@aboutThis.headline.downloadedFrom": {
     "sourceHash": "a46a4ac"
   },
-  "aboutThis.headline.putHereByCmdr": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {kind, select, copy {copied here} move {moved here} rename {renamed} create {created} extract {extracted here} compress {compressed} other {moved here when deleted}} with Cmdr{hasVolume, select, yes { from {volume}} other {}} on <date></date>",
+  "aboutThis.headline.putHereByCmdr": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, am <date></date> mit Cmdr{hasVolume, select, yes { von {volume}} other {}} {kind, select, copy {hierher kopiert} move {hierher bewegt} rename {umbenannt} create {erstellt} extract {hierher entpackt} compress {komprimiert} other {beim Löschen hierher bewegt}}",
   "@aboutThis.headline.putHereByCmdr": {
     "sourceHash": "e73b25d"
   },
-  "aboutThis.headline.receivedByMail": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as a Mail attachment{hasDate, select, yes { saved on <date></date>} other {}}",
+  "aboutThis.headline.receivedByMail": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, laut Vermerk ein Mail-Anhang{hasDate, select, yes {, gespeichert am <date></date>} other {}}",
   "@aboutThis.headline.receivedByMail": {
     "sourceHash": "224c768"
   },
-  "aboutThis.headline.receivedByAirDrop": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as received over AirDrop{hasDate, select, yes { on <date></date>} other {}}",
+  "aboutThis.headline.receivedByAirDrop": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, laut Vermerk{hasDate, select, yes { am <date></date>} other {}} per AirDrop empfangen",
   "@aboutThis.headline.receivedByAirDrop": {
     "sourceHash": "f516160"
   },
-  "aboutThis.headline.dataOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {certainty, select, probable {probably {app}’s data} other {{app}’s data}}",
+  "aboutThis.headline.dataOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, {certainty, select, probable {wahrscheinlich Daten von {app}} other {Daten von {app}}}",
   "@aboutThis.headline.dataOfApp": {
     "sourceHash": "b4fbc49"
   },
-  "aboutThis.headline.cacheOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {certainty, select, probable {probably {app}’s cache} other {{app}’s cache}}",
+  "aboutThis.headline.cacheOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, {certainty, select, probable {wahrscheinlich Cache von {app}} other {Cache von {app}}}",
   "@aboutThis.headline.cacheOfApp": {
     "sourceHash": "1d671ae"
   },
-  "aboutThis.headline.dataOfMissingApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, named after {bundleId}, an app that isn’t installed",
+  "aboutThis.headline.dataOfMissingApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, benannt nach {bundleId}, einer App, die nicht installiert ist",
   "@aboutThis.headline.dataOfMissingApp": {
     "sourceHash": "05f42d2"
   },
-  "aboutThis.headline.downloadedBy": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, recorded as downloaded with {app}{hasDate, select, yes { on <date></date>} other {}}",
+  "aboutThis.headline.downloadedBy": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, laut Vermerk{hasDate, select, yes { am <date></date>} other {}} mit {app} heruntergeladen",
   "@aboutThis.headline.downloadedBy": {
     "sourceHash": "9b4bf46"
   },
-  "aboutThis.headline.lastOpened": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, last opened <date></date>",
+  "aboutThis.headline.lastOpened": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, zuletzt geöffnet am <date></date>",
   "@aboutThis.headline.lastOpened": {
     "sourceHash": "7a37566"
   },
-  "aboutThis.bundle.named": "{hasVersion, select, yes {{name}, version {version}} other {{name}}}",
+  "aboutThis.bundle.named": "{hasVersion, select, yes {{name}, Version {version}} other {{name}}}",
   "@aboutThis.bundle.named": {
     "sourceHash": "32cbc50"
   },
-  "aboutThis.bundle.unnamed": "{hasVersion, select, yes {No name stated, version {version}} other {No name or version stated}}",
+  "aboutThis.bundle.unnamed": "{hasVersion, select, yes {Kein Name angegeben, Version {version}} other {Kein Name und keine Version angegeben}}",
   "@aboutThis.bundle.unnamed": {
     "sourceHash": "abe0e87"
   },
-  "aboutThis.signature.unsigned": "Not signed",
+  "aboutThis.signature.unsigned": "Nicht signiert",
   "@aboutThis.signature.unsigned": {
     "sourceHash": "c0f06f8"
   },
-  "aboutThis.signature.adHoc": "Signed without a developer’s identity, like a local build",
+  "aboutThis.signature.adHoc": "Ohne Entwickleridentität signiert, wie ein lokaler Build",
   "@aboutThis.signature.adHoc": {
     "sourceHash": "d6406a2"
   },
-  "aboutThis.signature.developerId": "{matches, select, yes {Signed by {org} (team {team})} other {Carries a signature from {org} (team {team})}}",
+  "aboutThis.signature.developerId": "{matches, select, yes {Von {org} signiert (Team {team})} other {Trägt eine Signatur von {org} (Team {team})}}",
   "@aboutThis.signature.developerId": {
     "sourceHash": "d6ff0dc"
   },
-  "aboutThis.signature.appStore": "{matches, select, yes {Signed by the Mac App Store} other {Carries the Mac App Store’s signature}}",
+  "aboutThis.signature.appStore": "{matches, select, yes {Vom Mac App Store signiert} other {Trägt die Signatur des Mac App Store}}",
   "@aboutThis.signature.appStore": {
     "sourceHash": "3348913"
   },
-  "aboutThis.signature.apple": "{matches, select, yes {Signed by Apple} other {Carries Apple’s signature}}",
+  "aboutThis.signature.apple": "{matches, select, yes {Von Apple signiert} other {Trägt die Signatur von Apple}}",
   "@aboutThis.signature.apple": {
     "sourceHash": "bb76e30"
   },
-  "aboutThis.signature.unrecognized": "Carries a signature from an authority Cmdr doesn’t know",
+  "aboutThis.signature.unrecognized": "Trägt eine Signatur von einer Stelle, die Cmdr nicht kennt",
   "@aboutThis.signature.unrecognized": {
     "sourceHash": "6fdda36"
   },
-  "aboutThis.signature.executableDiffers": "Its program doesn’t match the signature it carries.",
+  "aboutThis.signature.executableDiffers": "Das Programm passt nicht zu der Signatur, die es trägt.",
   "@aboutThis.signature.executableDiffers": {
     "sourceHash": "cecae80"
   },
-  "aboutThis.signature.checkTimedOut": "Cmdr didn’t finish comparing its program with the signature.",
+  "aboutThis.signature.checkTimedOut": "Cmdr hat den Vergleich des Programms mit der Signatur nicht abgeschlossen.",
   "@aboutThis.signature.checkTimedOut": {
     "sourceHash": "3e01b68"
   },
-  "aboutThis.signature.checkUnavailable": "Cmdr couldn’t compare its program with the signature.",
+  "aboutThis.signature.checkUnavailable": "Cmdr konnte das Programm nicht mit der Signatur vergleichen.",
   "@aboutThis.signature.checkUnavailable": {
     "sourceHash": "593adcf"
   },
-  "aboutThis.signature.ticketPresent": "A notarization ticket is stapled to it.",
+  "aboutThis.signature.ticketPresent": "Ein Notarisierungsnachweis ist angehängt.",
   "@aboutThis.signature.ticketPresent": {
     "sourceHash": "45aef96"
   },
-  "aboutThis.signature.ticketAbsent": "No notarization ticket is stapled to it. macOS can also check with Apple online.",
+  "aboutThis.signature.ticketAbsent": "Es ist kein Notarisierungsnachweis angehängt. macOS kann auch online bei Apple nachprüfen.",
   "@aboutThis.signature.ticketAbsent": {
     "sourceHash": "fb6efd9"
   },
-  "aboutThis.lastOpened.noRecord": "No last-opened record",
+  "aboutThis.lastOpened.noRecord": "Kein Vermerk zum letzten Öffnen",
   "@aboutThis.lastOpened.noRecord": {
     "sourceHash": "6e28632"
   },
-  "aboutThis.lastOpened.known": "<date></date>{hasCount, select, yes {, {count, plural, one {opened once} other {opened {countText} times}}} other {}}",
+  "aboutThis.lastOpened.known": "<date></date>{hasCount, select, yes {, {count, plural, one {einmal geöffnet} other {{countText}-mal geöffnet}}} other {}}",
   "@aboutThis.lastOpened.known": {
     "sourceHash": "d503f13"
   },
-  "aboutThis.importance.notScored": "Cmdr hasn’t scored how much this folder matters yet",
+  "aboutThis.importance.notScored": "Cmdr hat noch nicht bewertet, wie wichtig dieser Ordner ist",
   "@aboutThis.importance.notScored": {
     "sourceHash": "b095a21"
   },
-  "aboutThis.importance.band": "{band, select, high {High} medium {Medium} low {Low} other {Not ranked}}",
+  "aboutThis.importance.band": "{band, select, high {Hoch} medium {Mittel} low {Niedrig} other {Nicht eingestuft}}",
   "@aboutThis.importance.band": {
     "sourceHash": "e94498a"
   },
-  "aboutThis.importance.because": "Because of {reasons}",
+  "aboutThis.importance.because": "Ausschlaggebend: {reasons}",
   "@aboutThis.importance.because": {
     "sourceHash": "2d0b95d"
   },
-  "aboutThis.importance.reason.projectMarker": "a project file in it",
+  "aboutThis.importance.reason.projectMarker": "eine Projektdatei darin",
   "@aboutThis.importance.reason.projectMarker": {
     "sourceHash": "1c3970a"
   },
-  "aboutThis.importance.reason.mtimeRecency": "recent changes",
+  "aboutThis.importance.reason.mtimeRecency": "kürzliche Änderungen",
   "@aboutThis.importance.reason.mtimeRecency": {
     "sourceHash": "ceb5e1c"
   },
-  "aboutThis.importance.reason.visitActivity": "your visits in Cmdr",
+  "aboutThis.importance.reason.visitActivity": "deine Besuche in Cmdr",
   "@aboutThis.importance.reason.visitActivity": {
     "sourceHash": "628eb6f"
   },
-  "aboutThis.importance.reason.lastUsed": "recent use",
+  "aboutThis.importance.reason.lastUsed": "kürzliche Nutzung",
   "@aboutThis.importance.reason.lastUsed": {
     "sourceHash": "f43c570"
   },
-  "aboutThis.importance.reason.extensionDiversity": "many kinds of files",
+  "aboutThis.importance.reason.extensionDiversity": "viele Dateiarten",
   "@aboutThis.importance.reason.extensionDiversity": {
     "sourceHash": "2302631"
   },
-  "aboutThis.importance.reason.projectRoot": "being a project’s top folder",
+  "aboutThis.importance.reason.projectRoot": "seine Rolle als oberster Ordner eines Projekts",
   "@aboutThis.importance.reason.projectRoot": {
     "sourceHash": "a6e90d7"
   },
-  "aboutThis.importance.reason.userContent": "holding your own files",
+  "aboutThis.importance.reason.userContent": "deine eigenen Dateien darin",
   "@aboutThis.importance.reason.userContent": {
     "sourceHash": "40bbc2a"
   },
-  "aboutThis.importance.floor.nameDenylisted": "Cmdr doesn’t rank folders whose name marks generated files",
+  "aboutThis.importance.floor.nameDenylisted": "Cmdr stuft keine Ordner ein, deren Name auf erzeugte Dateien hinweist",
   "@aboutThis.importance.floor.nameDenylisted": {
     "sourceHash": "fa12ecd"
   },
-  "aboutThis.importance.floor.hiddenOrSystem": "Cmdr doesn’t rank hidden, system, or temporary folders",
+  "aboutThis.importance.floor.hiddenOrSystem": "Cmdr stuft keine verborgenen, System- oder temporären Ordner ein",
   "@aboutThis.importance.floor.hiddenOrSystem": {
     "sourceHash": "1665ffd"
   },
-  "aboutThis.importance.floor.underFlooredAncestor": "Cmdr doesn’t rank folders inside one it leaves out",
+  "aboutThis.importance.floor.underFlooredAncestor": "Cmdr stuft keine Ordner in einem Ordner ein, den es auslässt",
   "@aboutThis.importance.floor.underFlooredAncestor": {
     "sourceHash": "61ab4a2"
   },
-  "aboutThis.importance.floor.other": "Cmdr leaves folders like this out of its ranking",
+  "aboutThis.importance.floor.other": "Cmdr lässt Ordner wie diesen bei der Einstufung aus",
   "@aboutThis.importance.floor.other": {
     "sourceHash": "872bc2a"
   },
-  "aboutThis.importance.reason.other": "other signals",
+  "aboutThis.importance.reason.other": "andere Signale",
   "@aboutThis.importance.reason.other": {
     "sourceHash": "7edd91c"
   },
-  "aboutThis.importance.visits": "{count, plural, one {Cmdr visited it once} other {Cmdr visited it {countText} times}}",
+  "aboutThis.importance.visits": "{count, plural, one {Cmdr hat den Ordner einmal besucht} other {Cmdr hat den Ordner {countText}-mal besucht}}",
   "@aboutThis.importance.visits": {
     "sourceHash": "8753151"
   },
-  "aboutThis.importance.stale": "Scored before the latest changes",
+  "aboutThis.importance.stale": "Vor den letzten Änderungen bewertet",
   "@aboutThis.importance.stale": {
     "sourceHash": "996a6b2"
   },
   "aboutThis.owner.byBundleId": "{app}",
   "@aboutThis.owner.byBundleId": {
-    "sourceHash": "ab9f435"
+    "sourceHash": "ab9f435",
+    "sameAsSourceJustification": "Placeholder only: the app's name needs no words around it in German either."
   },
-  "aboutThis.owner.byBundleIdHow": "The folder carries the app’s identifier, {bundleId}.",
+  "aboutThis.owner.byBundleIdHow": "Der Ordner trägt die Kennung der App: {bundleId}.",
   "@aboutThis.owner.byBundleIdHow": {
     "sourceHash": "30f6aa5"
   },
-  "aboutThis.owner.notInstalled": "Left over from an app that isn’t installed ({bundleId})",
+  "aboutThis.owner.notInstalled": "Übrig von einer App, die nicht installiert ist ({bundleId})",
   "@aboutThis.owner.notInstalled": {
     "sourceHash": "0746a4a"
   },
-  "aboutThis.owner.byName": "Probably {app}",
+  "aboutThis.owner.byName": "Wahrscheinlich {app}",
   "@aboutThis.owner.byName": {
     "sourceHash": "e8a89fd"
   },
-  "aboutThis.owner.byNameHow": "Only this app has the folder’s name.",
+  "aboutThis.owner.byNameHow": "Nur diese App hat den Namen des Ordners.",
   "@aboutThis.owner.byNameHow": {
     "sourceHash": "be4f13c"
   },
-  "aboutThis.owner.partOfOs": "Part of macOS ({pkgId})",
+  "aboutThis.owner.partOfOs": "Teil von macOS ({pkgId})",
   "@aboutThis.owner.partOfOs": {
     "sourceHash": "627aa11"
   },
-  "aboutThis.owner.installedBy": "Installed by the package {pkgId}",
+  "aboutThis.owner.installedBy": "Installiert durch das Paket {pkgId}",
   "@aboutThis.owner.installedBy": {
     "sourceHash": "c3271fd"
   },
-  "aboutThis.owner.homebrew": "Homebrew’s {kind, select, cask {cask} other {formula}} {name}",
+  "aboutThis.owner.homebrew": "{kind, select, cask {Homebrew-Cask} other {Homebrew-Formula}} {name}",
   "@aboutThis.owner.homebrew": {
     "sourceHash": "4a9fdea"
   },
-  "aboutThis.owner.standardFolder": "{folder}, set up by the system",
+  "aboutThis.owner.standardFolder": "{folder}, vom System angelegt",
   "@aboutThis.owner.standardFolder": {
     "sourceHash": "378b403"
   },
-  "aboutThis.standardFolder.home": "Your home folder",
+  "aboutThis.standardFolder.home": "Dein persönlicher Ordner",
   "@aboutThis.standardFolder.home": {
     "sourceHash": "a0111e9"
   },
-  "aboutThis.standardFolder.desktop": "Your Desktop folder",
+  "aboutThis.standardFolder.desktop": "Dein Ordner „Schreibtisch“",
   "@aboutThis.standardFolder.desktop": {
     "sourceHash": "9b1dabb"
   },
-  "aboutThis.standardFolder.documents": "Your Documents folder",
+  "aboutThis.standardFolder.documents": "Dein Ordner „Dokumente“",
   "@aboutThis.standardFolder.documents": {
     "sourceHash": "9ef28aa"
   },
-  "aboutThis.standardFolder.downloads": "Your Downloads folder",
+  "aboutThis.standardFolder.downloads": "Dein Ordner „Downloads“",
   "@aboutThis.standardFolder.downloads": {
     "sourceHash": "4bd179b"
   },
-  "aboutThis.standardFolder.movies": "Your Movies folder",
+  "aboutThis.standardFolder.movies": "Dein Ordner „Filme“",
   "@aboutThis.standardFolder.movies": {
     "sourceHash": "d28ecb9"
   },
-  "aboutThis.standardFolder.music": "Your Music folder",
+  "aboutThis.standardFolder.music": "Dein Ordner „Musik“",
   "@aboutThis.standardFolder.music": {
     "sourceHash": "c03e44f"
   },
-  "aboutThis.standardFolder.pictures": "Your Pictures folder",
+  "aboutThis.standardFolder.pictures": "Dein Ordner „Bilder“",
   "@aboutThis.standardFolder.pictures": {
     "sourceHash": "c6b7545"
   },
-  "aboutThis.standardFolder.public": "Your Public folder",
+  "aboutThis.standardFolder.public": "Dein Ordner „Öffentlich“",
   "@aboutThis.standardFolder.public": {
     "sourceHash": "c4d7b03"
   },
-  "aboutThis.standardFolder.homeLibrary": "Your Library folder",
+  "aboutThis.standardFolder.homeLibrary": "Dein Ordner „Library“",
   "@aboutThis.standardFolder.homeLibrary": {
     "sourceHash": "bbce73c"
   },
-  "aboutThis.standardFolder.homeApplications": "Your own Applications folder",
+  "aboutThis.standardFolder.homeApplications": "Dein eigener Ordner „Programme“",
   "@aboutThis.standardFolder.homeApplications": {
     "sourceHash": "19a99a9"
   },
-  "aboutThis.standardFolder.applications": "The computer’s Applications folder",
+  "aboutThis.standardFolder.applications": "Der Ordner „Programme“ des Computers",
   "@aboutThis.standardFolder.applications": {
     "sourceHash": "4735f61"
   },
-  "aboutThis.standardFolder.library": "The computer’s Library folder",
+  "aboutThis.standardFolder.library": "Der Ordner „Library“ des Computers",
   "@aboutThis.standardFolder.library": {
     "sourceHash": "4b8adf2"
   },
-  "aboutThis.standardFolder.system": "The System folder of macOS",
+  "aboutThis.standardFolder.system": "Der Ordner „System“ von macOS",
   "@aboutThis.standardFolder.system": {
     "sourceHash": "b4b5daa"
   },
-  "aboutThis.standardFolder.users": "The Users folder",
+  "aboutThis.standardFolder.users": "Der Ordner „Benutzer:innen“",
   "@aboutThis.standardFolder.users": {
     "sourceHash": "955c56c"
   },
-  "aboutThis.standardFolder.startupDisk": "The top of the startup disk",
+  "aboutThis.standardFolder.startupDisk": "Der oberste Ordner des Startvolumes",
   "@aboutThis.standardFolder.startupDisk": {
     "sourceHash": "6e69278"
   },
-  "aboutThis.owner.insideApp": "Part of {app}",
+  "aboutThis.owner.insideApp": "Teil von {app}",
   "@aboutThis.owner.insideApp": {
     "sourceHash": "5a318e6"
   },
-  "aboutThis.owner.noReceipt": "No installer record",
+  "aboutThis.owner.noReceipt": "Kein Installationsvermerk",
   "@aboutThis.owner.noReceipt": {
     "sourceHash": "b2f04b8"
   },
-  "aboutThis.owner.ambiguous": "Several installed apps could own this, so Cmdr doesn’t pick one.",
+  "aboutThis.owner.ambiguous": "Mehrere installierte Apps kommen infrage, deshalb wählt Cmdr keine aus.",
   "@aboutThis.owner.ambiguous": {
     "sourceHash": "e870bd3"
   },
-  "aboutThis.git.repo": "In <repo></repo>{hasBranch, select, yes {, on {branch}} other {, with no branch checked out}}",
+  "aboutThis.git.repo": "In <repo></repo>{hasBranch, select, yes {, Branch „{branch}“} other {, kein Branch ausgecheckt}}",
   "@aboutThis.git.repo": {
     "sourceHash": "a54b5fc"
   },
-  "aboutThis.git.copyRepo": "Copy the repository’s path",
+  "aboutThis.git.copyRepo": "Pfad des Repos kopieren",
   "@aboutThis.git.copyRepo": {
     "sourceHash": "79d4b93"
   },
-  "aboutThis.git.clean": "Committed, with no changes",
+  "aboutThis.git.clean": "Committet, ohne Änderungen",
   "@aboutThis.git.clean": {
     "sourceHash": "0dc5b69"
   },
-  "aboutThis.git.modified": "Has changes no commit has",
+  "aboutThis.git.modified": "Hat Änderungen, die in keinem Commit stehen",
   "@aboutThis.git.modified": {
     "sourceHash": "408d71e"
   },
-  "aboutThis.git.untracked": "Git doesn’t track it",
+  "aboutThis.git.untracked": "Git verfolgt es nicht",
   "@aboutThis.git.untracked": {
     "sourceHash": "db130db"
   },
-  "aboutThis.git.ignored": "Git ignores it",
+  "aboutThis.git.ignored": "Git ignoriert es",
   "@aboutThis.git.ignored": {
     "sourceHash": "c5b9eb8"
   },
-  "aboutThis.folderSize.known": "{coverage, select, lowerBound {At least <size></size>} other {<size></size>}} in {files, plural, one {one file} other {{filesText} files}} and {folders, plural, one {one folder} other {{foldersText} folders}}",
+  "aboutThis.folderSize.known": "{coverage, select, lowerBound {Mindestens <size></size>} other {<size></size>}} in {files, plural, one {einer Datei} other {{filesText} Dateien}} und {folders, plural, one {einem Ordner} other {{foldersText} Ordnern}}",
   "@aboutThis.folderSize.known": {
     "sourceHash": "be20154"
   },
-  "aboutThis.folderSize.stale": "From the drive index’s last pass, so it may have changed since",
+  "aboutThis.folderSize.stale": "Vom letzten Durchlauf des Laufwerksindex, kann sich also seitdem geändert haben",
   "@aboutThis.folderSize.stale": {
     "sourceHash": "338420a"
   },
-  "aboutThis.folderSize.updating": "The drive index is updating this folder right now",
+  "aboutThis.folderSize.updating": "Der Laufwerksindex aktualisiert diesen Ordner gerade",
   "@aboutThis.folderSize.updating": {
     "sourceHash": "ab2cbb7"
   },
-  "aboutThis.folderSize.symlinks": "Links to other places aren’t counted",
+  "aboutThis.folderSize.symlinks": "Links zu anderen Orten werden nicht mitgezählt",
   "@aboutThis.folderSize.symlinks": {
     "sourceHash": "b6f82e9"
   },
-  "aboutThis.contents.summary": "{count, plural, =0 {Empty} one {One item} other {{countText} items: {kinds}}}",
+  "aboutThis.contents.summary": "{count, plural, =0 {Leer} one {Ein Objekt} other {{countText} Objekte: {kinds}}}",
   "@aboutThis.contents.summary": {
     "sourceHash": "12e1387"
   },
-  "aboutThis.childKind.folder": "{count, plural, one {{countText} folder} other {{countText} folders}}",
+  "aboutThis.childKind.folder": "{count, plural, one {{countText} Ordner} other {{countText} Ordner}}",
   "@aboutThis.childKind.folder": {
     "sourceHash": "3c46f04"
   },
-  "aboutThis.childKind.image": "{count, plural, one {{countText} image} other {{countText} images}}",
+  "aboutThis.childKind.image": "{count, plural, one {{countText} Bild} other {{countText} Bilder}}",
   "@aboutThis.childKind.image": {
     "sourceHash": "ddc0659"
   },
-  "aboutThis.childKind.video": "{count, plural, one {{countText} video} other {{countText} videos}}",
+  "aboutThis.childKind.video": "{count, plural, one {{countText} Video} other {{countText} Videos}}",
   "@aboutThis.childKind.video": {
     "sourceHash": "1912484"
   },
-  "aboutThis.childKind.audio": "{count, plural, one {{countText} sound file} other {{countText} sound files}}",
+  "aboutThis.childKind.audio": "{count, plural, one {{countText} Audiodatei} other {{countText} Audiodateien}}",
   "@aboutThis.childKind.audio": {
     "sourceHash": "930b7cc"
   },
-  "aboutThis.childKind.document": "{count, plural, one {{countText} document} other {{countText} documents}}",
+  "aboutThis.childKind.document": "{count, plural, one {{countText} Dokument} other {{countText} Dokumente}}",
   "@aboutThis.childKind.document": {
     "sourceHash": "7e308f7"
   },
-  "aboutThis.childKind.archive": "{count, plural, one {{countText} archive or disk image} other {{countText} archives or disk images}}",
+  "aboutThis.childKind.archive": "{count, plural, one {{countText} Archiv oder Image} other {{countText} Archive oder Images}}",
   "@aboutThis.childKind.archive": {
     "sourceHash": "7cb7114"
   },
-  "aboutThis.childKind.code": "{count, plural, one {{countText} code file} other {{countText} code files}}",
+  "aboutThis.childKind.code": "{count, plural, one {{countText} Codedatei} other {{countText} Codedateien}}",
   "@aboutThis.childKind.code": {
     "sourceHash": "d0b36f3"
   },
-  "aboutThis.childKind.app": "{count, plural, one {{countText} app or program} other {{countText} apps or programs}}",
+  "aboutThis.childKind.app": "{count, plural, one {{countText} App oder Programm} other {{countText} Apps oder Programme}}",
   "@aboutThis.childKind.app": {
     "sourceHash": "a5e82a0"
   },
-  "aboutThis.childKind.other": "{count, plural, one {{countText} other file} other {{countText} other files}}",
+  "aboutThis.childKind.other": "{count, plural, one {{countText} andere Datei} other {{countText} andere Dateien}}",
   "@aboutThis.childKind.other": {
     "sourceHash": "473df3e"
   },
-  "aboutThis.folderClass.dependencies": "Installed packages a package manager put here",
+  "aboutThis.folderClass.dependencies": "Installierte Pakete, die ein Paketmanager hier abgelegt hat",
   "@aboutThis.folderClass.dependencies": {
     "sourceHash": "b4a2d34"
   },
-  "aboutThis.folderClass.buildOutput": "Output a build tool wrote",
+  "aboutThis.folderClass.buildOutput": "Von einem Build-Werkzeug geschriebene Ausgabe",
   "@aboutThis.folderClass.buildOutput": {
     "sourceHash": "ff8c437"
   },
-  "aboutThis.folderClass.cache": "A cache",
+  "aboutThis.folderClass.cache": "Ein Cache",
   "@aboutThis.folderClass.cache": {
     "sourceHash": "843f82c"
   },
-  "aboutThis.folderClass.versionControl": "A repository’s history and settings",
+  "aboutThis.folderClass.versionControl": "Verlauf und Einstellungen eines Repos",
   "@aboutThis.folderClass.versionControl": {
     "sourceHash": "9848335"
   },
-  "aboutThis.contents.atLeastSize": "at least <size></size>",
+  "aboutThis.contents.atLeastSize": "mindestens <size></size>",
   "@aboutThis.contents.atLeastSize": {
     "sourceHash": "dfcd99e"
   },
-  "aboutThis.contents.noSize": "Not sized yet",
+  "aboutThis.contents.noSize": "Noch keine Größe",
   "@aboutThis.contents.noSize": {
     "sourceHash": "4bdd378"
   },
   "aboutThis.contents.inFolder": "in {path}",
   "@aboutThis.contents.inFolder": {
-    "sourceHash": "7ac1b38"
+    "sourceHash": "7ac1b38",
+    "sameAsSourceJustification": "German uses the same preposition in before a path (catalog: in {path} style, Unter „{path}“ for full sentences); the muted fragment needs nothing more."
   },
-  "aboutThis.contents.goTo": "Go to {name}",
+  "aboutThis.contents.goTo": "Zu „{name}“ gehen",
   "@aboutThis.contents.goTo": {
     "sourceHash": "5650d8d"
   },
-  "aboutThis.contents.notLoaded": "Cmdr lists these once Search has loaded this drive",
+  "aboutThis.contents.notLoaded": "Cmdr listet diese auf, sobald die Suche dieses Laufwerk geladen hat",
   "@aboutThis.contents.notLoaded": {
     "sourceHash": "75b1252"
   },
-  "aboutThis.contents.unchanged": "{atLeast, select, yes {At least {percent} of it hasn’t changed in a year (<size></size>)} other {{percent} of it hasn’t changed in a year (<size></size>)}}",
+  "aboutThis.contents.unchanged": "{atLeast, select, yes {Mindestens {percent} davon sind seit einem Jahr unverändert (<size></size>)} other {{percent} davon sind seit einem Jahr unverändert (<size></size>)}}",
   "@aboutThis.contents.unchanged": {
     "sourceHash": "811264b"
   },
-  "aboutThis.appData.summary": "{count, plural, =0 {None that Cmdr’s index knows of} one {{atLeast, select, yes {At least <size></size> in one folder} other {<size></size> in one folder}}} other {{atLeast, select, yes {At least <size></size> in {countText} folders} other {<size></size> in {countText} folders}}}}",
+  "aboutThis.appData.summary": "{count, plural, =0 {Keine, die der Index von Cmdr kennt} one {{atLeast, select, yes {Mindestens <size></size> in einem Ordner} other {<size></size> in einem Ordner}}} other {{atLeast, select, yes {Mindestens <size></size> in {countText} Ordnern} other {<size></size> in {countText} Ordnern}}}}",
   "@aboutThis.appData.summary": {
     "sourceHash": "4688194"
   },
-  "aboutThis.appData.notLookedIn": "Cmdr’s index hasn’t listed {places} yet, so there may be more",
+  "aboutThis.appData.notLookedIn": "Der Index von Cmdr hat {places} noch nicht aufgelistet, es kann also mehr geben",
   "@aboutThis.appData.notLookedIn": {
     "sourceHash": "40b9187"
   },
   "aboutThis.ownerPlace.caches": "Caches",
   "@aboutThis.ownerPlace.caches": {
-    "sourceHash": "c4d5ec9"
+    "sourceHash": "c4d5ec9",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.containers": "Containers",
   "@aboutThis.ownerPlace.containers": {
-    "sourceHash": "a22daa7"
+    "sourceHash": "a22daa7",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.groupContainers": "Group Containers",
   "@aboutThis.ownerPlace.groupContainers": {
-    "sourceHash": "33f3ee0"
+    "sourceHash": "33f3ee0",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.applicationSupport": "Application Support",
   "@aboutThis.ownerPlace.applicationSupport": {
-    "sourceHash": "7ef6ff2"
+    "sourceHash": "7ef6ff2",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.applicationScripts": "Application Scripts",
   "@aboutThis.ownerPlace.applicationScripts": {
-    "sourceHash": "4abecec"
+    "sourceHash": "4abecec",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.preferences": "Preferences",
   "@aboutThis.ownerPlace.preferences": {
-    "sourceHash": "66962f7"
+    "sourceHash": "66962f7",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.savedState": "Saved Application State",
   "@aboutThis.ownerPlace.savedState": {
-    "sourceHash": "d2c3ab9"
+    "sourceHash": "d2c3ab9",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.logs": "Logs",
   "@aboutThis.ownerPlace.logs": {
-    "sourceHash": "ea2100d"
+    "sourceHash": "ea2100d",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
   "aboutThis.ownerPlace.webData": "HTTPStorages",
   "@aboutThis.ownerPlace.webData": {
-    "sourceHash": "0a2ea16"
+    "sourceHash": "0a2ea16",
+    "sameAsSourceJustification": "A folder name as it is on disk"
   },
-  "aboutThis.ownerPlace.sandboxHome": "App home",
+  "aboutThis.ownerPlace.sandboxHome": "Persönlicher Ordner der App",
   "@aboutThis.ownerPlace.sandboxHome": {
     "sourceHash": "0548eba"
   },
-  "aboutThis.removal.standardFolder.home": "It’s your home folder: everything of yours on this computer is inside it, and the system and every app expect it.",
+  "aboutThis.removal.standardFolder.home": "Das ist dein persönlicher Ordner: Alles, was dir auf diesem Computer gehört, liegt darin, und das System und jede App erwarten ihn.",
   "@aboutThis.removal.standardFolder.home": {
     "sourceHash": "214ceb7"
   },
-  "aboutThis.removal.standardFolder.personal": "It’s one of your standard folders: the system and your apps expect to find it, and everything inside it goes with it.",
+  "aboutThis.removal.standardFolder.personal": "Das ist einer deiner Standardordner: Das System und deine Apps erwarten, ihn vorzufinden, und alles darin wird mit ihm entfernt.",
   "@aboutThis.removal.standardFolder.personal": {
     "sourceHash": "2702168"
   },
-  "aboutThis.removal.standardFolder.homeLibrary": "It holds the settings and data your apps keep for you, and they can stop working or start over without it.",
+  "aboutThis.removal.standardFolder.homeLibrary": "Der Ordner enthält die Einstellungen und Daten, die deine Apps für dich speichern, und ohne ihn können sie aufhören zu funktionieren oder von vorn beginnen.",
   "@aboutThis.removal.standardFolder.homeLibrary": {
     "sourceHash": "1dfa0b3"
   },
-  "aboutThis.removal.standardFolder.homeApplications": "It holds apps installed for you alone, and the system looks for them here.",
+  "aboutThis.removal.standardFolder.homeApplications": "Der Ordner enthält Apps, die nur für dich installiert sind, und das System sucht sie hier.",
   "@aboutThis.removal.standardFolder.homeApplications": {
     "sourceHash": "9652169"
   },
-  "aboutThis.removal.standardFolder.applications": "It holds this computer’s apps, and the system looks for them here.",
+  "aboutThis.removal.standardFolder.applications": "Der Ordner enthält die Apps dieses Computers, und das System sucht sie hier.",
   "@aboutThis.removal.standardFolder.applications": {
     "sourceHash": "2741b28"
   },
-  "aboutThis.removal.standardFolder.library": "It holds settings and data that apps and the system keep for everyone on this computer, and they can stop working without it.",
+  "aboutThis.removal.standardFolder.library": "Der Ordner enthält Einstellungen und Daten, die Apps und das System für alle auf diesem Computer speichern, und ohne ihn können sie aufhören zu funktionieren.",
   "@aboutThis.removal.standardFolder.library": {
     "sourceHash": "0fc06cf"
   },
-  "aboutThis.removal.standardFolder.system": "It’s macOS itself: the computer can’t start without it.",
+  "aboutThis.removal.standardFolder.system": "Das ist macOS selbst: Ohne diesen Ordner kann der Computer nicht starten.",
   "@aboutThis.removal.standardFolder.system": {
     "sourceHash": "e06bc7e"
   },
-  "aboutThis.removal.standardFolder.users": "It holds every account’s home folder on this computer.",
+  "aboutThis.removal.standardFolder.users": "Der Ordner enthält die persönlichen Ordner aller Konten auf diesem Computer.",
   "@aboutThis.removal.standardFolder.users": {
     "sourceHash": "b72c1fe"
   },
-  "aboutThis.removal.standardFolder.startupDisk": "It holds everything on the startup disk, macOS included.",
+  "aboutThis.removal.standardFolder.startupDisk": "Der Ordner enthält alles auf dem Startvolume, auch macOS.",
   "@aboutThis.removal.standardFolder.startupDisk": {
     "sourceHash": "3f6c151"
   },
-  "aboutThis.removal.uncommittedWork": "It has changes no commit holds, so git can’t bring those back.",
+  "aboutThis.removal.uncommittedWork": "Das Objekt hat Änderungen, die in keinem Commit stehen, deshalb kann git sie nicht zurückholen.",
   "@aboutThis.removal.uncommittedWork": {
     "sourceHash": "9fb3490"
   },
-  "aboutThis.removal.untrackedNotInGit": "Git doesn’t track it, so git can’t bring it back.",
+  "aboutThis.removal.untrackedNotInGit": "Git verfolgt es nicht, deshalb kann git es nicht zurückholen.",
   "@aboutThis.removal.untrackedNotInGit": {
     "sourceHash": "fd709a6"
   },
-  "aboutThis.removal.ignoredByGit": "Git ignores it, so git can’t bring it back.",
+  "aboutThis.removal.ignoredByGit": "Git ignoriert es, deshalb kann git es nicht zurückholen.",
   "@aboutThis.removal.ignoredByGit": {
     "sourceHash": "bc86083"
   },
-  "aboutThis.removal.userDocument": "Nothing Cmdr knows of made this or could make it again.",
+  "aboutThis.removal.userDocument": "Nichts, was Cmdr kennt, hat das erstellt oder könnte es neu erstellen.",
   "@aboutThis.removal.userDocument": {
     "sourceHash": "81982af"
   },
-  "aboutThis.removal.removesApp": "This removes the app. Cmdr can’t tell yet how much of its data stays in your Library.",
+  "aboutThis.removal.removesApp": "Damit wird die App entfernt. Cmdr kann noch nicht sagen, wie viel von ihren Daten in deinem Ordner „Library“ bleibt.",
   "@aboutThis.removal.removesApp": {
     "sourceHash": "7f8bfbe"
   },
-  "aboutThis.removal.removesAppDataLeft": "{count, plural, =0 {This removes the app. Cmdr’s index knows of none of its data in your Library.} one {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in one folder.} other {This removes the app. Its data in your Library stays: <size></size> in one folder.}}} other {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in {countText} folders.} other {This removes the app. Its data in your Library stays: <size></size> in {countText} folders.}}}}",
+  "aboutThis.removal.removesAppDataLeft": "{count, plural, =0 {Damit wird die App entfernt. Der Index von Cmdr kennt keine ihrer Daten in deinem Ordner „Library“.} one {{atLeast, select, yes {Damit wird die App entfernt. Die Daten der App in deinem Ordner „Library“ bleiben: mindestens <size></size> in einem Ordner.} other {Damit wird die App entfernt. Die Daten der App in deinem Ordner „Library“ bleiben: <size></size> in einem Ordner.}}} other {{atLeast, select, yes {Damit wird die App entfernt. Die Daten der App in deinem Ordner „Library“ bleiben: mindestens <size></size> in {countText} Ordnern.} other {Damit wird die App entfernt. Die Daten der App in deinem Ordner „Library“ bleiben: <size></size> in {countText} Ordnern.}}}}",
   "@aboutThis.removal.removesAppDataLeft": {
     "sourceHash": "9e527f8"
   },
-  "aboutThis.removal.appData": "{certainty, select, probable {It’s probably {app}’s data, and {app} may lose what it keeps here.} other {It’s {app}’s data, and {app} may lose what it keeps here.}}",
+  "aboutThis.removal.appData": "{certainty, select, probable {Das sind wahrscheinlich Daten von {app}, und {app} verliert vielleicht, was die App hier aufbewahrt.} other {Das sind Daten von {app}, und {app} verliert vielleicht, was die App hier aufbewahrt.}}",
   "@aboutThis.removal.appData": {
     "sourceHash": "3571d95"
   },
-  "aboutThis.removal.installedByReceipt": "{partOfOs, select, yes {macOS installed it, and parts of macOS may need it.} other {The package {pkgId} installed it, and what it installed may need it.}}",
+  "aboutThis.removal.installedByReceipt": "{partOfOs, select, yes {macOS hat das installiert, und Teile von macOS brauchen es vielleicht.} other {Das Paket {pkgId} hat das installiert, und die Software aus dem Paket braucht es vielleicht.}}",
   "@aboutThis.removal.installedByReceipt": {
     "sourceHash": "ec4b768"
   },
-  "aboutThis.removal.installedByHomebrew": "Homebrew installed it as part of {name}, which may stop working.",
+  "aboutThis.removal.installedByHomebrew": "Homebrew hat das als Teil von {name} installiert, und {name} funktioniert dann vielleicht nicht mehr.",
   "@aboutThis.removal.installedByHomebrew": {
     "sourceHash": "caea929"
   },
-  "aboutThis.removal.leftoverOfUninstalledApp": "It’s named after {bundleId}, an app that isn’t installed. Cmdr can’t tell whether anything else uses it.",
+  "aboutThis.removal.leftoverOfUninstalledApp": "Es ist nach {bundleId} benannt, einer App, die nicht installiert ist. Cmdr kann nicht sagen, ob noch etwas anderes es nutzt.",
   "@aboutThis.removal.leftoverOfUninstalledApp": {
     "sourceHash": "0da2729"
   },
-  "aboutThis.removal.recordedDownload": "{platform, select, macos {macOS recorded this as downloaded from {host}. Cmdr can’t tell whether the site still has it.} other {Your browser recorded this as downloaded from {host}. Cmdr can’t tell whether the site still has it.}}",
+  "aboutThis.removal.recordedDownload": "{platform, select, macos {macOS hat vermerkt: von {host} heruntergeladen. Cmdr kann nicht sagen, ob die Website die Datei noch anbietet.} other {Dein Browser hat vermerkt: von {host} heruntergeladen. Cmdr kann nicht sagen, ob die Website die Datei noch anbietet.}}",
   "@aboutThis.removal.recordedDownload": {
     "sourceHash": "389ab69"
   },
-  "aboutThis.removal.gitCanRestore": "Git can restore it from the last commit.",
+  "aboutThis.removal.gitCanRestore": "Git kann es aus dem letzten Commit wiederherstellen.",
   "@aboutThis.removal.gitCanRestore": {
     "sourceHash": "9d75b10"
   },
-  "aboutThis.removal.rebuildablePackageManager": "A package manager can fetch this again, which takes time and a network.",
+  "aboutThis.removal.rebuildablePackageManager": "Ein Paketmanager kann das erneut laden, das dauert aber und braucht ein Netzwerk.",
   "@aboutThis.removal.rebuildablePackageManager": {
     "sourceHash": "2c0dd33"
   },
-  "aboutThis.removal.rebuildableBuildTool": "A build tool can make this again, which takes time.",
+  "aboutThis.removal.rebuildableBuildTool": "Ein Build-Werkzeug kann das neu erstellen, das dauert aber.",
   "@aboutThis.removal.rebuildableBuildTool": {
     "sourceHash": "b0b9b09"
   },
-  "aboutThis.removal.regeneratedCache": "{hasApp, select, yes {It’s {app}’s cache: {app} writes it again, and is slower until it has.} other {It’s a cache: whatever wrote it writes it again, and is slower until it has.}}",
+  "aboutThis.removal.regeneratedCache": "{hasApp, select, yes {Das ist der Cache von {app}: {app} schreibt ihn neu und ist langsamer, bis das erledigt ist.} other {Das ist ein Cache: Was ihn geschrieben hat, schreibt ihn neu und ist langsamer, bis das erledigt ist.}}",
   "@aboutThis.removal.regeneratedCache": {
     "sourceHash": "9e428d5"
   },
-  "aboutThis.removal.otherNamesRemain": "{count, plural, one {One other name points to the same contents, which stays.} other {{countText} other names point to the same contents, which stays.}}",
+  "aboutThis.removal.otherNamesRemain": "{count, plural, one {Ein weiterer Name verweist auf denselben Inhalt, und der bleibt.} other {{countText} weitere Namen verweisen auf denselben Inhalt, und der bleibt.}}",
   "@aboutThis.removal.otherNamesRemain": {
     "sourceHash": "c06d0b6"
   },
-  "aboutThis.removal.linkOnly": "It’s a link: removing it leaves what it points to.",
+  "aboutThis.removal.linkOnly": "Das ist ein Link: Wenn du ihn entfernst, bleibt sein Ziel erhalten.",
   "@aboutThis.removal.linkOnly": {
     "sourceHash": "95cb310"
   },
-  "aboutThis.removal.cantTell": "Cmdr can’t tell what depends on this.",
+  "aboutThis.removal.cantTell": "Cmdr kann nicht sagen, was davon abhängt.",
   "@aboutThis.removal.cantTell": {
     "sourceHash": "c9900f8"
   },
-  "aboutThis.removal.more": "{count, plural, one {One more} other {{countText} more}}",
+  "aboutThis.removal.more": "{count, plural, one {Noch eine} other {{countText} weitere}}",
   "@aboutThis.removal.more": {
     "sourceHash": "2daca20"
   },
-  "aboutThis.removal.less": "Show fewer",
+  "aboutThis.removal.less": "Weniger anzeigen",
   "@aboutThis.removal.less": {
     "sourceHash": "255beb6"
   },
-  "aboutThis.label.gitSnapshot": "Git history",
+  "aboutThis.label.gitSnapshot": "Git-Verlauf",
   "@aboutThis.label.gitSnapshot": {
     "sourceHash": "452144b"
   },
-  "aboutThis.unknown.volumeStoppedAnswering": "No answer from the drive",
+  "aboutThis.unknown.volumeStoppedAnswering": "Keine Antwort vom Laufwerk",
   "@aboutThis.unknown.volumeStoppedAnswering": {
     "sourceHash": "a99c484"
   },
-  "aboutThis.unknown.notFound": "It isn’t there anymore.",
+  "aboutThis.unknown.notFound": "Es ist nicht mehr da.",
   "@aboutThis.unknown.notFound": {
     "sourceHash": "8b3a5a7"
   },
-  "aboutThis.download.insideArchive": "Inside the archive “{archive}”.",
+  "aboutThis.download.insideArchive": "Im Archiv „{archive}“.",
   "@aboutThis.download.insideArchive": {
     "sourceHash": "5b790df"
   },
-  "aboutThis.download.archiveRecord": "{platform, select, macos {What macOS recorded about the archive:} other {What your browser recorded about the archive:}}",
+  "aboutThis.download.archiveRecord": "{platform, select, macos {Was macOS über das Archiv vermerkt hat:} other {Was dein Browser über das Archiv vermerkt hat:}}",
   "@aboutThis.download.archiveRecord": {
     "sourceHash": "8fd1b3b"
   },
-  "aboutThis.gitSnapshot.from": "{kind, select, branch {As the branch {name} has it in <repo></repo>} tag {As the tag {name} has it in <repo></repo>} commit {As commit {name} has it in <repo></repo>} other {As stash entry {name} has it in <repo></repo>}}",
+  "aboutThis.gitSnapshot.from": "{kind, select, branch {Stand im Branch {name} in <repo></repo>} tag {Stand im Tag {name} in <repo></repo>} commit {Stand im Commit {name} in <repo></repo>} other {Stand im Stash-Eintrag {name} in <repo></repo>}}",
   "@aboutThis.gitSnapshot.from": {
     "sourceHash": "aafff28"
   },
-  "aboutThis.gitSnapshot.lastChanged": "Last changed by a commit on <date></date>",
+  "aboutThis.gitSnapshot.lastChanged": "Zuletzt am <date></date> durch einen Commit geändert",
   "@aboutThis.gitSnapshot.lastChanged": {
     "sourceHash": "ed8a966"
   },
-  "aboutThis.gitSnapshot.copyCommit": "Copy the commit’s id",
+  "aboutThis.gitSnapshot.copyCommit": "Commit-ID kopieren",
   "@aboutThis.gitSnapshot.copyCommit": {
     "sourceHash": "22ce389"
   },
-  "aboutThis.headline.insideArchive": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, inside {archive}",
+  "aboutThis.headline.insideArchive": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, in {archive}",
   "@aboutThis.headline.insideArchive": {
     "sourceHash": "36a16da"
   },
-  "aboutThis.headline.fromGitHistory": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {kind, select, branch {as the branch {name} has it} tag {as the tag {name} has it} commit {as commit {name} has it} other {as stash entry {name} has it}}",
+  "aboutThis.headline.fromGitHistory": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, mindestens <size></size>} other {}}, {kind, select, branch {Stand im Branch {name}} tag {Stand im Tag {name}} commit {Stand im Commit {name}} other {Stand im Stash-Eintrag {name}}}",
   "@aboutThis.headline.fromGitHistory": {
     "sourceHash": "fb6543a"
   },
-  "aboutThis.removal.holdsRepoHistory": "It holds the repository’s whole history. Removing it leaves the files but drops every commit that isn’t pushed somewhere else, and Cmdr can’t tell what’s pushed.",
+  "aboutThis.removal.holdsRepoHistory": "Der Ordner enthält den gesamten Verlauf des Repos. Wenn du ihn entfernst, bleiben die Dateien, aber jeder Commit, der nicht anderswohin gepusht ist, geht verloren, und Cmdr kann nicht sagen, was gepusht ist.",
   "@aboutThis.removal.holdsRepoHistory": {
     "sourceHash": "011304a"
   },
-  "aboutThis.removal.inGitHistory": "This is git’s record of it at that point in history, not a file on the disk, so there’s nothing to remove here.",
+  "aboutThis.removal.inGitHistory": "Das ist der Stand, den git an diesem Punkt im Verlauf festgehalten hat, keine Datei auf dem Datenträger, deshalb gibt es hier nichts zu entfernen.",
   "@aboutThis.removal.inGitHistory": {
     "sourceHash": "5c3ab2e"
   },
-  "aboutThis.verdict.label": "AI wrote this",
+  "aboutThis.verdict.label": "Von KI geschrieben",
   "@aboutThis.verdict.label": {
     "sourceHash": "8fe1d9b"
   },
-  "aboutThis.verdict.trust.oftenWrong": "This model, or a similar one, often got its take wrong when Cmdr tested it. Check it against the card’s facts, or switch to a stronger model.",
+  "aboutThis.verdict.trust.oftenWrong": "Dieses oder ein ähnliches Modell lag mit seinem Kommentar in den Tests von Cmdr oft falsch. Prüfe den Kommentar anhand der Fakten auf der Karte, oder wechsle zu einem stärkeren Modell.",
   "@aboutThis.verdict.trust.oftenWrong": {
     "sourceHash": "ab85bab"
   },
-  "aboutThis.verdict.trust.changeModel": "Change the model",
+  "aboutThis.verdict.trust.changeModel": "Modell ändern",
   "@aboutThis.verdict.trust.changeModel": {
     "sourceHash": "c4f44ed"
   },
-  "aboutThis.verdict.trust.untested": "Cmdr hasn’t tested this model for these takes, so it can’t say whether to trust this one.",
+  "aboutThis.verdict.trust.untested": "Cmdr hat dieses Modell für solche Kommentare nicht getestet und kann daher nicht sagen, ob du diesem Kommentar vertrauen kannst.",
   "@aboutThis.verdict.trust.untested": {
     "sourceHash": "d1174d9"
   },
-  "aboutThis.verdict.writing": "Writing a short take…",
+  "aboutThis.verdict.writing": "Kurzer Kommentar wird geschrieben …",
   "@aboutThis.verdict.writing": {
     "sourceHash": "fa632d5"
   },
-  "aboutThis.verdict.stop": "Stop",
+  "aboutThis.verdict.stop": "Stopp",
   "@aboutThis.verdict.stop": {
     "sourceHash": "cae7d57"
   },
-  "aboutThis.verdict.stopTooltip": "Stops the AI take. The facts and what it wrote so far stay.",
+  "aboutThis.verdict.stopTooltip": "Stoppt den KI-Kommentar. Die Fakten und was bisher geschrieben ist, bleiben.",
   "@aboutThis.verdict.stopTooltip": {
     "sourceHash": "f6dc700"
   },
-  "aboutThis.verdict.stopped": "Stopped",
+  "aboutThis.verdict.stopped": "Gestoppt",
   "@aboutThis.verdict.stopped": {
     "sourceHash": "1a4f630"
   },
-  "aboutThis.verdict.fromEarlier": "From earlier",
+  "aboutThis.verdict.fromEarlier": "Von vorhin",
   "@aboutThis.verdict.fromEarlier": {
     "sourceHash": "10d0e01"
   },
-  "aboutThis.verdict.announcement": "AI wrote this: {text}",
+  "aboutThis.verdict.announcement": "Von KI geschrieben: {text}",
   "@aboutThis.verdict.announcement": {
     "sourceHash": "a2d0297"
   },
-  "aboutThis.verdict.given.none": "From the card’s facts. Cmdr didn’t look inside.",
+  "aboutThis.verdict.given.none": "Aus den Fakten der Karte. Cmdr hat nicht hineingeschaut.",
   "@aboutThis.verdict.given.none": {
     "sourceHash": "387fa5a"
   },
-  "aboutThis.verdict.given.firstLines": "From the card’s facts and its first lines.",
+  "aboutThis.verdict.given.firstLines": "Aus den Fakten der Karte und den ersten Zeilen.",
   "@aboutThis.verdict.given.firstLines": {
     "sourceHash": "daa8542"
   },
-  "aboutThis.verdict.given.firstPage": "From the card’s facts and the first page.",
+  "aboutThis.verdict.given.firstPage": "Aus den Fakten der Karte und der ersten Seite.",
   "@aboutThis.verdict.given.firstPage": {
     "sourceHash": "15b0aab"
   },
-  "aboutThis.verdict.given.entryNames": "From the card’s facts and the names of the first files inside.",
+  "aboutThis.verdict.given.entryNames": "Aus den Fakten der Karte und den Namen der ersten Dateien darin.",
   "@aboutThis.verdict.given.entryNames": {
     "sourceHash": "b32f391"
   },
-  "aboutThis.verdict.given.cameraDetails": "From the card’s facts and the photo’s camera details, without its location.",
+  "aboutThis.verdict.given.cameraDetails": "Aus den Fakten der Karte und den Kameraangaben des Fotos, ohne Aufnahmeort.",
   "@aboutThis.verdict.given.cameraDetails": {
     "sourceHash": "a56e30c"
   },
-  "aboutThis.verdict.given.protected": "From the card’s facts. This is somewhere Cmdr keeps contents private, so it didn’t look inside.",
+  "aboutThis.verdict.given.protected": "Aus den Fakten der Karte. Hier hält Cmdr Inhalte privat, deshalb hat es nicht hineingeschaut.",
   "@aboutThis.verdict.given.protected": {
     "sourceHash": "0b846ce"
   },
-  "aboutThis.verdict.problem.authFailed": "Your AI provider didn’t accept the key.",
+  "aboutThis.verdict.problem.authFailed": "Dein KI-Anbieter hat den Schlüssel nicht akzeptiert.",
   "@aboutThis.verdict.problem.authFailed": {
     "sourceHash": "bac1177"
   },
-  "aboutThis.verdict.problem.rateLimited": "Your AI provider’s limit is reached for now.",
+  "aboutThis.verdict.problem.rateLimited": "Das Limit deines KI-Anbieters ist vorerst erreicht.",
   "@aboutThis.verdict.problem.rateLimited": {
     "sourceHash": "301b2b9"
   },
-  "aboutThis.verdict.problem.unreachable": "Cmdr couldn’t reach your AI provider.",
+  "aboutThis.verdict.problem.unreachable": "Cmdr konnte deinen KI-Anbieter nicht erreichen.",
   "@aboutThis.verdict.problem.unreachable": {
     "sourceHash": "818effd"
   },
-  "aboutThis.verdict.problem.overloaded": "Your AI provider is busy right now.",
+  "aboutThis.verdict.problem.overloaded": "Dein KI-Anbieter ist gerade ausgelastet.",
   "@aboutThis.verdict.problem.overloaded": {
     "sourceHash": "7427168"
   },
-  "aboutThis.verdict.problem.managed": "Your IT team’s policy stopped this on its way out.",
+  "aboutThis.verdict.problem.managed": "Eine Richtlinie deines IT-Teams hat das vor dem Senden gestoppt.",
   "@aboutThis.verdict.problem.managed": {
     "sourceHash": "ec46e5e"
   },
-  "aboutThis.verdict.problem.noAnswer": "The AI didn’t write anything this time.",
+  "aboutThis.verdict.problem.noAnswer": "Die KI hat diesmal nichts geschrieben.",
   "@aboutThis.verdict.problem.noAnswer": {
     "sourceHash": "7f4d4d3"
   },
-  "aboutThis.verdict.problem.other": "Your AI provider couldn’t answer this time.",
+  "aboutThis.verdict.problem.other": "Dein KI-Anbieter konnte diesmal nicht antworten.",
   "@aboutThis.verdict.problem.other": {
     "sourceHash": "dbc9df5"
   },
-  "aboutThis.verdict.unavailable.noCloudConsent": "Allow cloud AI for a deeper read of each item.",
+  "aboutThis.verdict.unavailable.noCloudConsent": "Erlaube Cloud-KI für einen genaueren Blick auf jedes Objekt.",
   "@aboutThis.verdict.unavailable.noCloudConsent": {
     "sourceHash": "5dddcad"
   },
-  "aboutThis.verdict.unavailable.notConfigured": "Add your AI provider’s key for a deeper read of each item.",
+  "aboutThis.verdict.unavailable.notConfigured": "Füge den Schlüssel deines KI-Anbieters hinzu für einen genaueren Blick auf jedes Objekt.",
   "@aboutThis.verdict.unavailable.notConfigured": {
     "sourceHash": "39b54cd"
   },
-  "aboutThis.verdict.unavailable.notReady": "The local AI model isn’t running, so there’s no AI take this time.",
+  "aboutThis.verdict.unavailable.notReady": "Das lokale KI-Modell läuft nicht, deshalb gibt es diesmal keinen KI-Kommentar.",
   "@aboutThis.verdict.unavailable.notReady": {
     "sourceHash": "4cf13bf"
   },
-  "aboutThis.verdict.unavailable.tooManyRequests": "That’s a lot of AI takes in a minute. Try again in a moment.",
+  "aboutThis.verdict.unavailable.tooManyRequests": "Das sind viele KI-Kommentare in einer Minute. Versuche es gleich noch einmal.",
   "@aboutThis.verdict.unavailable.tooManyRequests": {
     "sourceHash": "888f933"
   },
-  "aboutThis.verdict.unavailable.openAiSettings": "Open AI settings",
+  "aboutThis.verdict.unavailable.openAiSettings": "KI-Einstellungen öffnen",
   "@aboutThis.verdict.unavailable.openAiSettings": {
     "sourceHash": "edcc53b"
   },
-  "aboutThis.verdict.aiOffHint": "Turn on AI for a deeper read of each item.",
+  "aboutThis.verdict.aiOffHint": "Schalte KI ein für einen genaueren Blick auf jedes Objekt.",
   "@aboutThis.verdict.aiOffHint": {
     "sourceHash": "08266ac"
   },
-  "aboutThis.verdict.column": "AI take",
+  "aboutThis.verdict.column": "KI-Kommentar",
   "@aboutThis.verdict.column": {
     "sourceHash": "326481c"
   },
-  "aboutThis.verdict.hint.dismiss": "Hide this hint",
+  "aboutThis.verdict.hint.dismiss": "Diesen Hinweis ausblenden",
   "@aboutThis.verdict.hint.dismiss": {
     "sourceHash": "f18aa5e"
   },
-  "aboutThis.verdict.hint.dismissTooltip": "Hide this hint. You can bring it back in Settings > Advanced.",
+  "aboutThis.verdict.hint.dismissTooltip": "Diesen Hinweis ausblenden. Unter Einstellungen > Erweitert kannst du ihn zurückholen.",
   "@aboutThis.verdict.hint.dismissTooltip": {
     "sourceHash": "6a3a4b3"
   },
-  "aboutThis.action.continueInAskCmdr": "Continue in Ask Cmdr",
+  "aboutThis.action.continueInAskCmdr": "In Ask Cmdr weitermachen",
   "@aboutThis.action.continueInAskCmdr": {
     "sourceHash": "e9f482a"
   },
-  "aboutThis.action.continueInAskCmdrTooltip": "Opens a new Ask Cmdr chat about this item. Nothing is sent until you send it.",
+  "aboutThis.action.continueInAskCmdrTooltip": "Öffnet einen neuen Ask-Cmdr-Chat zu diesem Objekt. Gesendet wird erst, wenn du sendest.",
   "@aboutThis.action.continueInAskCmdrTooltip": {
     "sourceHash": "223ad10"
   },
-  "aboutThis.continueInAskCmdr.draft": "Tell me more about this.",
+  "aboutThis.continueInAskCmdr.draft": "Erzähl mir mehr darüber.",
   "@aboutThis.continueInAskCmdr.draft": {
     "sourceHash": "93b9cd7"
   },
   "aboutThis.label.name": "Name",
   "@aboutThis.label.name": {
-    "sourceHash": "dcd1d52"
+    "sourceHash": "dcd1d52",
+    "sameAsSourceJustification": "German says Name (term ruling name → Name; Finder's Name column)."
   },
-  "aboutThis.identity.nameHidReordering": "Its name hides a character that flips the text’s direction, so in other apps it can seem to end differently. Cmdr shows it without that character.",
+  "aboutThis.identity.nameHidReordering": "Der Name verbirgt ein Zeichen, das die Textrichtung umkehrt. In anderen Apps kann er deshalb scheinbar anders enden. Cmdr zeigt ihn ohne dieses Zeichen.",
   "@aboutThis.identity.nameHidReordering": {
     "sourceHash": "408f58a"
   },
-  "aboutThis.identity.nameHidInvisible": "Its name holds characters you can’t see, so it can look like another name or carry hidden text. Cmdr shows it without them.",
+  "aboutThis.identity.nameHidInvisible": "Der Name enthält unsichtbare Zeichen. Er kann deshalb wie ein anderer Name aussehen oder verborgenen Text tragen. Cmdr zeigt ihn ohne diese Zeichen.",
   "@aboutThis.identity.nameHidInvisible": {
     "sourceHash": "1ba3066"
   },
-  "aboutThis.label.imageContents": "What it shows",
+  "aboutThis.label.imageContents": "Was es zeigt",
   "@aboutThis.label.imageContents": {
     "sourceHash": "8e7ddf9"
   },
-  "aboutThis.imageContents.tags": "Tagged as {tags}",
+  "aboutThis.imageContents.tags": "Tags: {tags}",
   "@aboutThis.imageContents.tags": {
     "sourceHash": "dc8ce45"
   },
-  "aboutThis.imageContents.textHeading": "Text in it:",
+  "aboutThis.imageContents.textHeading": "Text darin:",
   "@aboutThis.imageContents.textHeading": {
     "sourceHash": "1a751be"
   },
-  "aboutThis.imageContents.textLine": "“{text}”",
+  "aboutThis.imageContents.textLine": "„{text}“",
   "@aboutThis.imageContents.textLine": {
     "sourceHash": "ce4c196"
   },
-  "aboutThis.imageContents.moreText": "And more text",
+  "aboutThis.imageContents.moreText": "Und weiterer Text",
   "@aboutThis.imageContents.moreText": {
     "sourceHash": "460d2ea"
   },
-  "aboutThis.imageContents.nothing": "No tags or text found",
+  "aboutThis.imageContents.nothing": "Keine Tags und kein Text gefunden",
   "@aboutThis.imageContents.nothing": {
     "sourceHash": "80c55c4"
   },
-  "aboutThis.imageContents.notIndexed": "Not in Cmdr’s image index",
+  "aboutThis.imageContents.notIndexed": "Nicht im Bildindex von Cmdr",
   "@aboutThis.imageContents.notIndexed": {
     "sourceHash": "3b8e22b"
   },
-  "aboutThis.imageContents.indexingOff": "Image indexing is off",
+  "aboutThis.imageContents.indexingOff": "Die Bildindizierung ist ausgeschaltet",
   "@aboutThis.imageContents.indexingOff": {
     "sourceHash": "29b0990"
   },
-  "aboutThis.unknown.indexingOff": "Its index is turned off",
+  "aboutThis.unknown.indexingOff": "Der zuständige Index ist ausgeschaltet",
   "@aboutThis.unknown.indexingOff": {
     "sourceHash": "f2c2c68"
   },
-  "aboutThis.unknown.onlineOnly": "Stored online only, so Cmdr didn’t download it to look",
+  "aboutThis.unknown.onlineOnly": "Nur online gespeichert, deshalb hat Cmdr die Datei nicht zum Hineinschauen heruntergeladen",
   "@aboutThis.unknown.onlineOnly": {
     "sourceHash": "347baa0"
   }

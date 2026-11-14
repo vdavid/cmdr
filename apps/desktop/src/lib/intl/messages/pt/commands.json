@@ -872,15 +872,15 @@
   "@commands.fileGetInfo.label": {
     "sourceHash": "da65a65"
   },
-  "commands.fileTellMeAbout.label": "Tell me about this",
+  "commands.fileTellMeAbout.label": "Fale sobre isto",
   "@commands.fileTellMeAbout.label": {
     "sourceHash": "0d5deaf"
   },
-  "commands.fileTellMeAbout.description": "Shows where the item came from, what it is, and what removing it would mean",
+  "commands.fileTellMeAbout.description": "Mostra de onde o item veio, o que ele é e o que significaria apagá-lo",
   "@commands.fileTellMeAbout.description": {
     "sourceHash": "66f0488"
   },
-  "commands.aboutThisStopVerdict.label": "Stop the AI take",
+  "commands.aboutThisStopVerdict.label": "Parar o comentário da IA",
   "@commands.aboutThisStopVerdict.label": {
     "sourceHash": "0ffd7ae"
   },

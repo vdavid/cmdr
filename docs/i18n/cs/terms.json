@@ -2010,7 +2010,12 @@
     "accept": ["zápis", "zaps", "zapis", "zapíš"],
     "forms": "noun → zápis; verb → zapsat; written so far → zapsáno",
     "confidence": "high",
-    "sources": "Double Commander (Zápis); MS (zápis, zapisovat); macOS Get Info (Čtení a zápis)"
+    "sources": "Double Commander (Zápis); MS (zápis, zapisovat); macOS Get Info (Čtení a zápis)",
+    "exceptions": {
+      "aboutThis.verdict.writing": "the AI composing text, not data landing on a drive: psát (Píše se krátký komentář…), as people say of writing a text",
+      "aboutThis.verdict.problem.noAnswer": "the AI composing text, not data landing on a drive: napsat (AI tentokrát nic nenapsala)",
+      "settings.aboutThis.aiVerdict.description": "the AI composing text, not data landing on a drive: napsat (AI napíše dvě nebo tři věty)"
+    }
   },
   "zoom": {
     "chosen": "zvětšení",
@@ -4751,5 +4756,43 @@
     "forms": "then closes → a pak se zavře; Cmdr closes afterwards → Pak se Cmdr zavře; after Cmdr closes → po zavření Cmdru; only in a platform select's windows branch (macOS and Linux say ukončit se)",
     "confidence": "tentative",
     "sources": "ms (close → zavřít); no TBX entry for an app closing by itself"
+  },
+  "font": {
+    "chosen": "písmo",
+    "accept": ["písm", "písem"],
+    "forms": "n.: file kind → Písmo; pl. písma, gen. pl. písem",
+    "confidence": "high",
+    "sources": "macOS AppKit FontManager (Font → Písmo); MS TBX (font → písmo); Dolphin (Systémové písmo); DC (Písmo:)"
+  },
+  "video": {
+    "chosen": "video",
+    "accept": ["video", "videa", "videí", "videu"],
+    "forms": "n.: 1 video, 2–4 videa, 5+ videí",
+    "confidence": "high",
+    "sources": "Nautilus and Dolphin (Video); MS TBX (video → video)"
+  },
+  "macos-package": {
+    "chosen": "balíček",
+    "accept": ["balíč"],
+    "forms": "m.: item kind → Balíček; Show Package Contents → Zobrazit obsah balíčku",
+    "confidence": "high",
+    "sources": "macOS Finder LocalizableMerged N158 (Show Package Contents → Zobrazit obsah balíčku)",
+    "exceptions": {
+      "fileExplorer.list.rowKind.package": "shipped screen-reader row kind written as balík before this ruling; Finder's balíček is the ruled form, left for a native reviewer to align (review-queue.md)"
+    }
+  },
+  "generate": {
+    "chosen": "generovat",
+    "accept": ["generov", "vygener"],
+    "forms": "verb → generovat; generated files → generované soubory",
+    "confidence": "tentative",
+    "sources": "MS TBX (generate → generovat, the AI sense); Thunar (bude vygenerován kontrolní součet); DC (generovat název souboru)"
+  },
+  "it-team": {
+    "chosen": "IT oddělení",
+    "accept": ["IT oddělen", "IT tým"],
+    "forms": "n., indeclinable head oddělení: your IT team's policy → zásady vašeho IT oddělení",
+    "confidence": "tentative",
+    "sources": "No pile hit (IT team: none in macOS, MS, Linux, orthodox); IT oddělení is the everyday Czech name for the people who run an employer's or school's computers"
   }
 }

@@ -3042,7 +3042,10 @@
     "chosen": "dừng",
     "confidence": "high",
     "forms": "Stopped after … → Đã dừng sau khi …; the rollback tooltip button → Dừng lại; stopped doing X → đã dừng + verb; something that quit on its own → ngừng",
-    "sources": "macOS Finder (Dừng xóa, Dừng nén), Keychain First Aid"
+    "sources": "macOS Finder (Dừng xóa, Dừng nén), Keychain First Aid",
+    "exceptions": {
+      "aboutThis.verdict.problem.managed": "a policy blocking a request before it leaves, not halting something that runs → chặn (as askCmdr.error.managedByOrganization's không cho phép sense)"
+    }
   },
   "storage": {
     "accept": ["dung lượng", "bộ nhớ"],
@@ -3165,7 +3168,12 @@
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
     "forms": "tag colors Đỏ, Cam, Vàng, Lục, Lam, Tía, Xám (Cyan → Xanh ngọc); a song's or video's metadata tags (ID3, MP4) are thẻ too (Đang đọc thẻ, Không đọc được thẻ)",
-    "sources": "macOS Finder (Thẻ…, Thêm thẻ…, TG_COLOR_*); macOS Music ConvertID3 (ID3 tag version → Phiên bản thẻ ID3)"
+    "sources": "macOS Finder (Thẻ…, Thêm thẻ…, TG_COLOR_*); macOS Music ConvertID3 (ID3 tag version → Phiên bản thẻ ID3)",
+    "exceptions": {
+      "aboutThis.gitSnapshot.from": "a git tag, not a Finder color tag: the catalog keeps git's tag (fileExplorer.readOnly.gitPortalMessage, fileExplorer.git.portalIntro.what)",
+      "aboutThis.headline.fromGitHistory": "a git tag, not a Finder color tag: the catalog keeps git's tag (fileExplorer.git.portalIntro.what)",
+      "ai.cloudConsent.aboutThis.item.git": "a git tag, not a Finder color tag: the catalog keeps git's tag (fileExplorer.git.portalIntro.what)"
+    }
   },
   "tail": {
     "accept": ["bám theo"],
@@ -3545,7 +3553,12 @@
     "confidence": "high",
     "decision": "Hộp thoại thoát khi thao tác đang chạy",
     "forms": "partly written → đã được ghi một phần (predicative); half-written file → tệp ghi dở (attributive)",
-    "sources": "macOS Finder (ghi đè)"
+    "sources": "macOS Finder (ghi đè)",
+    "exceptions": {
+      "aboutThis.verdict.writing": "the AI composing text, not data landing on a drive → viết",
+      "aboutThis.verdict.problem.noAnswer": "the AI composing text, not data landing on a drive → viết",
+      "settings.aboutThis.aiVerdict.description": "the AI composing text, not data landing on a drive → viết"
+    }
   },
   "zip": {
     "chosen": "tệp zip",
@@ -3910,5 +3923,55 @@
     "chosen": "các thiết lập bảo mật đã thống nhất",
     "confidence": "tentative",
     "sources": "catalog (fileExplorer.network.osMountFallback.negotiationInvalid macOS branch)"
+  },
+  "database": {
+    "chosen": "cơ sở dữ liệu",
+    "confidence": "high",
+    "sources": "Microsoft TBX (database → cơ sở dữ liệu); git.po (cơ sở dữ liệu đối tượng)"
+  },
+  "desktop": {
+    "chosen": "Màn hình nền",
+    "confidence": "confirmed",
+    "forms": "the Desktop folder → thư mục Màn hình nền; a Linux desktop environment → môi trường máy tính để bàn",
+    "sources": "macOS SystemFolderLocalizations vi.lproj (Desktop → Màn hình nền, read with plutil, macOS 27, 2026-11-14); catalog (onboarding.stepFda.pro.body)",
+    "exceptions": {
+      "errors.listing.couldntReadUnknown.suggestion": "The Linux desktop environment (môi trường máy tính để bàn), not the Desktop folder.",
+      "errors.listing.diskReadProblem.suggestion": "The Linux desktop environment (môi trường máy tính để bàn), not the Desktop folder.",
+      "errors.listing.ioSerious.suggestion": "The Linux desktop environment (môi trường máy tính để bàn), not the Desktop folder.",
+      "errors.listing.unexpectedSystemResponse.suggestion": "The Linux desktop environment (môi trường máy tính để bàn), not the Desktop folder.",
+      "mtp.ptpcameradDialog.explanation": "“your desktop” is the Linux desktop environment (môi trường máy tính để bàn), not the Desktop folder.",
+      "onboarding.stepOptional.mtp.desc": "“your desktop” is the Linux desktop environment (môi trường máy tính để bàn), not the Desktop folder."
+    }
+  },
+  "font": {
+    "chosen": "phông chữ",
+    "confidence": "high",
+    "sources": "macOS AppKit FontManager (Font → Phông chữ); Microsoft TBX (font → phông chữ); GNOME Nautilus (Phông chữ)"
+  },
+  "importance": {
+    "chosen": "mức độ quan trọng",
+    "confidence": "high",
+    "forms": "the row label → Mức độ quan trọng; the bands Cao / Trung bình / Thấp; left out of the ranking → Không xếp hạng; important folders in prose → các thư mục quan trọng",
+    "sources": "catalog (askCmdr.tool.folderImportance.*: mức độ quan trọng); Microsoft TBX (high importance → tầm quan trọng cao)",
+    "accept": ["quan trọng"]
+  },
+  "it-team": {
+    "chosen": "nhóm IT",
+    "confidence": "high",
+    "accept": ["bộ phận IT"],
+    "sources": "catalog (errors.listing.authRequiredEauth.suggestion: nhóm IT; askCmdr.error.managedByOrganization: Bộ phận IT); the pile has no IT administrator entry"
+  },
+  "macos-package": {
+    "chosen": "gói",
+    "confidence": "confirmed",
+    "forms": "Show Package Contents → Hiển thị nội dung gói",
+    "sources": "macOS Finder (N158 Show Package Contents → Hiển thị nội dung gói)"
+  },
+  "on-disk-size": {
+    "chosen": "trên đĩa",
+    "confidence": "high",
+    "forms": "<size> on disk → <size> trên đĩa; the size-display option and tooltip header → Trên đĩa",
+    "sources": "catalog (settings.listing.sizeDisplay.opt.physical, fileExplorer.dirSize.onDiskLabel, fileExplorer.selectionTooltip.onDiskHeader: Trên đĩa); Xfce Thunar (Size on Disk → Kích cỡ trên đĩa); macOS Finder writes trên ổ đĩa (IN_G1), accepted",
+    "accept": ["trên ổ đĩa"]
   }
 }

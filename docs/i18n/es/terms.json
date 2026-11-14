@@ -1992,7 +1992,7 @@
   },
   "look-inside": {
     "chosen": "mirar dentro de",
-    "accept": ["dentro de", "mirar dentro"],
+    "accept": ["dentro de", "mirar dentro", "mira dentro"],
     "forms": "tool labels Mirando dentro de los archivos / Se ha mirado dentro de los archivos (es-419 Se miró); a named file → Mirando dentro de {name}",
     "confidence": "tentative",
     "sources": "composed; macOS es dentro de for inside",
@@ -3006,7 +3006,8 @@
     "confidence": "high",
     "sources": "macOS SystemSettings (Ajustes, Ajustes del Sistema)",
     "exceptions": {
-      "servers.sheet.s3GcsKeyHelp": "Google Cloud’s own Spanish console names that page Configuración; a third-party label is quoted from its own UI."
+      "servers.sheet.s3GcsKeyHelp": "Google Cloud’s own Spanish console names that page Configuración; a third-party label is quoted from its own UI.",
+      "aboutThis.folderClass.versionControl": "A git repository's own configuration (.git/config), not Cmdr's Settings: la configuración de un repositorio, as git's own Spanish says."
     },
     "decision": "Ask Cmdr",
     "windows": {
@@ -4271,5 +4272,40 @@
     "forms": "system theme color (macOS) → el color del tema del sistema",
     "confidence": "high",
     "sources": "catalog settings.appearance.appColor.opt.system (Color del tema del sistema), settings.theme.mode.keywords"
+  },
+  "database": {
+    "chosen": "base de datos",
+    "accept": ["bases de datos"],
+    "confidence": "high",
+    "sources": "MS TBX database → base de datos; KDE Dolphin, git.po base de datos"
+  },
+  "font": {
+    "chosen": "tipo de letra",
+    "accept": ["tipos de letra"],
+    "confidence": "high",
+    "sources": "macOS AppKit FontManager Font → Tipo de letra; KDE Dolphin tipo de letra (MS also accepts fuente)"
+  },
+  "importance": {
+    "chosen": "importancia",
+    "confidence": "high",
+    "sources": "MS TBX high importance → importancia alta; the band values agree in the feminine (Alta, Media, Baja)",
+    "accept": ["important", "importan"]
+  },
+  "it-team": {
+    "chosen": "equipo de informática",
+    "confidence": "high",
+    "sources": "the catalog's settled form (ai.managed.hostNotAllowed, askCmdr.error.managedByOrganization, errors.listing.authRequiredEauth.suggestion), the usual Spain wording; MS TBX writes TI",
+    "accept": ["equipo de TI"]
+  },
+  "macos-package": {
+    "chosen": "paquete",
+    "confidence": "high",
+    "sources": "macOS Finder N158 Show Package Contents → Mostrar contenido del paquete"
+  },
+  "on-disk-size": {
+    "chosen": "en disco",
+    "forms": "the catalog's settled form: column option En disco, el tamaño en disco; <size> on disk → <size> en disco",
+    "confidence": "high",
+    "sources": "the catalog (settings.listing.sizeDisplay.opt.physical, fileExplorer.dirSize.onDiskLabel); Thunar Tamaño en disco; macOS Finder writes en el disco (IN_G1)"
   }
 }
