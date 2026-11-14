@@ -17,6 +17,7 @@ import AboutAppData from './AboutAppData.svelte'
 import AboutPlaceList from './AboutPlaceList.svelte'
 import AboutActions from './AboutActions.svelte'
 import AboutVerdict from './AboutVerdict.svelte'
+import AboutAiHint from './AboutAiHint.svelte'
 import { aboutThisFixtures } from '#lib/dialog-gallery/fixtures/about-this.js'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
 
@@ -176,11 +177,19 @@ describe('the card’s parts on their own', () => {
     await expectNoA11yViolations(mountInto(AboutRemoval, { removal, settled: true }))
   })
 
-  it('the AI take, writing, stopped, and refused for consent', async () => {
-    for (const id of ['verdict-streaming', 'verdict-stopped', 'verdict-no-consent']) {
+  it('the AI take, writing, stopped, and the local model not running', async () => {
+    for (const id of ['verdict-streaming', 'verdict-stopped', 'verdict-not-ready']) {
       const verdict = aboutThisFixtures[id]?.verdict
       if (!verdict) throw new Error(`no verdict on ${id}`)
       await expectNoA11yViolations(mountInto(AboutVerdict, { verdict, onStop: () => {} }))
+    }
+  })
+
+  it('the AI hint line, for each setting in the way, with its link and its ×', async () => {
+    for (const kind of ['aiOff', 'noCloudConsent', 'notConfigured'] as const) {
+      const target = mountInto(AboutAiHint, { why: { kind }, onDismiss: () => {} })
+      expect(target.querySelector('button[aria-label="Hide this hint"]')).not.toBeNull()
+      await expectNoA11yViolations(target)
     }
   })
 })
