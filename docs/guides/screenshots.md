@@ -173,6 +173,9 @@ The traps already encoded there, so you don't rediscover them:
   would come from a window nobody ships.
 - Unpin before closing tabs. `close_others` deliberately skips pinned tabs, so a remembered pin leaves a third tab in
   the shot.
+- The settings master picks its theme by clicking the settings window's own Theme mode control. A theme set from the
+  main window (`setTheme`) flips the appearance but left that control on "Light", so the dark master showed "Light"
+  picked in a dark window (2026-11-14).
 - The settings window's size is read from the MAIN window. Its own restricted capability rejects
   `plugin:window|inner_size`, which is production behaving correctly.
 
