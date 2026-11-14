@@ -520,4 +520,11 @@ reads Commander One installed, `Slack` probably Slack, `Google` ambiguous (a fak
 its class kept, an empty one known and empty, `node_modules` and a Rust `target` classed, an app's Library folders found
 by id while a name-only vendor folder and another app's cache stay out. `git_tests.rs` pins what the status list proves over a real repo, and a walk past its budget; `owner_tests.rs`,
 `index.rs`, and `platform/macos/apps.rs` the lookups and mappings. `registry.rs` tests the tombstone and run ownership; `signature.rs` tests Apple's tools, a plain file, and
-a tampered copy of `/bin/ls`.
+a tampered copy of `/bin/ls`; `spotlight.rs` that a fresh file has no use record.
+
+Gotcha/Why the session tests script the framework reads: `Sources::none` carries `jobs::OsReads::scripted` (Spotlight,
+LaunchServices, and the code signature all answer `NoRecord`; the download record stays a real `getxattr`). The first
+framework call in a process connects to its daemon, 0.7–1.9 s alone, and with the whole Rust suite starting a process
+per test it ran past nextest's 8 s cap: four card tests timed out only in the full run (macOS 27.0, nextest, 2026-11-14).
+The real reads are tested once each in `platform/macos/`. `the_facts_dont_wait_for_the_verdicts_gate` runs the real
+`start`, so it gathers a folder (no framework row) and holds the gate on a channel the test releases.

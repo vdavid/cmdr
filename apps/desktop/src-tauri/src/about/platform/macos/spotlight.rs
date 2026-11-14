@@ -77,3 +77,23 @@ fn copy_attribute(item: MdItemRef, name: &'static str) -> Option<CFTypeRef> {
     let value = unsafe { MDItemCopyAttribute(item, name.as_concrete_TypeRef()) };
     (!value.is_null()).then_some(value)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The real Spotlight: a file written a moment ago has no use record, which
+    /// reads as unknown, ❌ never "never opened". The card's flow tests script this
+    /// read (`jobs::OsReads`), so this is the one that asks the OS.
+    #[test]
+    fn a_file_written_a_moment_ago_has_no_use_record() {
+        let dir = crate::test_support::TestDir::new("about-spotlight");
+        let file = dir.as_ref().join("notes.txt");
+        std::fs::write(&file, "hello").expect("write the fixture");
+        let fact = last_opened(&file.to_string_lossy());
+        assert!(
+            matches!(&fact, Fact::Unknown(unknown) if unknown.why() == UnknownWhy::NoRecord),
+            "{fact:?}"
+        );
+    }
+}

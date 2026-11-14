@@ -24,7 +24,7 @@ use cmdr_fs::volume::{RoutedKind, Volume};
 use super::event::{AboutRequest, AboutUnavailable};
 use super::history::History;
 use super::index::IndexPlace;
-use super::jobs::{GATHERED, Sources, local_jobs};
+use super::jobs::{GATHERED, OsReads, Sources, local_jobs};
 use super::model::GateReach;
 use super::owner::AppSource;
 use super::platform;
@@ -423,6 +423,7 @@ async fn local_card(resolved: &ResolvedLocation, path: String) -> Result<Gathere
             .map_or(OwnerQuestion::Nothing, |home| OwnerQuestion::of(&path, home)),
         home,
         apps: AppSource::of_the_os(),
+        os: OsReads::of_the_os(),
     };
     Ok(local_gathered(
         &path,

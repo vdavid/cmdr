@@ -225,14 +225,6 @@ async fn a_downloaded_disk_image_streams_the_plan_then_each_fact_then_settles() 
         ),
         "{sources:?}"
     );
-    // A file written a moment ago has no Spotlight use record: unknown, never "never".
-    assert!(
-        facts.iter().any(|fact| matches!(
-            fact,
-            AboutFact::LastOpened(Fact::Unknown(unknown)) if unknown.why() == UnknownWhy::NoRecord
-        )),
-        "{facts:?}"
-    );
 }
 
 #[tokio::test]
@@ -575,6 +567,10 @@ async fn a_cancel_that_beats_its_start_makes_the_start_send_nothing() {
 
 /// ❗ The plan and every fact go out while the verdict's gate is still resolving (its
 /// slot reads `main.db`, which a writer can hold): no fact row waits for the verdict.
+/// The gate holds until the test lets it go, so the order is the proof, ❌ not a
+/// race against a budget. A folder, since this runs the real `start`: a file would
+/// ask Spotlight and LaunchServices, whose cold start a loaded machine stretches
+/// past the cap (`jobs::OsReads`).
 #[tokio::test]
 async fn the_facts_dont_wait_for_the_verdicts_gate() {
     use crate::ignore_poison::IgnorePoison;
@@ -587,8 +583,8 @@ async fn the_facts_dont_wait_for_the_verdicts_gate() {
         )),
     );
     let dir = TestDir::new("about-gate-held");
-    let file = dir.as_ref().join("notes.txt");
-    std::fs::write(&file, "x").expect("write the fixture");
+    let folder = dir.as_ref().join("notes");
+    std::fs::create_dir(&folder).expect("make the fixture");
     let sent = Arc::new(Mutex::new(Vec::<String>::new()));
     let kept = Arc::clone(&sent);
     let channel = tauri::ipc::Channel::new(move |body| {
@@ -605,22 +601,19 @@ async fn the_facts_dont_wait_for_the_verdicts_gate() {
     super::commands::start(
         super::event::AboutRequest {
             request_id: "about-test-gate-held".to_string(),
-            path: file.to_string_lossy().into_owned(),
+            path: folder.to_string_lossy().into_owned(),
             volume_id: None,
-            is_directory: Some(false),
+            is_directory: Some(true),
         },
         channel,
         move || {
-            let _ = held.recv_timeout(LONG);
+            // Held until the test sends, or its sender drops on a failed assert.
+            let _ = held.recv();
             Err(super::event::VerdictUnavailable::AiOff)
         },
         || false,
     );
-    // A local card settles in milliseconds; the gate stays held far longer.
-    wait_until_async(Duration::from_secs(3), "the facts to settle with the gate held", || {
-        saw("factsSettled")
-    })
-    .await;
+    wait_until_async(LONG, "the facts to settle with the gate held", || saw("factsSettled")).await;
     assert!(saw("planned"));
     assert!(!saw("verdictUnavailable"), "the gate is still held");
     release.send(()).expect("the gate waits");

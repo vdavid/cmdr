@@ -11,7 +11,7 @@ use std::time::Duration;
 use cmdr_about::card::{AboutFact, AboutPlan};
 use cmdr_about::fact::{AboutTarget, Fact, FactKind, NotApplicableWhy, UnknownWhy};
 use cmdr_about::gather::Job;
-use cmdr_about::payload::Bundle;
+use cmdr_about::payload::{AppRef, Bundle, Signature, Usage};
 use cmdr_about::sniff::{HEAD_BYTES, RealType, TAIL_BYTES, real_type};
 use cmdr_about::text::ItemText;
 
@@ -78,11 +78,53 @@ pub(crate) struct Sources {
     pub(crate) owner: OwnerQuestion,
     /// Where the owner row's lookups come from.
     pub(crate) apps: AppSource,
+    /// Where the rows that ask the OS's frameworks get their answers.
+    pub(crate) os: OsReads,
+}
+
+/// Where the rows that ask an OS framework over XPC (Spotlight, LaunchServices,
+/// code signing) get their answers: the OS, or a test's fixed ones. The download
+/// record is plain `getxattr`, so it always reads the item.
+///
+/// Gotcha: the first of these calls in a process pays to connect to the
+/// framework's daemon, 0.7–1.9 s alone and past 8 s with the whole Rust suite
+/// starting a process per test (macOS 27.0, nextest, 2026-11-14), so a test of the
+/// card's flow that asked the real OS timed out under load. Flow tests script
+/// them (`Sources::none`); the real calls have their own tests in `platform/`.
+#[derive(Clone, Copy)]
+pub(crate) struct OsReads {
+    /// Spotlight's use record.
+    pub(crate) last_opened: fn(&str) -> Fact<Usage>,
+    /// LaunchServices' default app.
+    pub(crate) default_app: fn(&str) -> Fact<AppRef>,
+    /// The code signature.
+    pub(crate) signature: fn(&str, AboutTarget, Option<&str>) -> Fact<Signature>,
+}
+
+impl OsReads {
+    /// The OS's own answers.
+    pub(crate) fn of_the_os() -> Self {
+        Self {
+            last_opened: platform::last_opened,
+            default_app: platform::default_app,
+            signature: platform::signature,
+        }
+    }
+
+    /// Nothing recorded, for every read: no framework is asked.
+    #[cfg(test)]
+    pub(crate) fn scripted() -> Self {
+        Self {
+            last_opened: |_| Fact::unknown(UnknownWhy::NoRecord),
+            default_app: |_| Fact::unknown(UnknownWhy::NoRecord),
+            signature: |_, _, _| Fact::unknown(UnknownWhy::NoRecord),
+        }
+    }
 }
 
 impl Sources {
     /// No store at all, and a path that names no owner: the identity and OS rows
-    /// only.
+    /// only, with the framework reads scripted (`OsReads`).
     #[cfg(test)]
     pub(crate) fn none() -> Self {
         Self {
@@ -91,6 +133,7 @@ impl Sources {
             home: None,
             owner: OwnerQuestion::Nothing,
             apps: AppSource::of_the_os(),
+            os: OsReads::scripted(),
         }
     }
 }
@@ -125,6 +168,7 @@ pub(crate) fn local_jobs(
 fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources, sub_jobs: SubJobs) -> Option<Job<AboutFact>> {
     let target = probe.target;
     let extension = probe.extension.clone();
+    let os = sources.os;
     // Each job names its call first, so a worker that never comes back says which
     // one it's stuck in (`pool::submit`). The kind, ❌ never the path.
     let job: Job<AboutFact> = match kind {
@@ -138,7 +182,7 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources, sub_jobs:
         }),
         FactKind::Signature => Box::new(move || {
             note_activity("read the code signature", "signature");
-            AboutFact::Signature(platform::signature(&path, target, extension.as_deref()))
+            AboutFact::Signature((os.signature)(&path, target, extension.as_deref()))
         }),
         FactKind::Download => Box::new(move || {
             note_activity("getxattr", "download");
@@ -146,11 +190,11 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources, sub_jobs:
         }),
         FactKind::LastOpened => Box::new(move || {
             note_activity("MDItemCopyAttribute", "lastOpened");
-            AboutFact::LastOpened(platform::last_opened(&path))
+            AboutFact::LastOpened((os.last_opened)(&path))
         }),
         FactKind::DefaultApp => Box::new(move || {
             note_activity("URLForApplicationToOpenURL", "defaultApp");
-            AboutFact::DefaultApp(platform::default_app(&path))
+            AboutFact::DefaultApp((os.default_app)(&path))
         }),
         FactKind::CmdrOperation => {
             let history = sources.history.clone()?;
