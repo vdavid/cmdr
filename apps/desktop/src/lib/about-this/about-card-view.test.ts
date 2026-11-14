@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { aboutThisFixtures } from '#lib/dialog-gallery/fixtures/about-this.js'
-import { sectionsOf, showsOnDisk, tallyRows } from './about-card-view'
+import { collapsedLine, sectionsOf, showsOnDisk, tallyRows } from './about-card-view'
 
 function fixture(id: string) {
   const card = aboutThisFixtures[id]
@@ -33,6 +33,24 @@ describe('sectionsOf', () => {
     expect(unlisted.find((view) => view.section === 'contents')?.collapsed).toBe(false)
     expect(unlisted.find((view) => view.section === 'origin')).toMatchObject({ collapsed: true, collapsedWhy: null })
     expect(sectionsOf(fixture('plain-document')).find((view) => view.section === 'origin')?.collapsedWhy).toBeNull()
+  })
+
+  // Regression: `~/Downloads` showed "Not indexed yet" under "How it's used" with no row label, right below a digest
+  // the index had answered. Its one row is the importance score, which the index doesn't hold.
+  it('words a one-row collapsed section with that row’s own absence, and a shared reason otherwise', () => {
+    const use = sectionsOf(fixture('standard-folder')).find((view) => view.section === 'use')
+    expect(use).toMatchObject({ collapsed: true, collapsedWhy: 'notIndexed' })
+    expect(use && collapsedLine(use)).toBe('aboutThis.importance.notScored')
+    const twoRows = {
+      rows: [
+        { kind: 'recursiveSize' as const, fact: null },
+        { kind: 'importance' as const, fact: null },
+      ],
+      collapsedWhy: 'notIndexed' as const,
+    }
+    expect(collapsedLine(twoRows)).toBe('aboutThis.unknown.notIndexed')
+    const origin = sectionsOf(fixture('not-indexed-folder')).find((view) => view.section === 'origin')
+    expect(origin && collapsedLine(origin)).toBe('aboutThis.section.nothingOnRecord')
   })
 
   it('never collapses a section holding a Notable unknown', () => {

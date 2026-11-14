@@ -140,10 +140,70 @@ fn group_containers_are_named_by_a_team_or_a_group_prefix() {
     assert_eq!(group("2BUA8C4S2C.com.agilebits"), id("com.agilebits"));
 }
 
+/// The folders the OS sets up are told by the path alone, at home and at the
+/// startup disk's top. Regression: `~/Downloads` claimed nothing, so its removal
+/// row read "Nothing Cmdr knows of made this or could make it again" (the real
+/// app, 2026-11-14).
+#[test]
+fn the_folders_the_os_sets_up_are_its_own() {
+    let standard = |path: &str| match OwnerQuestion::of(path, HOME) {
+        OwnerQuestion::Answered(OwnerClaim::StandardFolder { folder }) => Some(folder),
+        _ => None,
+    };
+    for (path, folder) in [
+        (HOME.to_string(), StandardFolder::Home),
+        (format!("{HOME}/"), StandardFolder::Home),
+        (format!("{HOME}/Desktop"), StandardFolder::Desktop),
+        (format!("{HOME}/Documents"), StandardFolder::Documents),
+        (format!("{HOME}/Downloads"), StandardFolder::Downloads),
+        (format!("{HOME}/Downloads/"), StandardFolder::Downloads),
+        (format!("{HOME}/Movies"), StandardFolder::Movies),
+        (format!("{HOME}/Music"), StandardFolder::Music),
+        (format!("{HOME}/Pictures"), StandardFolder::Pictures),
+        (format!("{HOME}/Public"), StandardFolder::Public),
+        (format!("{HOME}/Library"), StandardFolder::HomeLibrary),
+        (format!("{HOME}/Applications"), StandardFolder::HomeApplications),
+        ("/".to_string(), StandardFolder::StartupDisk),
+        ("/Applications".to_string(), StandardFolder::Applications),
+        ("/Library".to_string(), StandardFolder::Library),
+        ("/System".to_string(), StandardFolder::System),
+        ("/Users".to_string(), StandardFolder::Users),
+    ] {
+        assert_eq!(standard(&path), Some(folder), "{path}");
+    }
+    // Whatever home is: a fixture home's Downloads is that home's.
+    assert_eq!(
+        OwnerQuestion::of("/tmp/fixture-home/Downloads", "/tmp/fixture-home"),
+        OwnerQuestion::Answered(OwnerClaim::StandardFolder {
+            folder: StandardFolder::Downloads
+        })
+    );
+    // Only the folder itself: what's inside is the person's own, or another
+    // rule's. Finder's translated name ("Hämtade filer") never reaches the path,
+    // which stays English on disk, so only the English name counts, and only
+    // with its exact case.
+    for path in [
+        format!("{HOME}/Downloads/report.pdf"),
+        format!("{HOME}/Documents/Projects"),
+        format!("{HOME}/Hämtade filer"),
+        format!("{HOME}/downloads"),
+        format!("{HOME}/Videos"),
+        "/Users/someone-else/Downloads".to_string(),
+        "/System/Library".to_string(),
+        "/Applications/Utilities".to_string(),
+    ] {
+        assert_eq!(standard(&path), None, "{path}");
+    }
+    // `/Library` itself is the OS's; a folder in it still asks the receipts.
+    assert_eq!(
+        OwnerQuestion::of("/Library/Application Support/Vendor", HOME),
+        OwnerQuestion::Receipt
+    );
+}
+
 #[test]
 fn a_library_folder_itself_or_a_plain_name_outside_application_support_claims_nothing() {
     for relative in [
-        "Library",
         "Library/Containers",
         "Library/Application Support",
         "Library/Caches/Homebrew",

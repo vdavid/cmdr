@@ -5,14 +5,14 @@ use serde_json::{Value, json};
 use super::*;
 use crate::digest::{AppData, ByteShare, ChildKind, FolderClass, FolderDigest, KindCount, LibraryFolder, SizedChild};
 use crate::fact::{AboutTarget, Fact, UnknownWhy};
-use crate::owner::{InstalledApp, OwnerClaim, OwnerPlace};
+use crate::owner::{InstalledApp, OwnerClaim, OwnerPlace, StandardFolder};
 use crate::payload::{
     AppRef, Bundle, ExecutableCheck, GitContext, GitSnapshot, GitStatus, Identity, ImageContents, Importance,
     ImportanceBand, NotCheckedWhy, RecursiveSize, Signature, Signer, SizeCoverage, SnapshotKind, StapledTicket,
     TrackedState, Usage,
 };
 use crate::provenance::{CmdrOperation, LandedBy, StartedBy, download_fact};
-use crate::sniff::real_type;
+use crate::sniff::{RealType, real_type};
 use crate::text::ItemText;
 
 /// Words every number the way a test can read back: `size:<bytes>` with its
@@ -188,6 +188,26 @@ fn project_folder() -> AboutCard {
             FolderClass::Plain,
         ))),
         ..empty(AboutTarget::Folder)
+    }
+}
+
+/// `~/Downloads`: a standard folder, whose owner and removal rows name it.
+fn downloads_folder() -> AboutCard {
+    AboutCard {
+        identity: Some(identity("Downloads")),
+        owner: Some(Fact::Known(OwnerClaim::StandardFolder {
+            folder: StandardFolder::Downloads,
+        })),
+        ..empty(AboutTarget::Folder)
+    }
+}
+
+/// A zip on a share: its Kind row is the name's claim, the bytes unread.
+fn zip_on_a_share() -> AboutCard {
+    AboutCard {
+        identity: Some(identity("photos.zip")),
+        real_type: Some(RealType::by_name(Some("zip"), UnknownWhy::VolumeCantTell)),
+        ..empty(AboutTarget::File)
     }
 }
 
@@ -861,6 +881,7 @@ fn every_field_that_leaves_names_its_disclosure_item() {
                 "owner.state",
                 "owner.value",
                 "owner.value.app",
+                "owner.value.folder",
                 "owner.value.type",
             ],
         ),
@@ -874,6 +895,7 @@ fn every_field_that_leaves_names_its_disclosure_item() {
                 "realType.value",
                 "realType.value.agreement",
                 "realType.value.bytesAre",
+                "realType.value.bytesNotRead",
                 "realType.value.extension",
                 "realType.value.extensionClaims",
             ],
@@ -926,6 +948,7 @@ fn every_field_that_leaves_names_its_disclosure_item() {
                 "removal[].dataLeft.value.totalBytes",
                 "removal[].dataLeft.value.totalHuman",
                 "removal[].dataLeft.value.totalIsLowerBound",
+                "removal[].folder",
                 "removal[].host",
                 "removal[].type",
             ],
@@ -961,7 +984,13 @@ fn every_field_that_leaves_names_its_disclosure_item() {
         &mut sent,
     );
     // The removal row's other variants carry fields of their own.
-    for card in [downloaded_dmg(), app_with_data(), project_folder()] {
+    for card in [
+        downloaded_dmg(),
+        app_with_data(),
+        project_folder(),
+        downloads_folder(),
+        zip_on_a_share(),
+    ] {
         key_paths(&json_of(&card, "/Applications/Tool.app", None), "", &mut sent);
     }
     let mut mapped = std::collections::BTreeSet::new();
@@ -1185,4 +1214,23 @@ fn key_paths(value: &Value, prefix: &str, out: &mut std::collections::BTreeSet<S
             .for_each(|item| key_paths(item, &format!("{prefix}[]"), out)),
         _ => {}
     }
+}
+
+/// A Kind row from the name alone says the bytes went unread and why, so a model
+/// reads it as a claim; a read file's row keeps `bytesAre` and no `bytesNotRead`.
+#[test]
+fn a_kind_from_the_name_alone_says_the_bytes_went_unread() {
+    let unread = json_of(&zip_on_a_share(), "/Volumes/share/photos.zip", None);
+    assert_eq!(
+        unread["realType"],
+        json!({ "state": "known", "value": {
+            "bytesNotRead": "volumeCantTell",
+            "extension": "zip",
+            "extensionClaims": "archive",
+            "agreement": "cantTell",
+        }})
+    );
+    let read = json_of(&downloaded_dmg(), "/Users/jane/Downloads/tool.dmg", None);
+    assert!(read["realType"]["value"].get("bytesAre").is_some());
+    assert!(read["realType"]["value"].get("bytesNotRead").is_none());
 }

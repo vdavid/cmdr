@@ -6,7 +6,7 @@ string changes there, change it here too, or regenerate this list. Where a value
 placeholder or tag is filled in by the card (a date, a size, a path).
 
 The list below covers every key the branch adds, grouped by the surface it shows on (checked against the catalogs on
-2026-11-14: all 313 added or changed keys are here). The decisions behind the layout, with their evidence, are in
+2026-11-14: all 341 added or changed keys are here). The decisions behind the layout, with their evidence, are in
 `tell-me-about-this-review.md`.
 
 ## Open questions, all in one place
@@ -387,9 +387,13 @@ The list below covers every key the branch adds, grouped by the surface it shows
 - `aboutThis.identity.copyLinkTarget`: Copy where it points
   - Where: Accessible name and hover hint of the copy button beside the "Points to" row of a symbolic link on the "Tell
     me about this" card. It copies the full target path.
-- `aboutThis.realType.matches`: {kind}, as its name says
-  - Where: Answer on the "Kind" row of the "Tell me about this" card when the file's contents match what its extension
-    says. No closing period.
+- `aboutThis.realType.matches`: {kind}, checked against its contents
+  - Where: Answer on the "Kind" row of the "Tell me about this" card when Cmdr read the file's first bytes and they
+    confirm what its extension says. It says Cmdr looked, unlike the answer for a file Cmdr couldn't read. No closing
+    period.
+- `aboutThis.realType.unread`: {kind}, as its name says
+  - Where: Answer on the "Kind" row when Cmdr didn't read the file's contents (a network drive or phone, a file stored
+    online only, a read the system refused), so the kind is only the extension's claim. No closing period.
 - `aboutThis.realType.mismatch`: The contents say {kind}, while the name ends in .{extension}.
   - Where: Answer on the "Kind" row of the "Tell me about this" card when the file's contents are a different kind than
     its extension says (for example a program named like a photo). Shown with a warning mark.
@@ -467,6 +471,8 @@ from Cmdr's image index, never from the picture.
 - `aboutThis.imageContents.indexingOff`: Image indexing is off
   - Where: Muted answer on the "What it shows" row when the person turned image indexing off in Settings, so Cmdr has
     nothing stored about what pictures show. An ordinary state. No closing period.
+- `aboutThis.unknown.onlineOnly`: Stored online only, so Cmdr didn’t download it to look
+  - Where: Muted answer on a card row when the file is stored online only and reading it would download it.
 - `aboutThis.unknown.indexingOff`: Its index is turned off
   - Where: Muted answer on a "Tell me about this" card row when the index that would answer it is turned off in
     Settings. An ordinary state, not a problem. Short, no closing period. (No row shows it today: the picture row has
@@ -595,6 +601,9 @@ from Cmdr's image index, never from the picture.
   {countText} times}}} other {}}
   - Where: Answer on the "Last opened" row of the "Tell me about this" card: the date the system recorded, and how many
     times it was opened when that's recorded. <date></date> becomes the date. No closing period.
+- `aboutThis.importance.notScored`: Cmdr hasn’t scored how much this folder matters yet
+  - Where: Muted answer on the "Importance" row when the importance ranking hasn't scored the folder (it scores apart
+    from the drive index). Also the one line of "How it’s used" when that's its only row.
 - `aboutThis.importance.band`: {band, select, high {High} medium {Medium} low {Low} other {Not ranked}}
   - Where: Answer on the "Importance" row of the "Tell me about this" card: how important Cmdr's drive index scores the
     folder. "Not ranked" is for folders the ranking leaves out on purpose (caches, build output, hidden, system, and
@@ -675,6 +684,24 @@ from Cmdr's image index, never from the picture.
   - Where: Answer on the "Belongs to" row of the "Tell me about this" card for something Homebrew installed. "Homebrew"
     is the package manager's name, and "cask" and "formula" are its own terms for an app and a command-line tool; keep
     them. No closing period.
+- `aboutThis.owner.standardFolder`: {folder}, set up by the system
+  - Where: Answer on the "Belongs to" row for a folder the OS creates and expects. {folder} is one of the names below.
+- `aboutThis.standardFolder.home`: Your home folder
+- `aboutThis.standardFolder.desktop`: Your Desktop folder
+- `aboutThis.standardFolder.documents`: Your Documents folder
+- `aboutThis.standardFolder.downloads`: Your Downloads folder
+- `aboutThis.standardFolder.movies`: Your Movies folder
+- `aboutThis.standardFolder.music`: Your Music folder
+- `aboutThis.standardFolder.pictures`: Your Pictures folder
+- `aboutThis.standardFolder.public`: Your Public folder
+- `aboutThis.standardFolder.homeLibrary`: Your Library folder
+- `aboutThis.standardFolder.homeApplications`: Your own Applications folder
+- `aboutThis.standardFolder.applications`: The computer’s Applications folder
+- `aboutThis.standardFolder.library`: The computer’s Library folder
+- `aboutThis.standardFolder.system`: The System folder of macOS
+- `aboutThis.standardFolder.users`: The Users folder
+- `aboutThis.standardFolder.startupDisk`: The top of the startup disk
+  - Where: The folder's name in the owner row above. Finder may show a translated name; the path on disk is English.
 - `aboutThis.owner.insideApp`: Part of {app}
   - Where: Answer on the "Belongs to" row of the "Tell me about this" card for something inside an app's bundle. No
     closing period.
@@ -830,6 +857,22 @@ from Cmdr's image index, never from the picture.
 
 ### The card: what removing it means
 
+- `aboutThis.removal.standardFolder.home`: It’s your home folder: everything of yours on this computer is inside it, and
+  the system and every app expect it.
+- `aboutThis.removal.standardFolder.personal`: It’s one of your standard folders: the system and your apps expect to
+  find it, and everything inside it goes with it.
+- `aboutThis.removal.standardFolder.homeLibrary`: It holds the settings and data your apps keep for you, and they can
+  stop working or start over without it.
+- `aboutThis.removal.standardFolder.homeApplications`: It holds apps installed for you alone, and the system looks for
+  them here.
+- `aboutThis.removal.standardFolder.applications`: It holds this computer’s apps, and the system looks for them here.
+- `aboutThis.removal.standardFolder.library`: It holds settings and data that apps and the system keep for everyone on
+  this computer, and they can stop working without it.
+- `aboutThis.removal.standardFolder.system`: It’s macOS itself: the computer can’t start without it.
+- `aboutThis.removal.standardFolder.users`: It holds every account’s home folder on this computer.
+- `aboutThis.removal.standardFolder.startupDisk`: It holds everything on the startup disk, macOS included.
+  - Where: The first line under "What removing it means" for a folder the OS creates (`personal` covers Desktop,
+    Documents, Downloads, Movies, Music, Pictures, and Public). Never reassuring.
 - `aboutThis.removal.uncommittedWork`: It has changes no commit holds, so git can’t bring those back.
   - Where: One line under "What removing it means" on the "Tell me about this" card: the item has uncommitted changes in
     git. A consequence, never advice.
@@ -1089,7 +1132,8 @@ In the "What Cmdr sends" fold under Settings > AI > Provider and in onboarding's
     (`recursiveSize`), and a yes/no flag that the name hid a reordering character (`nameHidReordering`; the character
     itself never leaves, and invisible ones aren't flagged). Too long for one line? Splitting the name flag into its own
     line is the alternative (a new disclosure token).
-- `ai.cloudConsent.aboutThis.item.realType`: What kind of file its first bytes say it is
+- `ai.cloudConsent.aboutThis.item.realType`: What kind of file its first bytes say it is, or its name where Cmdr didn’t
+  read them
 - `ai.cloudConsent.aboutThis.item.imageIndex`: For a picture, the labels Cmdr’s image index gave it and the first lines
   of text it found in it, read from Cmdr’s index, never the picture itself
   - **New** (consent stays at version 3: nothing has shipped under 3 yet). It rides with the look inside: if the take
@@ -1115,7 +1159,8 @@ In the "What Cmdr sends" fold under Settings > AI > Provider and in onboarding's
 - `ai.cloudConsent.aboutThis.item.git`: Its git repository’s folder, branch, and status, or for a file from git’s
   history, the commit, branch, or tag it’s from and when it last changed there
   - **New since the last draft** (added "and when it last changed there"): a snapshot sends `lastChanged`.
-- `ai.cloudConsent.aboutThis.item.owner`: The app or installer it belongs to, and how Cmdr knows
+- `ai.cloudConsent.aboutThis.item.owner`: The app or installer it belongs to, or which standard folder of the system it
+  is, and how Cmdr knows
 - `ai.cloudConsent.aboutThis.item.importance`: For a folder, how much it matters by Cmdr’s ranking, and how often you
   open it in Cmdr
 - `ai.cloudConsent.aboutThis.item.inside`: For a folder, what sort it is (like a cache or build output), how many things

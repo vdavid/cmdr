@@ -138,7 +138,8 @@ fn the_image_row_reads_the_index_so_a_share_and_an_evicted_picture_have_it() {
         image_format: true,
     });
     assert!(evicted.has(K::ImageContents));
-    assert!(!evicted.has(K::RealType));
+    // Its Kind row is the name's claim: nothing reads the bytes.
+    assert!(evicted.has(K::RealType));
     let no_images = VolumeCaps {
         image_index: false,
         ..mounted_share()
@@ -200,9 +201,15 @@ fn a_phone_answers_identity_and_says_so_once() {
     let phone = phone();
     for target in [File, Folder, AppBundle, Package, Symlink] {
         let plan = plan_of(target, Some("dmg"), &phone);
+        // A file's Kind row comes from its name, which the phone does answer.
+        let nature = if target == File {
+            vec![K::Identity, K::RealType]
+        } else {
+            vec![K::Identity]
+        };
         assert_eq!(
             sections(&plan),
-            [(Section::Nature, vec![K::Identity]), (Section::Removal, vec![])],
+            [(Section::Nature, nature), (Section::Removal, vec![])],
             "{target:?}"
         );
         assert_eq!(
@@ -225,20 +232,21 @@ fn an_archive_entry_answers_identity_and_the_archives_own_download_record() {
         sections(&plan_of(ArchiveEntry, Some("jpg"), &archive)),
         [
             (Section::Origin, vec![K::Download]),
-            (Section::Nature, vec![K::Identity]),
+            (Section::Nature, vec![K::Identity, K::RealType]),
             (Section::Removal, vec![]),
         ]
     );
     // Even on a volume that answers everything, an entry has no owner, repo, or
-    // operation of its own.
+    // operation of its own, and its Kind row is its name's claim alone.
     assert_eq!(
         sections(&plan_of(ArchiveEntry, Some("jpg"), &local())),
         [
             (Section::Origin, vec![K::Download]),
-            (Section::Nature, vec![K::Identity]),
+            (Section::Nature, vec![K::Identity, K::RealType]),
             (Section::Removal, vec![]),
         ]
     );
+    assert!(!plan_of(ArchiveEntry, Some("xyz"), &local()).has(K::RealType));
     // The download row says which archive it's in, so no note says what "the
     // volume" answers.
     assert_eq!(plan_of(ArchiveEntry, Some("jpg"), &archive).volume_note, None);
@@ -276,7 +284,7 @@ fn a_git_snapshot_entry_leads_with_its_snapshot_and_nothing_of_the_disks() {
         } else {
             vec![
                 (Section::Origin, vec![K::GitSnapshot]),
-                (Section::Nature, vec![K::Identity]),
+                (Section::Nature, vec![K::Identity, K::RealType]),
                 (Section::Removal, vec![]),
             ]
         };
@@ -362,7 +370,8 @@ fn an_os_without_use_history_or_signing_plans_neither_row_and_adds_no_note() {
 }
 
 /// Reading an online-only file's bytes downloads it, so the rows that read them
-/// aren't planned.
+/// aren't planned. Its Kind row stays, answered from the name alone
+/// (`RealType::by_name`), and only when the name claims a kind.
 #[test]
 fn an_online_only_file_plans_no_row_that_reads_its_bytes() {
     let plan = plan(PlanInput {
@@ -377,9 +386,36 @@ fn an_online_only_file_plans_no_row_that_reads_its_bytes() {
         git_snapshot: false,
         image_format: false,
     });
-    assert!(!plan.has(K::RealType));
+    assert!(plan.has(K::RealType), "the name's claim reads nothing");
     assert!(!plan.has(K::Signature));
     assert!(plan.has(K::Download), "an xattr is metadata, kept for an evicted file");
+    let unclaimed = super::plan(PlanInput {
+        target: File,
+        extension: Some("xyz"),
+        is_executable: false,
+        contents_local: false,
+        caps: &local(),
+        os: &macos(),
+        owner: &OwnerQuestion::Nothing,
+        in_a_repo: false,
+        git_snapshot: false,
+        image_format: false,
+    });
+    assert!(!unclaimed.has(K::RealType), "a name with no claim has nothing to say");
+}
+
+/// Where Cmdr reads no bytes (a server, a phone), a file whose name claims a kind
+/// still gets its Kind row; one whose name claims nothing doesn't.
+#[test]
+fn a_volume_that_reads_no_bytes_plans_the_kind_row_from_the_name() {
+    let server = VolumeCaps {
+        content: false,
+        ..mounted_share()
+    };
+    assert!(plan_of(File, Some("zip"), &server).has(K::RealType));
+    assert!(plan_of(File, Some("zip"), &phone()).has(K::RealType));
+    assert!(!plan_of(File, Some("xyz"), &server).has(K::RealType));
+    assert!(!plan_of(File, None, &phone()).has(K::RealType));
 }
 
 /// ❗ An online-only app or package (iCloud Drive) plans no row that opens its

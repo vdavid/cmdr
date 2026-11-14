@@ -6,7 +6,7 @@
     import type { FactKind, NotApplicableWhy, Unknown } from '#lib/ipc/bindings.js'
     import { t } from '#lib/intl/messages.svelte.js'
     import Icon from '#lib/ui/Icon.svelte'
-    import { NOT_APPLICABLE_WHY, ROW_UNKNOWN, UNKNOWN_WHY } from './about-words'
+    import { NOT_APPLICABLE_WHY, absenceKey } from './about-words'
 
     interface Props {
         kind: FactKind
@@ -17,9 +17,7 @@
     const { kind, unknown, notApplicable }: Props = $props()
 
     const key = $derived(
-        unknown
-            ? (ROW_UNKNOWN[kind]?.[unknown.why] ?? UNKNOWN_WHY[unknown.why])
-            : NOT_APPLICABLE_WHY[notApplicable ?? 'volumeHasNone'],
+        unknown ? absenceKey(kind, unknown.why) : NOT_APPLICABLE_WHY[notApplicable ?? 'volumeHasNone'],
     )
     const notable = $derived(unknown?.prominence === 'notable')
 </script>

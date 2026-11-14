@@ -156,9 +156,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.aboutThis.item.realType": "What kind of file its first bytes say it is",
+  "ai.cloudConsent.aboutThis.item.realType": "What kind of file its first bytes say it is, or its name where Cmdr didn’t read them",
   "@ai.cloudConsent.aboutThis.item.realType": {
-    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Cmdr reads the start of the file to tell its real format (a program named like a photo shows up). Only the kind leaves, never the bytes. Sentence case, no period.",
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Cmdr reads the start of the file to tell its real format (a program named like a photo shows up); where it can't read the file (a network drive, a file stored online only), the kind is what the file's name says, and why Cmdr didn't read it. Only the kind leaves, never the bytes. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -198,9 +198,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.aboutThis.item.owner": "The app or installer it belongs to, and how Cmdr knows",
+  "ai.cloudConsent.aboutThis.item.owner": "The app or installer it belongs to, or which standard folder of the system it is, and how Cmdr knows",
   "@ai.cloudConsent.aboutThis.item.owner": {
-    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. The app or installer package Cmdr thinks owns the item, with how sure it is (from the folder's name, an installer's record, and so on). Sentence case, no period.",
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. The app or installer package Cmdr thinks owns the item, with how sure it is (from the folder's name, an installer's record, and so on), or, for a folder the operating system creates (Downloads, Applications, the home folder), which one it is. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

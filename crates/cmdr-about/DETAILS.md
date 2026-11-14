@@ -23,7 +23,8 @@ Modules import downward only, which is what keeps `module-cycles` green:
 - **`Unknown` is built only from an `UnknownWhy`** (`Fact::unknown`), so the prominence on the wire is always the one
   the rule gives. Routine: `NoRecord`, `NotInStatus`, `NoInstalledAppMatches`, `VolumeCantTell` (the card's volume note
   says that one once), `VolumeStoppedAnswering`, `NotIndexed`, and `IndexingOff` (the person turned image indexing off:
-  a setting they chose, so the image row says it in one quiet line). Everything else is Notable.
+  a setting they chose, so the image row says it in one quiet line), and `OnlineOnly` (a cloud drive keeps the contents,
+  and the card never downloads a file to describe it). Everything else is Notable.
 - **Decision: `NotIndexed` is Routine.** Indexing off or not there yet is nothing going wrong, and on a folder it's one
   cause behind its size, what's inside, and its importance: Notable, it drew three warning sentences on every folder of
   an unindexed drive (screenshots, 2026-11-13). `only_ordinary_absences_are_routine` pins the list.
@@ -126,6 +127,12 @@ document or e-book is a zip; `m4a` is an MP4; a `.js` may start with an interpre
 `.so` may be Mach-O). So a `.txt`, `.md`, `.json`, or source file whose bytes are text `Matches` (the Kind row reads
 "Text, as its name says"), and a `.jpg` full of text is a `Mismatch`.
 
+- **Where Cmdr reads no bytes** (a share, a phone, an archive's entry, git's history, an online-only file, a read the OS
+  refused), `RealType::by_name` gives the extension's claim with `sniffed: Unknown(why)` and `CantTell`, and the card
+  words it as a claim ("Zip archive, as its name says"); a read that matched says it looked ("Image, checked against its
+  contents"). A name with no claim is `Unknown(why)` at the top, and the plan leaves that row out where no bytes are
+  read. **Decision/Why**: a share's file showed no Kind row at all while its name said what it claimed to be (the real
+  app, 2026-11-14), and "as its name says" on a confirmed JPEG read the same as a guess.
 - **Gotcha/Why**: without the text check, every plain text file was `CantTell`, the Kind row hedged "Text, going by its
   name", and the verdict eval's models read the projection's `bytesAre: unrecognized, agreement: cantTell` as "its
   contents don't match the extension" (`docs/notes/about-verdict-eval.md`). Regression test:
@@ -146,8 +153,11 @@ rows, and the volume note.
   `download_records` is off on Windows, where Cmdr reads no download record: a row that could only answer `NoRecord`
   would claim there's none.
 - **An online-only file** (`contents_local: false`, a cloud drive evicted it) plans no row that reads its bytes: the
-  real type and the signature, and for an app or package the bundle and its app data (both open its `Info.plist`).
-  Reading them would download it. Its xattrs are metadata and stay.
+  signature, and for an app or package the bundle and its app data (both open its `Info.plist`). Reading them would
+  download it. Its xattrs are metadata and stay.
+- **The Kind row** (`RealType`) is planned for a file whose bytes the volume reads (`caps.content`, `contents_local`),
+  and otherwise, for a file or an archive's entry, only when the name claims a kind (`sniff::claims_a_kind`): the host
+  then answers `RealType::by_name` without reading (§ Real type).
 - **Each kind sits in exactly one section** (`rows_of`): Origin (download, Cmdr operation), Nature (identity, real type,
   image contents, bundle, signature, recursive size), Use (last opened, default app, importance), Context (owner, git,
   app data), Contents (folder digest), Removal (derived, no rows, always last).
@@ -206,6 +216,8 @@ and `rank` follows it; the card shows the top two.
   `UncommittedWork`: removing it leaves the files but drops every commit not pushed elsewhere, and Cmdr can't tell
   what's pushed. Said of `.svn` too, where it overstates the loss (svn's history is on the server): the line never
   understates one.
+- **A standard folder** → `StandardFolder { folder }`, ranked first: no other consequence outweighs removing the home
+  folder, `~/Downloads`, or `/System`. The frontend words it by what the folder holds, never as safe.
 - **A `.git` portal entry** → `InGitHistory` alone: it's git's record, so no other consequence applies.
 - **A symlink** → `LinkOnly`; **more than one hard link** → `OtherNamesRemain`. Without these the fallback would call a
   link the person's own irreplaceable document.
@@ -234,6 +246,14 @@ word certainty honestly. `home` is a parameter, so a fixture home never touches 
   is `Ambiguous`; none is `NoRecord`.
 - **By path**: a Homebrew `Cellar/<name>` or `Caskroom/<name>` under `/opt/homebrew`, `/usr/local`, or
   `/home/linuxbrew/.linuxbrew`; anything inside an `.app` bundle is that app's (the bundle itself isn't inside one).
+- **Standard folders, by path alone** (`OwnerClaim::StandardFolder`, checked first): the home folder itself, its
+  `Desktop`, `Documents`, `Downloads`, `Movies`, `Music`, `Pictures`, `Public`, `Library`, and `Applications`, and `/`,
+  `/Applications`, `/Library`, `/System`, `/Users`. Only the folder itself, exact case: what's inside is the person's
+  own or another rule's (a folder in `/Library` still asks the receipts). The on-disk name is English whatever Finder
+  shows (`.localized`), so a translated name never needs matching. **Why**: `~/Downloads` claimed nothing, so its
+  removal row fell back to "Nothing Cmdr knows of made this", underselling what the system and apps expect of it (the
+  real app, 2026-11-14). Not covered: Linux's `Videos` and `Templates` (they'd be wrong on a Mac, and the rule takes no
+  OS), and the insides of `/System`, `/usr`, `/bin`.
 - **Not claimed**: dot-folders in home (`~/.npm`, `~/.cargo`), plain names in Library folders other than
   `Application Support`, anything else. A curated tool table is #1179.
 
@@ -345,13 +365,15 @@ the JSON is the cheapest nudge there is; the agent tool's description asks for i
 
 - **Kept**: the target, the path (through `model_text`) and every `ItemText` as is: name, sizes, dates, hard links, a
   link's target; the real type (Cmdr's tokens plus the extension); bundle id, name, version; signer with team, ticket,
-  and whether the executable was checked; download time and app, and the archive a record is from; Cmdr's operation with
-  its source path and volume name; last opened and use count; the default app; importance band, staleness, the scorer's
-  reasons, and visits; the owner claim and its how; git root, branch, status; a folder's size, class, children and
-  largest files by name and size, kind mix, unchanged share; an app's Library folders by name, place, and size; a portal
-  entry's snapshot; a picture's index tags as `taggedAs` and its recognized text's first lines as `recognizedText`
-  (renamed from the payload's `tags` and `textLines` on purpose, so the key itself says they're labels and found text,
-  never a description; the verdict's prompt says the same, § The plan says why).
+  and whether the executable was checked; a Kind from the name alone as `bytesNotRead` (the why) in place of `bytesAre`,
+  two keys rather than a nested fact so a read file's projection keeps the shape the verdict eval measured; a standard
+  folder's token as the owner (`standardFolder`) and the removal line; download time and app, and the archive a record
+  is from; Cmdr's operation with its source path and volume name; last opened and use count; the default app; importance
+  band, staleness, the scorer's reasons, and visits; the owner claim and its how; git root, branch, status; a folder's
+  size, class, children and largest files by name and size, kind mix, unchanged share; an app's Library folders by name,
+  place, and size; a portal entry's snapshot; a picture's index tags as `taggedAs` and its recognized text's first lines
+  as `recognizedText` (renamed from the payload's `tags` and `textLines` on purpose, so the key itself says they're
+  labels and found text, never a description; the verdict's prompt says the same, § The plan says why).
 - **Redacted**: each download source to `redact_for_egress` (a host, or a kind with no text).
 - **Dropped**: every raw `path` kept for navigating (an owner's app bundle, a digest child, a largest file, a Library
   folder: the largest files' paths would map a folder's whole subtree), and the prominence.
@@ -521,3 +543,10 @@ Raised 149 → 151 by a picture's "What it shows" row (§ The plan):
 - **`ImageContents::of`**: which tags are worth naming (at least 0.3 confident, six at most, underscores as spaces) and
   how much of the recognized text shows (three lines of 120 characters, through `shown_text`), each a rule a person
   could argue. The host passes the index's raw row.
+
+Raised 151 → 153 by the real app's card (2026-11-14):
+
+- **`owner::StandardFolder`**: a wire type, which folder the OS set up. Which folders count is a rule a person could
+  argue, and the removal row ranks on it, so it lives with the owner rule (§ The owner).
+- **`RealType::by_name`**: what the Kind row says where Cmdr reads no bytes, and that it's a claim. A host building the
+  struct itself would decide the agreement and when a name claims nothing, both rules here.

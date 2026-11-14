@@ -14,6 +14,7 @@ import type {
   HiddenInName,
   PlannedSection,
   RemovalConsequence,
+  SniffedKind,
   UnknownWhy,
 } from '#lib/ipc/bindings.js'
 import { applyAboutEvent, emptyCard, type AboutCardData } from '#lib/about-this/about-card.js'
@@ -30,6 +31,24 @@ export function routine(why: UnknownWhy): Fact<never> {
 }
 export function notable(why: UnknownWhy): Fact<never> {
   return { state: 'unknown', value: { why, prominence: 'notable' } }
+}
+
+/**
+ * A Kind row Cmdr answered from the name alone (`RealType::by_name`): the bytes unread for `why`, the extension's claim
+ * standing.
+ */
+export function kindByName(kind: SniffedKind, extension: string, why: UnknownWhy): AboutFact {
+  return {
+    kind: 'realType',
+    fact: {
+      state: 'known',
+      value: {
+        sniffed: routine(why),
+        claimed: { extension, kind },
+        agreement: 'cantTell',
+      },
+    },
+  }
 }
 
 /** No footer actions: what a card derives before any fact lands on a volume that allows none. */

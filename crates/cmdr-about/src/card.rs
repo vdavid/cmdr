@@ -365,7 +365,14 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
 
     let applies = |kind: FactKind| match kind {
         FactKind::Identity => true,
-        FactKind::RealType => target == File && caps.content && contents_local,
+        // Where Cmdr won't read the bytes (a share, a phone, an online-only file, an
+        // archive's entry), the name's claim still says what it is, worded as a
+        // claim; a name with no claim would leave a row with nothing to say.
+        FactKind::RealType => match target {
+            File => (caps.content && contents_local) || crate::sniff::claims_a_kind(extension.as_deref()),
+            ArchiveEntry => crate::sniff::claims_a_kind(extension.as_deref()),
+            Folder | AppBundle | Package | Symlink => false,
+        },
         // Opening an online-only bundle's `Info.plist` downloads it.
         FactKind::Bundle => is_bundle && caps.system && contents_local,
         FactKind::Signature => signable && caps.system && os.code_signing && contents_local,

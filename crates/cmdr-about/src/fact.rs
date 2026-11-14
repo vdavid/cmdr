@@ -144,6 +144,10 @@ pub enum UnknownWhy {
     /// The person turned off the index that would answer it (image indexing).
     /// Routine: a setting they chose, said once in the row.
     IndexingOff,
+    /// The file's contents are online only (a cloud drive evicted them), and
+    /// reading them would download it. Routine: an ordinary state, and the card
+    /// never downloads a file to describe it.
+    OnlineOnly,
 }
 
 impl UnknownWhy {
@@ -156,7 +160,8 @@ impl UnknownWhy {
             | UnknownWhy::VolumeCantTell
             | UnknownWhy::VolumeStoppedAnswering
             | UnknownWhy::NotIndexed
-            | UnknownWhy::IndexingOff => Prominence::Routine,
+            | UnknownWhy::IndexingOff
+            | UnknownWhy::OnlineOnly => Prominence::Routine,
             UnknownWhy::LibraryNameMatchesNoApp
             | UnknownWhy::TimedOut
             | UnknownWhy::Unreachable

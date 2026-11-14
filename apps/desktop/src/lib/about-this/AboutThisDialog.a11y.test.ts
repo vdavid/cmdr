@@ -70,6 +70,8 @@ describe('AboutThisDialog a11y', () => {
     'verdict-managed',
     'verdict-ai-off',
     'git-snapshot',
+    'share-file',
+    'standard-folder',
   ])('has no violations: %s', async (id) => {
     await expectNoA11yViolations(await render(id))
   })

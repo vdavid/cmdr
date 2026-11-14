@@ -168,8 +168,10 @@ fn what(card: &AboutCard) -> HeadlineWhat {
             let real_type = known(&card.real_type);
             // The bytes win over the name: a program named like a picture is a program.
             let kind = real_type.and_then(|found| match found.agreement {
-                TypeAgreement::Matches | TypeAgreement::CantTell => found.claimed.kind.or(Some(found.sniffed.kind)),
-                TypeAgreement::Mismatch => Some(found.sniffed.kind),
+                TypeAgreement::Matches | TypeAgreement::CantTell => {
+                    found.claimed.kind.or(found.sniffed.known().map(|sniffed| sniffed.kind))
+                }
+                TypeAgreement::Mismatch => found.sniffed.known().map(|sniffed| sniffed.kind),
             });
             HeadlineWhat::File {
                 kind: kind.filter(|kind| *kind != SniffedKind::Unrecognized),
@@ -282,9 +284,16 @@ fn lead(card: &AboutCard) -> HeadlineLead {
         Some(OwnerClaim::ByName { app, place, .. }) => {
             return of_app(app, *place, Certainty::Probable);
         }
-        // An installer's or Homebrew's claim, and a file inside an app, are context
-        // for their own row: they don't say why the item is here in a few words.
-        Some(OwnerClaim::InstalledBy { .. } | OwnerClaim::Homebrew { .. } | OwnerClaim::InsideApp { .. }) | None => {}
+        // An installer's or Homebrew's claim, a file inside an app, and a standard
+        // folder are context for their own row: they don't say why the item is
+        // here in a few words.
+        Some(
+            OwnerClaim::InstalledBy { .. }
+            | OwnerClaim::Homebrew { .. }
+            | OwnerClaim::InsideApp { .. }
+            | OwnerClaim::StandardFolder { .. },
+        )
+        | None => {}
     }
     if let Some(app) = by {
         return HeadlineLead::DownloadedBy { app, at };

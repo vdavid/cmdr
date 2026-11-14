@@ -422,6 +422,60 @@ const app: Stream = {
   settled: true,
 }
 
+// ── ~/Downloads: a folder the system set up, not yet scored for importance ──────
+
+const DOWNLOADS = `${HOME}/Downloads`
+const downloadsSize = total(23_418_880_000, 'exact', 1_204, 96)
+const downloadsHeadline: Headline = {
+  what: { type: 'folder' },
+  size: { bytes: downloadsSize.logical, atLeast: false },
+  lead: { template: 'plain' },
+}
+const downloadsRemoval = derived(downloadsHeadline, [{ type: 'standardFolder', folder: 'downloads' }], [], {
+  shown: [{ type: 'showInFileManager' }, { type: 'moveToTrash' }],
+  more: [],
+})
+
+const downloads: Stream = {
+  plan: folderPlan(['owner']),
+  first: derived({ ...downloadsHeadline, size: null }, [{ type: 'cantTell' }]),
+  facts: [
+    {
+      fact: digestFact({
+        directChildren: 312,
+        biggestChildren: [
+          child(DOWNLOADS, 'Tessera-2.4.1-arm64.dmg', 412_318_720, false),
+          child(DOWNLOADS, 'holiday-photos', 2_912_602_624, true),
+          child(DOWNLOADS, 'Scans 2025.zip', 48_120_000, false),
+        ],
+        largestFiles: { state: 'known', value: [child(DOWNLOADS, 'Tessera-2.4.1-arm64.dmg', 412_318_720, false)] },
+        kindMix: [
+          { kind: 'document', count: 140 },
+          { kind: 'image', count: 98 },
+          { kind: 'archive', count: 41 },
+          { kind: 'folder', count: 33 },
+        ],
+        unchangedForAYear: {
+          state: 'known',
+          value: { bytes: 9_120_000_000, of: downloadsSize.logical, atLeast: true },
+        },
+        class: 'plain',
+      }),
+      derived: downloadsRemoval,
+    },
+    { fact: identity('Downloads', null, '2026-11-13'), derived: downloadsRemoval },
+    { fact: sizeFact(downloadsSize), derived: downloadsRemoval },
+    {
+      fact: { kind: 'owner', fact: { state: 'known', value: { type: 'standardFolder', folder: 'downloads' } } },
+      derived: downloadsRemoval,
+    },
+    // The importance store hasn't scored it: its section collapses to the row's own words.
+    { fact: { kind: 'importance', fact: routine('notIndexed') }, derived: downloadsRemoval },
+    ...noRecords.map((fact) => ({ fact, derived: downloadsRemoval })),
+  ],
+  settled: true,
+}
+
 /** Keyed by the `tell-me-about-this` entry's state ids in `gallery-registry.ts`. */
 export const aboutThisFolderFixtures: Record<string, AboutCardData> = {
   folder: card('website', SITE, site),
@@ -429,4 +483,5 @@ export const aboutThisFolderFixtures: Record<string, AboutCardData> = {
   'empty-folder': card('New Folder', `${HOME}/Desktop/New Folder`, emptyFolder),
   'not-indexed-folder': card('Scans 2019', '/Volumes/Archive/Scans 2019', notIndexed),
   app: card(APP, `/Applications/${APP}`, app),
+  'standard-folder': card('Downloads', DOWNLOADS, downloads),
 }

@@ -52,6 +52,13 @@ pub enum OwnerClaim {
         /// Which of the two it is.
         kind: HomebrewKind,
     },
+    /// Certain: the path IS one of the folders the OS sets up and expects (the
+    /// home folder, `~/Downloads`, `/Applications`), told by the path alone, so a
+    /// folder Finder shows under a translated name is still known.
+    StandardFolder {
+        /// Which one.
+        folder: StandardFolder,
+    },
     /// Certain: the path sits inside an app bundle.
     InsideApp {
         /// The app's name.
@@ -114,6 +121,87 @@ pub enum OwnerPlace {
     SandboxHome,
 }
 
+/// A folder the OS sets up and expects to find. Each is the folder itself, never
+/// something inside it: a file in `~/Downloads` is the person's own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum StandardFolder {
+    /// The person's home folder.
+    Home,
+    /// `~/Desktop`.
+    Desktop,
+    /// `~/Documents`.
+    Documents,
+    /// `~/Downloads`.
+    Downloads,
+    /// `~/Movies`.
+    Movies,
+    /// `~/Music`.
+    Music,
+    /// `~/Pictures`.
+    Pictures,
+    /// `~/Public`.
+    Public,
+    /// `~/Library`: the person's settings and app data.
+    HomeLibrary,
+    /// `~/Applications`: apps installed for this person alone.
+    HomeApplications,
+    /// `/Applications`.
+    Applications,
+    /// `/Library`: settings and data for everyone on the computer.
+    Library,
+    /// `/System`: macOS itself.
+    System,
+    /// `/Users`: every account's home folder.
+    Users,
+    /// `/`: the top of the startup disk.
+    StartupDisk,
+}
+
+/// The home folder's standard children, by their name ON DISK: Finder may show a
+/// translated name (`.localized`), and the path stays English.
+const HOME_STANDARD_FOLDERS: [(&str, StandardFolder); 9] = [
+    ("Desktop", StandardFolder::Desktop),
+    ("Documents", StandardFolder::Documents),
+    ("Downloads", StandardFolder::Downloads),
+    ("Movies", StandardFolder::Movies),
+    ("Music", StandardFolder::Music),
+    ("Pictures", StandardFolder::Pictures),
+    ("Public", StandardFolder::Public),
+    ("Library", StandardFolder::HomeLibrary),
+    ("Applications", StandardFolder::HomeApplications),
+];
+
+/// The startup disk's standard folders.
+const ROOT_STANDARD_FOLDERS: [(&str, StandardFolder); 5] = [
+    ("/", StandardFolder::StartupDisk),
+    ("/Applications", StandardFolder::Applications),
+    ("/Library", StandardFolder::Library),
+    ("/System", StandardFolder::System),
+    ("/Users", StandardFolder::Users),
+];
+
+/// The standard folder `path` (no trailing `/`, except `/` itself) IS, with `home`
+/// the person's home folder.
+fn standard_folder(path: &str, home: &str) -> Option<StandardFolder> {
+    if !home.is_empty() {
+        match under(path, home) {
+            Some("") => return Some(StandardFolder::Home),
+            Some(in_home) => {
+                if let Some((_, folder)) = HOME_STANDARD_FOLDERS.iter().find(|(name, _)| *name == in_home) {
+                    return Some(*folder);
+                }
+            }
+            None => {}
+        }
+    }
+    let path = if path.is_empty() { "/" } else { path };
+    ROOT_STANDARD_FOLDERS
+        .iter()
+        .find(|(root, _)| *root == path)
+        .map(|(_, folder)| *folder)
+}
+
 /// Which kind of Homebrew package a path belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -151,8 +239,8 @@ pub enum OwnerQuestion {
     /// Outside the home folder, where installers write (`/Library`, `/usr/local`,
     /// `/opt`): the installer receipts know.
     Receipt,
-    /// The path alone answers: a Homebrew cellar or caskroom, or the inside of an
-    /// app bundle.
+    /// The path alone answers: a standard folder, a Homebrew cellar or caskroom,
+    /// or the inside of an app bundle.
     Answered(OwnerClaim),
     /// Nothing about the path names an owner, so the card has no owner row.
     Nothing,
@@ -236,6 +324,11 @@ impl OwnerQuestion {
     /// touches the real one).
     pub fn of(path: &str, home: &str) -> OwnerQuestion {
         let path = path.trim_end_matches('/');
+        // Before the receipt roots: `/Library` itself is the OS's folder, whatever
+        // packages also wrote into it.
+        if let Some(folder) = standard_folder(path, home.trim_end_matches('/')) {
+            return OwnerQuestion::Answered(OwnerClaim::StandardFolder { folder });
+        }
         if let Some((app, app_path)) = inside_an_app(path) {
             return OwnerQuestion::Answered(OwnerClaim::InsideApp {
                 app: ItemText::new(app),

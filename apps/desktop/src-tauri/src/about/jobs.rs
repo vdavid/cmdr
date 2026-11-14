@@ -177,6 +177,10 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources, sub_jobs:
     // Each job names its call first, so a worker that never comes back says which
     // one it's stuck in (`pool::submit`). The kind, ❌ never the path.
     let job: Job<AboutFact> = match kind {
+        // An online-only file's bytes would download it: its name's claim alone.
+        FactKind::RealType if !probe.contents_local => {
+            Box::new(move || AboutFact::RealType(RealType::by_name(extension.as_deref(), UnknownWhy::OnlineOnly)))
+        }
         FactKind::RealType => Box::new(move || {
             note_activity("read the first and last bytes", "realType");
             AboutFact::RealType(real_type_of(&path, extension.as_deref()))
@@ -276,10 +280,11 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources, sub_jobs:
 
 /// The file's first [`HEAD_BYTES`] and, when it's longer, its last
 /// [`TAIL_BYTES`] (a disk image is told by its trailer), against its extension.
+/// A read that failed leaves the name's claim, saying why the bytes went unread.
 pub(crate) fn real_type_of(path: &str, extension: Option<&str>) -> Fact<RealType> {
     match read_head_and_tail(Path::new(path)) {
         Ok((head, tail)) => Fact::Known(real_type(&head, tail.as_deref(), extension)),
-        Err(error) => Fact::unknown(why_of_io(&error)),
+        Err(error) => RealType::by_name(extension, why_of_io(&error)),
     }
 }
 

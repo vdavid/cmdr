@@ -784,11 +784,15 @@ var surfaceGuardedCrates = []struct {
 		// 149 → 151 (2026-11-14, a picture's "What it shows" row):
 		// `payload::ImageContents`, a wire type, and `ImageContents::of`, which
 		// tags and lines show, argued in that section.
+		//
+		// 151 → 153 (2026-11-14, the real app's card): `owner::StandardFolder`, a
+		// wire type naming the folders the OS sets up, and `RealType::by_name`, the
+		// Kind row where Cmdr reads no bytes, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   13,
 			PublicModules:  13,
-			SubsystemItems: 151,
+			SubsystemItems: 153,
 		},
 	},
 }

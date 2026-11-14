@@ -12,6 +12,7 @@ use cmdr_about::fact::{AboutTarget, Fact, FactKind, UnknownWhy};
 use cmdr_about::headline::HeadlineLead;
 use cmdr_about::payload::SnapshotKind;
 use cmdr_about::removal::RemovalConsequence;
+use cmdr_about::sniff::RealType;
 use cmdr_about::text::ItemText;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{InMemoryVolume, Volume, VolumeError};
@@ -217,7 +218,12 @@ async fn a_share_that_stopped_answering_gets_its_card_at_once_and_says_so_once()
 
     let updates = recorder.updates();
     assert_well_formed(&updates);
-    let order = kinds_in_order(&updates);
+    // The Kind row reads the name alone, so it may land before the note: it asks
+    // the share nothing.
+    let order: Vec<String> = kinds_in_order(&updates)
+        .into_iter()
+        .filter(|kind| kind != "RealType")
+        .collect();
     assert_eq!(order[0], "planned");
     assert_eq!(order[1], "stopped", "the note changes before any row lands: {order:?}");
     let AboutUpdate::Planned { plan, .. } = &updates[0] else {
@@ -230,7 +236,11 @@ async fn a_share_that_stopped_answering_gets_its_card_at_once_and_says_so_once()
     for fact in recorder.facts() {
         let why = match &fact {
             AboutFact::Identity(Fact::Unknown(unknown)) | AboutFact::Download(Fact::Unknown(unknown)) => unknown.why(),
-            other => panic!("only identity and the download record are planned: {other:?}"),
+            AboutFact::RealType(by_name) => {
+                assert_eq!(*by_name, RealType::by_name(Some("pdf"), UnknownWhy::VolumeCantTell));
+                continue;
+            }
+            other => panic!("only identity, the name's kind, and the download record are planned: {other:?}"),
         };
         assert_eq!(why, UnknownWhy::VolumeStoppedAnswering);
     }
@@ -255,7 +265,10 @@ async fn a_share_that_stopped_answering_gets_its_card_at_once_and_says_so_once()
         &caps,
         through(via, "/Volumes/naspi/report.pdf", Some(DownloadFrom::Volume)),
     );
-    assert!(again.jobs.is_empty(), "no call to a share that's holding two already");
+    assert!(
+        again.jobs.iter().all(|(kind, _)| *kind == FactKind::RealType),
+        "no call to a share that's holding two already: only the name's kind runs"
+    );
     assert_eq!(
         again.plan.volume_note.as_ref().map(|note| note.limit),
         Some(VolumeLimit::Unreachable)
@@ -403,6 +416,15 @@ async fn a_healthy_share_answers_identity_and_its_download_record_through_its_ow
             .iter()
             .any(|fact| matches!(fact, AboutFact::Download(Fact::Known(_)))),
         "the share's xattrs carried a download record: {facts:?}"
+    );
+    // Its Kind row is the name's claim, the bytes unread. Regression: a share's
+    // file showed no Kind row at all (the real app, 2026-11-14).
+    assert!(
+        facts.contains(&AboutFact::RealType(RealType::by_name(
+            Some("pdf"),
+            UnknownWhy::VolumeCantTell
+        ))),
+        "{facts:?}"
     );
 }
 

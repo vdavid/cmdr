@@ -25,7 +25,7 @@ use crate::digest::{
     AppData, ByteShare, ChildKind, Children, FolderClass, FolderDigest, KindCount, LibraryFolder, SizedChild,
 };
 use crate::fact::{AboutTarget, Fact, NotApplicableWhy, UnknownWhy};
-use crate::owner::{Certainty, HomebrewKind, InstalledApp, OwnerClaim, OwnerPlace};
+use crate::owner::{Certainty, HomebrewKind, InstalledApp, OwnerClaim, OwnerPlace, StandardFolder};
 use crate::payload::{
     AppRef, Bundle, ExecutableCheck, GitContext, GitSnapshot, GitStatus, Identity, ImageContents, Importance,
     ImportanceBand, NotCheckedWhy, RecursiveSize, Signature, Signer, SizeCoverage, SnapshotKind, StapledTicket,
@@ -390,7 +390,14 @@ impl ModelIdentity {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ModelRealType {
-    bytes_are: SniffedKind,
+    /// Set when Cmdr read the bytes; `bytes_not_read` otherwise, never both. Two
+    /// keys rather than a nested fact so a read file's projection keeps the shape
+    /// the verdict eval measured.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bytes_are: Option<SniffedKind>,
+    /// Why Cmdr didn't read the bytes: the kind is then the extension's claim.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bytes_not_read: Option<UnknownWhy>,
     #[serde(skip_serializing_if = "Option::is_none")]
     format: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -403,18 +410,24 @@ pub(crate) struct ModelRealType {
 impl ModelRealType {
     fn of(real_type: &RealType) -> Self {
         let RealType {
-            sniffed: Sniffed { kind, format },
+            sniffed,
             claimed: ExtensionClaim {
                 extension,
                 kind: claimed_kind,
             },
             agreement,
         } = real_type;
-        Self {
-            bytes_are: *kind,
+        let (bytes_are, format, bytes_not_read) = match sniffed {
             // A token from Cmdr's own format table (`png`, `mach`), never the
             // item's text.
-            format: format.clone(),
+            Fact::Known(Sniffed { kind, format }) => (Some(*kind), format.clone(), None),
+            Fact::Unknown(unknown) => (None, None, Some(unknown.why())),
+            Fact::NotApplicable(_) | Fact::Pending => (None, None, None),
+        };
+        Self {
+            bytes_are,
+            bytes_not_read,
+            format,
             extension: extension.clone(),
             extension_claims: *claimed_kind,
             agreement: *agreement,
@@ -680,6 +693,9 @@ pub(crate) enum ModelOwner {
     InsideApp {
         app: ItemText,
     },
+    StandardFolder {
+        folder: StandardFolder,
+    },
 }
 
 impl ModelOwner {
@@ -707,6 +723,7 @@ impl ModelOwner {
                 kind: *kind,
             },
             OwnerClaim::InsideApp { app, app_path: _ } => ModelOwner::InsideApp { app: app.clone() },
+            OwnerClaim::StandardFolder { folder } => ModelOwner::StandardFolder { folder: *folder },
         }
     }
 }
@@ -1064,6 +1081,7 @@ impl ModelImageContents {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub(crate) enum ModelRemoval {
+    StandardFolder { folder: StandardFolder },
     UncommittedWork,
     HoldsRepoHistory,
     UntrackedNotInGit,
@@ -1087,6 +1105,7 @@ impl ModelRemoval {
     fn of(consequence: &RemovalConsequence, speak: &dyn Speak) -> Self {
         use RemovalConsequence as R;
         match consequence {
+            R::StandardFolder { folder } => ModelRemoval::StandardFolder { folder: *folder },
             R::UncommittedWork => ModelRemoval::UncommittedWork,
             R::HoldsRepoHistory => ModelRemoval::HoldsRepoHistory,
             R::UntrackedNotInGit => ModelRemoval::UntrackedNotInGit,
@@ -1168,14 +1187,15 @@ type Tokens = (
     SnapshotKind,
     TrackedState,
     Rebuilder,
+    StandardFolder,
 );
 
 #[expect(dead_code, reason = "a compile-time guard: it only has to type-check")]
-fn tokens_are_fieldless(tokens: Tokens) -> [u8; 19] {
-    let (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) = tokens;
+fn tokens_are_fieldless(tokens: Tokens) -> [u8; 20] {
+    let (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) = tokens;
     [
         a as u8, b as u8, c as u8, d as u8, e as u8, f as u8, g as u8, h as u8, i as u8, j as u8, k as u8, l as u8,
-        m as u8, n as u8, o as u8, p as u8, q as u8, r as u8, s as u8,
+        m as u8, n as u8, o as u8, p as u8, q as u8, r as u8, s as u8, t as u8,
     ]
 }
 

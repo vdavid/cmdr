@@ -220,6 +220,38 @@ fn dependencies_and_build_output_name_what_recreates_them() {
 
 // ── Owners ──────────────────────────────────────────────────────────────────
 
+/// A folder the OS set up says so, first, and never as the person's own
+/// document. Regression: `~/Downloads` read "Nothing Cmdr knows of made this or
+/// could make it again", underselling what the system and apps expect of it.
+#[test]
+fn a_standard_folder_says_the_system_expects_it() {
+    let downloads = settled_folder(vec![
+        AboutFact::Owner(Fact::Known(OwnerClaim::StandardFolder {
+            folder: StandardFolder::Downloads,
+        })),
+        digest(FolderClass::Plain),
+    ]);
+    assert_eq!(
+        all(&downloads),
+        [R::StandardFolder {
+            folder: StandardFolder::Downloads
+        }]
+    );
+    // It outranks whatever else the facts say.
+    let home_in_a_repo = settled_folder(vec![
+        AboutFact::Owner(Fact::Known(OwnerClaim::StandardFolder {
+            folder: StandardFolder::Home,
+        })),
+        git(Fact::Known(GitStatus::Tracked(TrackedState::Modified))),
+    ]);
+    assert_eq!(
+        all(&home_in_a_repo).first(),
+        Some(&R::StandardFolder {
+            folder: StandardFolder::Home
+        })
+    );
+}
+
 #[test]
 fn an_installed_apps_cache_is_regenerated_by_it() {
     let cache = settled_folder(vec![owned_by_id(OwnerPlace::Caches, Some("Tool"))]);
@@ -447,6 +479,9 @@ fn consequences_come_most_painful_first_and_two_are_shown() {
 #[test]
 fn no_consequence_is_a_green_light() {
     let every = [
+        R::StandardFolder {
+            folder: StandardFolder::Downloads,
+        },
         R::UncommittedWork,
         R::HoldsRepoHistory,
         R::UntrackedNotInGit,

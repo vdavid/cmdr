@@ -10,7 +10,7 @@ use serde::Serialize;
 use crate::card::AboutCard;
 use crate::digest::{AppData, FolderClass};
 use crate::fact::{AboutTarget, Fact, Prominence, UnknownWhy};
-use crate::owner::{Certainty, HomebrewKind, InstalledApp, OwnerClaim, OwnerPlace};
+use crate::owner::{Certainty, HomebrewKind, InstalledApp, OwnerClaim, OwnerPlace, StandardFolder};
 use crate::payload::{GitStatus, TrackedState};
 use crate::provenance::{WebSite, WhereFrom};
 use crate::text::ItemText;
@@ -25,6 +25,13 @@ const SHOWN: usize = 2;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum RemovalConsequence {
+    /// It's a folder the OS set up and expects to find (the home folder,
+    /// `~/Downloads`, `/Applications`): the system and apps look for it, and
+    /// everything inside goes with it. First: no other consequence outweighs it.
+    StandardFolder {
+        /// Which one.
+        folder: StandardFolder,
+    },
     /// It holds changes no commit has.
     UncommittedWork,
     /// It's a repository's own data (`.git`): its whole history. Removing it
@@ -103,23 +110,24 @@ impl RemovalConsequence {
     /// order.
     fn rank(&self) -> u8 {
         match self {
-            RemovalConsequence::UncommittedWork => 0,
-            RemovalConsequence::HoldsRepoHistory => 1,
-            RemovalConsequence::UntrackedNotInGit => 2,
-            RemovalConsequence::IgnoredByGit => 3,
-            RemovalConsequence::UserDocument => 4,
-            RemovalConsequence::RemovesApp { .. } => 5,
-            RemovalConsequence::AppData { .. } => 6,
-            RemovalConsequence::InstalledBy { .. } => 7,
-            RemovalConsequence::LeftoverOfUninstalledApp { .. } => 8,
-            RemovalConsequence::RecordedDownload { .. } => 9,
-            RemovalConsequence::GitCanRestore => 10,
-            RemovalConsequence::RebuildableOutput { .. } => 11,
-            RemovalConsequence::RegeneratedCache { .. } => 12,
-            RemovalConsequence::OtherNamesRemain { .. } => 13,
-            RemovalConsequence::LinkOnly => 14,
-            RemovalConsequence::InGitHistory => 15,
-            RemovalConsequence::CantTell => 16,
+            RemovalConsequence::StandardFolder { .. } => 0,
+            RemovalConsequence::UncommittedWork => 1,
+            RemovalConsequence::HoldsRepoHistory => 2,
+            RemovalConsequence::UntrackedNotInGit => 3,
+            RemovalConsequence::IgnoredByGit => 4,
+            RemovalConsequence::UserDocument => 5,
+            RemovalConsequence::RemovesApp { .. } => 6,
+            RemovalConsequence::AppData { .. } => 7,
+            RemovalConsequence::InstalledBy { .. } => 8,
+            RemovalConsequence::LeftoverOfUninstalledApp { .. } => 9,
+            RemovalConsequence::RecordedDownload { .. } => 10,
+            RemovalConsequence::GitCanRestore => 11,
+            RemovalConsequence::RebuildableOutput { .. } => 12,
+            RemovalConsequence::RegeneratedCache { .. } => 13,
+            RemovalConsequence::OtherNamesRemain { .. } => 14,
+            RemovalConsequence::LinkOnly => 15,
+            RemovalConsequence::InGitHistory => 16,
+            RemovalConsequence::CantTell => 17,
         }
     }
 }
@@ -231,6 +239,9 @@ pub fn consequences(card: &AboutCard) -> Removal {
                 part_of_os: *part_of_os,
             },
         }),
+        Some(OwnerClaim::StandardFolder { folder }) => {
+            found.push(RemovalConsequence::StandardFolder { folder: *folder });
+        }
         Some(OwnerClaim::Homebrew { name, kind }) => found.push(RemovalConsequence::InstalledBy {
             installer: Installer::Homebrew {
                 name: name.clone(),

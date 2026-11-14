@@ -21,6 +21,7 @@ use cmdr_about::fact::{Fact, FactKind, UnknownWhy};
 use cmdr_about::gather::Job;
 use cmdr_about::payload::{GitSnapshot, Identity};
 use cmdr_about::provenance::{Download, MAX_XATTR_BYTES};
+use cmdr_about::sniff::RealType;
 use cmdr_about::text::ItemText;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{Volume, VolumeError, XattrReadMode};
@@ -186,8 +187,9 @@ pub(crate) fn answers(through: &Through, kind: FactKind) -> bool {
         FactKind::Importance => through.index.as_ref().is_some_and(IndexPlace::scores),
         FactKind::GitSnapshot => through.snapshot.is_some(),
         FactKind::ImageContents => through.image.is_some(),
-        FactKind::RealType
-        | FactKind::Bundle
+        // From the name alone: no volume call.
+        FactKind::RealType => true,
+        FactKind::Bundle
         | FactKind::Signature
         | FactKind::CmdrOperation
         | FactKind::LastOpened
@@ -299,8 +301,14 @@ fn job(kind: FactKind, through: Through, sub_jobs: SubJobs) -> Option<Job<AboutF
                 AboutFact::ImageContents(image_contents_fact(&place, cmdr_index::media_index::gate::is_enabled()))
             })
         }
-        FactKind::RealType
-        | FactKind::Bundle
+        // A volume's bytes are a read over the network, or none at all (a phone):
+        // the name's claim, worded as one. The plan has this row only when the
+        // name claims a kind.
+        FactKind::RealType => Box::new(move || {
+            let extension = through.path.extension().map(|extension| extension.to_string_lossy());
+            AboutFact::RealType(RealType::by_name(extension.as_deref(), UnknownWhy::VolumeCantTell))
+        }),
+        FactKind::Bundle
         | FactKind::Signature
         | FactKind::CmdrOperation
         | FactKind::LastOpened

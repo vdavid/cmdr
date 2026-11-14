@@ -30,7 +30,7 @@ function picture(shows: Fact<ImageContents>): Stream {
     fact: {
       state: 'known',
       value: {
-        sniffed: { kind: 'image', format: 'jpg' },
+        sniffed: { state: 'known', value: { kind: 'image', format: 'jpg' } },
         claimed: { extension: 'jpg', kind: 'image' },
         agreement: 'matches',
       },

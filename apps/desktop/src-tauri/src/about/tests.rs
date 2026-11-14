@@ -339,8 +339,14 @@ fn a_read_that_failed_says_why_and_never_unparseable() {
     use std::os::unix::fs::PermissionsExt;
     let dir = TestDir::new("about-read-failed");
     let gone = dir.as_ref().join("gone.dmg");
+    // The name still claims a kind, so the row keeps it, saying why the bytes
+    // went unread; a name with no claim leaves the reason alone.
     assert_eq!(
         super::jobs::real_type_of(&gone.to_string_lossy(), Some("dmg")),
+        cmdr_about::sniff::RealType::by_name(Some("dmg"), UnknownWhy::NotFound)
+    );
+    assert_eq!(
+        super::jobs::real_type_of(&dir.as_ref().join("gone.xyz").to_string_lossy(), Some("xyz")),
         Fact::unknown(UnknownWhy::NotFound)
     );
 
@@ -410,7 +416,15 @@ fn a_local_looking_path_on_a_network_mount_runs_no_local_job() {
         Sources::none(),
     );
     assert!(gathered.jobs.is_empty());
-    assert_eq!(gathered.plan.kinds(), [FactKind::Identity]);
+    // The Kind row is the name's claim, ready at once: no job reads the bytes.
+    assert_eq!(gathered.plan.kinds(), [FactKind::Identity, FactKind::RealType]);
+    assert_eq!(
+        gathered.ready.last(),
+        Some(&AboutFact::RealType(cmdr_about::sniff::RealType::by_name(
+            Some("txt"),
+            UnknownWhy::VolumeCantTell
+        )))
+    );
 }
 
 #[test]
@@ -433,9 +447,22 @@ fn an_online_only_file_reads_none_of_its_bytes() {
         Sources::none(),
     );
     let jobs: Vec<FactKind> = gathered.jobs.iter().map(|(kind, _)| *kind).collect();
-    assert!(!jobs.contains(&FactKind::RealType));
     assert!(!jobs.contains(&FactKind::Signature));
     assert!(jobs.contains(&FactKind::Download));
+    // Its Kind row is the name's claim: the path doesn't exist, so a job that
+    // tried to read the bytes would answer `NotFound` instead.
+    let (_, real_type) = gathered
+        .jobs
+        .into_iter()
+        .find(|(kind, _)| *kind == FactKind::RealType)
+        .expect("a dmg's name claims a kind");
+    assert_eq!(
+        real_type(),
+        AboutFact::RealType(cmdr_about::sniff::RealType::by_name(
+            Some("dmg"),
+            UnknownWhy::OnlineOnly
+        ))
+    );
 }
 
 // ── Cancel and budgets ──────────────────────────────────────────────────────

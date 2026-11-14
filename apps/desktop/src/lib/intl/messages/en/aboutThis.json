@@ -409,9 +409,9 @@
   "@aboutThis.identity.copyLinkTarget": {
     "description": "Accessible name and hover hint of the copy button beside the \"Points to\" row of a symbolic link on the \"Tell me about this\" card. It copies the full target path."
   },
-  "aboutThis.realType.matches": "{kind}, as its name says",
+  "aboutThis.realType.matches": "{kind}, checked against its contents",
   "@aboutThis.realType.matches": {
-    "description": "Answer on the \"Kind\" row of the \"Tell me about this\" card when the file's contents match what its extension says. No closing period.",
+    "description": "Answer on the \"Kind\" row of the \"Tell me about this\" card when Cmdr read the file's first bytes and they confirm what its extension says. It says Cmdr looked, unlike the answer for a file Cmdr couldn't read. No closing period.",
     "placeholders": { "kind": { "description": "The kind of file, for example \"Disk image\" or \"PDF\"." } }
   },
   "aboutThis.realType.mismatch": "The contents say {kind}, while the name ends in .{extension}.",
@@ -421,6 +421,11 @@
       "kind": { "description": "What the contents really are, for example \"Mac program\"." },
       "extension": { "description": "The file's extension without the dot, for example \"jpg\"." }
     }
+  },
+  "aboutThis.realType.unread": "{kind}, as its name says",
+  "@aboutThis.realType.unread": {
+    "description": "Answer on the \"Kind\" row of the \"Tell me about this\" card when Cmdr didn't read the file's contents (it's on a network drive or phone, stored online only, or the system refused the read), so the kind is only what the file's extension claims. Worded as a claim, never as checked. No closing period.",
+    "placeholders": { "kind": { "description": "The kind the extension claims, for example \"Zip archive\"." } }
   },
   "aboutThis.realType.byName": "{kind}, going by its name",
   "@aboutThis.realType.byName": {
@@ -705,6 +710,10 @@
       "hasCount": { "description": "\"yes\" when a count is recorded." }
     }
   },
+  "aboutThis.importance.notScored": "Cmdr hasn’t scored how much this folder matters yet",
+  "@aboutThis.importance.notScored": {
+    "description": "Muted answer on the \"Importance\" row of the \"Tell me about this\" card when Cmdr's importance ranking hasn't scored the folder yet (it scores folders apart from the drive index, so a folder can be indexed and still unscored). Also the one line of the \"How it's used\" section when that's its only row. An ordinary state. No closing period."
+  },
   "aboutThis.importance.band": "{band, select, high {High} medium {Medium} low {Low} other {Not ranked}}",
   "@aboutThis.importance.band": {
     "description": "Answer on the \"Importance\" row of the \"Tell me about this\" card: how important Cmdr's drive index scores the folder. \"Not ranked\" is for folders the ranking leaves out on purpose (caches, build output, hidden, system, and temporary folders, app data in the Library); it never says the contents don't matter.",
@@ -824,6 +833,73 @@
       "name": { "description": "The formula's or cask's name, for example \"ffmpeg\"." },
       "kind": { "description": "cask or formula." }
     }
+  },
+  "aboutThis.owner.standardFolder": "{folder}, set up by the system",
+  "@aboutThis.owner.standardFolder": {
+    "description": "Answer on the \"Belongs to\" row of the \"Tell me about this\" card for one of the folders the operating system creates and expects (the home folder, Downloads, Applications, and so on). No closing period.",
+    "placeholders": {
+      "folder": { "description": "Which folder, already worded, for example \"Your Downloads folder\"." }
+    }
+  },
+  "aboutThis.standardFolder.home": "Your home folder",
+  "@aboutThis.standardFolder.home": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the person's home folder. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.desktop": "Your Desktop folder",
+  "@aboutThis.standardFolder.desktop": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Desktop folder in the home folder. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.documents": "Your Documents folder",
+  "@aboutThis.standardFolder.documents": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Documents folder in the home folder. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.downloads": "Your Downloads folder",
+  "@aboutThis.standardFolder.downloads": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Downloads folder in the home folder. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.movies": "Your Movies folder",
+  "@aboutThis.standardFolder.movies": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Movies folder in the home folder. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.music": "Your Music folder",
+  "@aboutThis.standardFolder.music": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Music folder in the home folder. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.pictures": "Your Pictures folder",
+  "@aboutThis.standardFolder.pictures": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Pictures folder in the home folder. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.public": "Your Public folder",
+  "@aboutThis.standardFolder.public": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Public folder in the home folder, which others on the network can see. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.homeLibrary": "Your Library folder",
+  "@aboutThis.standardFolder.homeLibrary": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Library folder in the home folder, where apps keep the person's settings and data. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.homeApplications": "Your own Applications folder",
+  "@aboutThis.standardFolder.homeApplications": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Applications folder inside the home folder, for apps installed for this person alone. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.applications": "The computer’s Applications folder",
+  "@aboutThis.standardFolder.applications": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Applications folder at the top of the startup disk, for apps everyone on the computer can use. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.library": "The computer’s Library folder",
+  "@aboutThis.standardFolder.library": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the Library folder at the top of the startup disk, for settings and data shared by everyone on the computer. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.system": "The System folder of macOS",
+  "@aboutThis.standardFolder.system": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: macOS's own System folder at the top of the startup disk. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.users": "The Users folder",
+  "@aboutThis.standardFolder.users": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the folder at the top of the startup disk that holds every account's home folder. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\". Use the name Finder shows for this folder in your language."
+  },
+  "aboutThis.standardFolder.startupDisk": "The top of the startup disk",
+  "@aboutThis.standardFolder.startupDisk": {
+    "description": "One of the folders the operating system creates, as the \"Tell me about this\" card names it: the topmost folder of the disk the computer starts from. Starts a sentence and is followed by a comma, as in \"Your Downloads folder, set up by the system\"."
   },
   "aboutThis.owner.insideApp": "Part of {app}",
   "@aboutThis.owner.insideApp": {
@@ -1079,6 +1155,42 @@
   "aboutThis.ownerPlace.sandboxHome": "App home",
   "@aboutThis.ownerPlace.sandboxHome": {
     "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. A sandboxed Linux app's own home folder (~/.var/app or ~/snap)."
+  },
+  "aboutThis.removal.standardFolder.home": "It’s your home folder: everything of yours on this computer is inside it, and the system and every app expect it.",
+  "@aboutThis.removal.standardFolder.home": {
+    "description": "One consequence under \"What removing it means\" on the \"Tell me about this\" card, for the person's home folder, a folder the operating system creates and expects. Never reassuring: it says what the folder holds and what expects it."
+  },
+  "aboutThis.removal.standardFolder.personal": "It’s one of your standard folders: the system and your apps expect to find it, and everything inside it goes with it.",
+  "@aboutThis.removal.standardFolder.personal": {
+    "description": "One consequence under \"What removing it means\" on the \"Tell me about this\" card, for a standard folder in the home folder (Desktop, Documents, Downloads, Movies, Music, Pictures, or Public), a folder the operating system creates and expects. Never reassuring: it says what the folder holds and what expects it."
+  },
+  "aboutThis.removal.standardFolder.homeLibrary": "It holds the settings and data your apps keep for you, and they can stop working or start over without it.",
+  "@aboutThis.removal.standardFolder.homeLibrary": {
+    "description": "One consequence under \"What removing it means\" on the \"Tell me about this\" card, for the Library folder in the home folder, a folder the operating system creates and expects. Never reassuring: it says what the folder holds and what expects it."
+  },
+  "aboutThis.removal.standardFolder.homeApplications": "It holds apps installed for you alone, and the system looks for them here.",
+  "@aboutThis.removal.standardFolder.homeApplications": {
+    "description": "One consequence under \"What removing it means\" on the \"Tell me about this\" card, for the Applications folder inside the home folder, a folder the operating system creates and expects. Never reassuring: it says what the folder holds and what expects it."
+  },
+  "aboutThis.removal.standardFolder.applications": "It holds this computer’s apps, and the system looks for them here.",
+  "@aboutThis.removal.standardFolder.applications": {
+    "description": "One consequence under \"What removing it means\" on the \"Tell me about this\" card, for the Applications folder at the top of the startup disk, a folder the operating system creates and expects. Never reassuring: it says what the folder holds and what expects it."
+  },
+  "aboutThis.removal.standardFolder.library": "It holds settings and data that apps and the system keep for everyone on this computer, and they can stop working without it.",
+  "@aboutThis.removal.standardFolder.library": {
+    "description": "One consequence under \"What removing it means\" on the \"Tell me about this\" card, for the Library folder at the top of the startup disk, a folder the operating system creates and expects. Never reassuring: it says what the folder holds and what expects it."
+  },
+  "aboutThis.removal.standardFolder.system": "It’s macOS itself: the computer can’t start without it.",
+  "@aboutThis.removal.standardFolder.system": {
+    "description": "One consequence under \"What removing it means\" on the \"Tell me about this\" card, for macOS's own System folder, a folder the operating system creates and expects. Never reassuring: it says what the folder holds and what expects it."
+  },
+  "aboutThis.removal.standardFolder.users": "It holds every account’s home folder on this computer.",
+  "@aboutThis.removal.standardFolder.users": {
+    "description": "One consequence under \"What removing it means\" on the \"Tell me about this\" card, for the Users folder at the top of the startup disk, a folder the operating system creates and expects. Never reassuring: it says what the folder holds and what expects it."
+  },
+  "aboutThis.removal.standardFolder.startupDisk": "It holds everything on the startup disk, macOS included.",
+  "@aboutThis.removal.standardFolder.startupDisk": {
+    "description": "One consequence under \"What removing it means\" on the \"Tell me about this\" card, for the topmost folder of the startup disk, a folder the operating system creates and expects. Never reassuring: it says what the folder holds and what expects it."
   },
   "aboutThis.removal.uncommittedWork": "It has changes no commit holds, so git can’t bring those back.",
   "@aboutThis.removal.uncommittedWork": {
@@ -1435,5 +1547,9 @@
   "aboutThis.unknown.indexingOff": "Its index is turned off",
   "@aboutThis.unknown.indexingOff": {
     "description": "Muted answer on a \"Tell me about this\" card row when the index that would answer it is turned off in Settings. An ordinary state, not a problem. Short, no closing period."
+  },
+  "aboutThis.unknown.onlineOnly": "Stored online only, so Cmdr didn’t download it to look",
+  "@aboutThis.unknown.onlineOnly": {
+    "description": "Muted answer on a \"Tell me about this\" card row when the file is stored online only (a cloud drive keeps its contents on the server) and reading it would download it. An ordinary state, not a problem. Short, no closing period."
   }
 }

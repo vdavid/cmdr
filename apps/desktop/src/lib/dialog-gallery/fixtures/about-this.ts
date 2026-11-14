@@ -78,7 +78,7 @@ const downloaded: Stream = {
         fact: {
           state: 'known',
           value: {
-            sniffed: { kind: 'diskImage', format: 'dmg' },
+            sniffed: { state: 'known', value: { kind: 'diskImage', format: 'dmg' } },
             claimed: { extension: 'dmg', kind: 'diskImage' },
             agreement: 'matches',
           },
@@ -142,7 +142,7 @@ const plainDocument: Stream = {
         fact: {
           state: 'known',
           value: {
-            sniffed: { kind: 'document', format: 'zip' },
+            sniffed: { state: 'known', value: { kind: 'document', format: 'zip' } },
             claimed: { extension: 'numbers', kind: 'document' },
             agreement: 'matches',
           },
@@ -234,7 +234,7 @@ const mismatch: Stream = {
         fact: {
           state: 'known',
           value: {
-            sniffed: { kind: 'machO', format: 'mach' },
+            sniffed: { state: 'known', value: { kind: 'machO', format: 'mach' } },
             claimed: { extension: 'jpg', kind: 'image' },
             agreement: 'mismatch',
           },
@@ -296,7 +296,7 @@ const disguisedName: Stream = {
         fact: {
           state: 'known',
           value: {
-            sniffed: { kind: 'script', format: null },
+            sniffed: { state: 'known', value: { kind: 'script', format: null } },
             claimed: { extension: 'command', kind: 'script' },
             agreement: 'matches',
           },
@@ -433,7 +433,7 @@ const hardLinked: Stream = {
         fact: {
           state: 'known',
           value: {
-            sniffed: { kind: 'text', format: null },
+            sniffed: { state: 'known', value: { kind: 'text', format: null } },
             claimed: { extension: 'md', kind: 'text' },
             agreement: 'matches',
           },

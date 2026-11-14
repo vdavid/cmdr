@@ -55,7 +55,11 @@ scrolling.
   `goToFromCard` turns into close-then-navigate (a folder opens, a file shows in its folder with the cursor on it, via
   `file.tellMeAbout`'s handler). The name keeps its room and the muted "in …" gives way first.
 - **A collapsed section names a shared reason**: when every row is the same unknown other than `noRecord`, the line is
-  that reason's words ("Not indexed yet"), else "Nothing on record" (`SectionView.collapsedWhy`).
+  that reason's words ("Not indexed yet"), else "Nothing on record" (`SectionView.collapsedWhy`, worded by
+  `collapsedLine`). A section of ONE row says that row's own absence (`absenceKey`: "Cmdr hasn’t scored how much this
+  folder matters yet"), since the line stands in for the row and its label. **Why**: a folder's "How it’s used" said
+  only "Not indexed yet" under a digest the index had just answered; its one row is the importance score, which a
+  separate store keeps (the real app, 2026-11-14).
 - **An archive's entry**: the download row's first line names the archive ("Inside the archive “Photos.zip”."), then
   either the archive's own record under "What macOS recorded about the archive:" or the usual absence. The headline says
   "inside Photos.zip", never the archive's site.

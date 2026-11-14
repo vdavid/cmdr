@@ -7,7 +7,9 @@
  */
 
 import type { AboutFact, FactKind, Identity, Section, UnknownWhy } from '#lib/ipc/bindings.js'
+import type { MessageKey } from '#lib/intl/keys.gen.js'
 import type { AboutCardData } from './about-card'
+import { UNKNOWN_WHY, absenceKey } from './about-words'
 
 /** One planned row: its answer, or `null` while it's pending. */
 export interface RowView {
@@ -57,6 +59,17 @@ export function sectionsOf(card: AboutCardData): SectionView[] {
     views.push({ section: planned.section, rows, collapsed, collapsedWhy: collapsed ? sharedWhy(rows) : null })
   }
   return views
+}
+
+/**
+ * The one muted line a collapsed section shows. A section of one row says that row's own absence ("Cmdr hasn't scored
+ * how much this folder matters yet"), since the line stands in for the row and its label; several rows sharing a reason
+ * say the reason; anything else is "Nothing on record".
+ */
+export function collapsedLine(view: Pick<SectionView, 'rows' | 'collapsedWhy'>): MessageKey {
+  if (!view.collapsedWhy) return 'aboutThis.section.nothingOnRecord'
+  const [only] = view.rows
+  return view.rows.length === 1 ? absenceKey(only.kind, view.collapsedWhy) : UNKNOWN_WHY[view.collapsedWhy]
 }
 
 /** How a card's rows have landed so far: the calm-card budget a plain document must meet. */

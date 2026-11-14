@@ -16450,6 +16450,16 @@ export type OwnerClaim =
       // Which of the two it is.
       kind: HomebrewKind
     }
+  /**
+   *  Certain: the path IS one of the folders the OS sets up and expects (the
+   *  home folder, `~/Downloads`, `/Applications`), told by the path alone, so a
+   *  folder Finder shows under a translated name is still known.
+   */
+  | {
+      type: 'standardFolder'
+      // Which one.
+      folder: StandardFolder
+    }
   // Certain: the path sits inside an app bundle.
   | {
       type: 'insideApp'
@@ -17506,8 +17516,12 @@ export type ReadOnlySide =
 
 // What a file really is, and whether its extension agrees.
 export type RealType = {
-  // What the bytes are.
-  sniffed: Sniffed
+  /**
+   *  What the bytes are, or why Cmdr didn't read them (a share's file, an
+   *  online-only one, a refused read): then the kind is the name's claim alone
+   *  ([`RealType::by_name`]).
+   */
+  sniffed: Fact<Sniffed>
   // What the extension claims.
   claimed: ExtensionClaim
   // Whether the two agree.
@@ -17743,6 +17757,16 @@ export type Removal = {
  *  the order [`consequences`] returns them in.
  */
 export type RemovalConsequence =
+  /**
+   *  It's a folder the OS set up and expects to find (the home folder,
+   *  `~/Downloads`, `/Applications`): the system and apps look for it, and
+   *  everything inside goes with it. First: no other consequence outweighs it.
+   */
+  | {
+      type: 'standardFolder'
+      // Which one.
+      folder: StandardFolder
+    }
   // It holds changes no commit has.
   | { type: 'uncommittedWork' }
   /**
@@ -21403,6 +21427,42 @@ export type StalledOn =
   | 'unknown'
 
 /**
+ *  A folder the OS sets up and expects to find. Each is the folder itself, never
+ *  something inside it: a file in `~/Downloads` is the person's own.
+ */
+export type StandardFolder =
+  // The person's home folder.
+  | 'home'
+  // `~/Desktop`.
+  | 'desktop'
+  // `~/Documents`.
+  | 'documents'
+  // `~/Downloads`.
+  | 'downloads'
+  // `~/Movies`.
+  | 'movies'
+  // `~/Music`.
+  | 'music'
+  // `~/Pictures`.
+  | 'pictures'
+  // `~/Public`.
+  | 'public'
+  // `~/Library`: the person's settings and app data.
+  | 'homeLibrary'
+  // `~/Applications`: apps installed for this person alone.
+  | 'homeApplications'
+  // `/Applications`.
+  | 'applications'
+  // `/Library`: settings and data for everyone on the computer.
+  | 'library'
+  // `/System`: macOS itself.
+  | 'system'
+  // `/Users`: every account's home folder.
+  | 'users'
+  // `/`: the top of the startup disk.
+  | 'startupDisk'
+
+/**
  *  Whether a notarization ticket is stapled to the item. An absent ticket doesn't
  *  say the item was never notarized: macOS can also ask Apple online.
  */
@@ -22853,8 +22913,8 @@ export type TypeAgreement =
   // The bytes are something else (a `.jpg` that's a program).
   | 'mismatch'
   /**
-   *  One side isn't confident: unrecognized bytes, or an extension with no
-   *  claim.
+   *  One side isn't confident: unrecognized or unread bytes, or an extension
+   *  with no claim.
    */
   | 'cantTell'
 
@@ -23002,6 +23062,12 @@ export type UnknownWhy =
    *  Routine: a setting they chose, said once in the row.
    */
   | 'indexingOff'
+  /**
+   *  The file's contents are online only (a cloud drive evicted them), and
+   *  reading them would download it. Routine: an ordinary state, and the card
+   *  never downloads a file to describe it.
+   */
+  | 'onlineOnly'
 
 /**
  *  Why an unlock or a forget didn't reach a container. A wrong password is

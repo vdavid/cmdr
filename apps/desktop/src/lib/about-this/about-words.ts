@@ -13,6 +13,7 @@ import type {
   OwnerPlace,
   Section,
   SniffedKind,
+  StandardFolder,
   UnknownWhy,
   VerdictContents,
   VerdictProblem,
@@ -66,6 +67,7 @@ export const UNKNOWN_WHY: Record<UnknownWhy, MessageKey> = {
   unparseable: 'aboutThis.unknown.unparseable',
   refusedInBackground: 'aboutThis.unknown.refusedInBackground',
   indexingOff: 'aboutThis.unknown.indexingOff',
+  onlineOnly: 'aboutThis.unknown.onlineOnly',
 }
 
 /** Where a row says an absence in its own words; every other reason takes `UNKNOWN_WHY`. */
@@ -78,6 +80,52 @@ export const ROW_UNKNOWN: Partial<Record<FactKind, Partial<Record<UnknownWhy, Me
     notIndexed: 'aboutThis.imageContents.notIndexed',
     indexingOff: 'aboutThis.imageContents.indexingOff',
   },
+  // The importance store scores folders apart from the drive index, so "not indexed" read as a contradiction under a
+  // digest the index had just answered.
+  importance: { notIndexed: 'aboutThis.importance.notScored' },
+}
+
+/** A row's own words for an absence, else the shared ones. */
+export function absenceKey(kind: FactKind, why: UnknownWhy): MessageKey {
+  return ROW_UNKNOWN[kind]?.[why] ?? UNKNOWN_WHY[why]
+}
+
+/** A standard folder by name, as the owner row and its removal line call it ("Your Downloads folder"). */
+export const STANDARD_FOLDER_NAME: Record<StandardFolder, MessageKey> = {
+  home: 'aboutThis.standardFolder.home',
+  desktop: 'aboutThis.standardFolder.desktop',
+  documents: 'aboutThis.standardFolder.documents',
+  downloads: 'aboutThis.standardFolder.downloads',
+  movies: 'aboutThis.standardFolder.movies',
+  music: 'aboutThis.standardFolder.music',
+  pictures: 'aboutThis.standardFolder.pictures',
+  public: 'aboutThis.standardFolder.public',
+  homeLibrary: 'aboutThis.standardFolder.homeLibrary',
+  homeApplications: 'aboutThis.standardFolder.homeApplications',
+  applications: 'aboutThis.standardFolder.applications',
+  library: 'aboutThis.standardFolder.library',
+  system: 'aboutThis.standardFolder.system',
+  users: 'aboutThis.standardFolder.users',
+  startupDisk: 'aboutThis.standardFolder.startupDisk',
+}
+
+/** What removing a standard folder means, by what the folder holds. */
+export const STANDARD_FOLDER_REMOVAL: Record<StandardFolder, MessageKey> = {
+  home: 'aboutThis.removal.standardFolder.home',
+  desktop: 'aboutThis.removal.standardFolder.personal',
+  documents: 'aboutThis.removal.standardFolder.personal',
+  downloads: 'aboutThis.removal.standardFolder.personal',
+  movies: 'aboutThis.removal.standardFolder.personal',
+  music: 'aboutThis.removal.standardFolder.personal',
+  pictures: 'aboutThis.removal.standardFolder.personal',
+  public: 'aboutThis.removal.standardFolder.personal',
+  homeLibrary: 'aboutThis.removal.standardFolder.homeLibrary',
+  homeApplications: 'aboutThis.removal.standardFolder.homeApplications',
+  applications: 'aboutThis.removal.standardFolder.applications',
+  library: 'aboutThis.removal.standardFolder.library',
+  system: 'aboutThis.removal.standardFolder.system',
+  users: 'aboutThis.removal.standardFolder.users',
+  startupDisk: 'aboutThis.removal.standardFolder.startupDisk',
 }
 
 /**

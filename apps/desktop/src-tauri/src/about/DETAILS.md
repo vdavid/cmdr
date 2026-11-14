@@ -52,6 +52,8 @@ drive): an archive, git's history, or a backup snapshot.
 The table (`route::caps_for`, pinned by `through_tests.rs::each_way_asks_only_what_it_can_answer`):
 
 - **`Local`** (a live local disk): every row, below.
+- **Every way below answers the Kind row from the name alone** (`RealType::by_name`, `VolumeCantTell`), planned only
+  when the name claims a kind; it asks the volume nothing, so it lands even when the volume stopped answering.
 - **`OsMountedShare`** (Finder's SMB, an OS NFS or WebDAV mount): identity through `get_metadata`, the download record
   through `read_xattr_many` (capped as a local read is), and the index rows (size, What's inside, importance) when a
   live index holds the share, plus "What it shows" for a picture on an SMB share (the image index's own database). No
@@ -154,7 +156,10 @@ lookup's deadline) a sub-job a worker picks up afterwards skips its work, so a c
   never `NotIndexed`; an importance generation that couldn't be read leaves the row `Unparseable`, ❌ never a definite
   "fresh".
 - **Real type**: the first 64 KB and, past that, the last 512 bytes (`TAIL_BYTES`: a DMG is told by its `koly`
-  trailer), into `cmdr_about::sniff::real_type`.
+  trailer), into `cmdr_about::sniff::real_type`. No read for an online-only file (`OnlineOnly`), and a read that failed
+  keeps the name's claim with its reason: both `RealType::by_name`. A card reached through a volume (`through.rs`, no
+  call to it) or through a link into a share (`route::local_gathered`, ready at once) answers by name too, with
+  `VolumeCantTell`; the plan has the row there only when the name claims a kind.
 - **Bundle**: the top-level `Contents/Info.plist` (or a root `Info.plist`), refused past 1 MB before parsing. An app's
   data row takes its id from the same file, and an unreadable one carries its reason there too.
 - **Download**: macOS `kMDItemWhereFroms` + `com.apple.quarantine`, Linux `user.xdg.origin.url` +

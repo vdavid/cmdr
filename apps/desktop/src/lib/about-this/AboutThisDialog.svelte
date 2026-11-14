@@ -26,8 +26,8 @@
     import { openSettingsWindow } from '#lib/settings/settings-window.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import type { AboutCardData, AboutGoTarget } from './about-card'
-    import { sectionsOf } from './about-card-view'
-    import { SECTION_TITLE, UNAVAILABLE, UNKNOWN_WHY, VOLUME_NOTE } from './about-words'
+    import { collapsedLine, sectionsOf } from './about-card-view'
+    import { SECTION_TITLE, UNAVAILABLE, VOLUME_NOTE } from './about-words'
 
     interface Props {
         card: AboutCardData
@@ -160,7 +160,7 @@
                 <section class="section" aria-labelledby="about-section-{view.section}" data-section={view.section}>
                     <h3 id="about-section-{view.section}">{t(SECTION_TITLE[view.section])}</h3>
                     {#if view.collapsed}
-                        <p class="quiet">{t(view.collapsedWhy ? UNKNOWN_WHY[view.collapsedWhy] : 'aboutThis.section.nothingOnRecord')}</p>
+                        <p class="quiet">{t(collapsedLine(view))}</p>
                     {:else}
                         <dl
                             style:min-height={view.section === 'contents' && !card.settled

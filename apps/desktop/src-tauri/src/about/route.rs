@@ -568,18 +568,29 @@ pub(crate) fn local_gathered(
             }
     });
     let sub_jobs = SubJobs::default();
+    let mut later = Vec::new();
     let jobs = if probed.on_local_disk {
         local_jobs(&plan, path, &probed, &sources, &sub_jobs)
     } else {
+        // Reached through a link into a share: nothing reads its bytes, so its Kind
+        // row (planned only when the name claims one) is that claim, at once.
+        if plan.has(FactKind::RealType) {
+            later.push(AboutFact::RealType(cmdr_about::sniff::RealType::by_name(
+                probed.extension.as_deref(),
+                UnknownWhy::VolumeCantTell,
+            )));
+        }
         Vec::new()
     };
+    let mut ready = vec![AboutFact::Identity(probed.identity)];
+    ready.append(&mut later);
     let item = ItemReach {
         node: probed.node,
         bytes_readable: probed.on_local_disk && probed.contents_local && probed.target == AboutTarget::File,
     };
     Gathered {
         plan,
-        ready: vec![AboutFact::Identity(probed.identity)],
+        ready,
         jobs,
         reach: Watch::EachRow,
         actions: ActionCaps::none(),

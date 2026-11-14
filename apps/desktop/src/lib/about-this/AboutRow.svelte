@@ -27,7 +27,15 @@
     import { lastName } from '#lib/path/grammar.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { showsOnDisk, type RowView } from './about-card-view'
-    import { KIND_LABEL, NAME_HID, ROW_LABEL, importanceFloorKey, importanceReasonKey, shortCommitId } from './about-words'
+    import {
+        KIND_LABEL,
+        NAME_HID,
+        ROW_LABEL,
+        STANDARD_FOLDER_NAME,
+        importanceFloorKey,
+        importanceReasonKey,
+        shortCommitId,
+    } from './about-words'
 
     interface Props {
         row: RowView
@@ -287,18 +295,26 @@
                 {/if}
             {:else if row.fact?.kind === 'realType' && row.fact.fact.state === 'known'}
                 {@const type = row.fact.fact.value}
-                {#if type.agreement === 'mismatch'}
+                {#if type.agreement === 'mismatch' && type.sniffed.state === 'known'}
                     <span class="notable">
                         <span class="mark" aria-hidden="true"><Icon name="triangle-alert" size={12} /></span>
                         {t('aboutThis.realType.mismatch', {
-                            kind: tString(KIND_LABEL[type.sniffed.kind]),
+                            kind: tString(KIND_LABEL[type.sniffed.value.kind]),
                             extension: type.claimed.extension ?? '',
                         })}
                     </span>
+                {:else if type.sniffed.state !== 'known'}
+                    <!-- Cmdr didn't read the bytes (a share, an online-only file): the name's claim, worded as one.
+                         The plan has this row only when the name claims a kind. -->
+                    {#if type.claimed.kind}
+                        {t('aboutThis.realType.unread', { kind: tString(KIND_LABEL[type.claimed.kind]) })}
+                    {:else}
+                        {t('aboutThis.realType.unrecognized')}
+                    {/if}
                 {:else if type.agreement === 'matches'}
-                    {t('aboutThis.realType.matches', { kind: tString(KIND_LABEL[type.sniffed.kind]) })}
-                {:else if type.sniffed.kind !== 'unrecognized'}
-                    {t(KIND_LABEL[type.sniffed.kind])}
+                    {t('aboutThis.realType.matches', { kind: tString(KIND_LABEL[type.sniffed.value.kind]) })}
+                {:else if type.sniffed.value.kind !== 'unrecognized'}
+                    {t(KIND_LABEL[type.sniffed.value.kind])}
                 {:else if type.claimed.kind}
                     {t('aboutThis.realType.byName', { kind: tString(KIND_LABEL[type.claimed.kind]) })}
                 {:else}
@@ -400,6 +416,10 @@
                     >
                 {:else if owner.type === 'homebrew'}
                     <span class="line">{t('aboutThis.owner.homebrew', { name: owner.name, kind: owner.kind })}</span>
+                {:else if owner.type === 'standardFolder'}
+                    <span class="line"
+                        >{t('aboutThis.owner.standardFolder', { folder: tString(STANDARD_FOLDER_NAME[owner.folder]) })}</span
+                    >
                 {:else}
                     <span class="line">{t('aboutThis.owner.insideApp', { app: owner.app })}</span>
                 {/if}

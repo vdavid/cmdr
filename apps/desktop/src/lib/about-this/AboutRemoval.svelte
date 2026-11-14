@@ -11,6 +11,7 @@
     import { formatInteger } from '#lib/intl/number-format.js'
     import Size from '#lib/ui/Size.svelte'
     import LinkButton from '#lib/ui/LinkButton.svelte'
+    import { STANDARD_FOLDER_REMOVAL } from './about-words'
 
     interface Props {
         removal: Removal | null
@@ -28,7 +29,8 @@
 
 {#snippet line(consequence: RemovalConsequence)}
     <li>
-        {#if consequence.type === 'uncommittedWork'}{t('aboutThis.removal.uncommittedWork')}
+        {#if consequence.type === 'standardFolder'}{t(STANDARD_FOLDER_REMOVAL[consequence.folder])}
+        {:else if consequence.type === 'uncommittedWork'}{t('aboutThis.removal.uncommittedWork')}
         {:else if consequence.type === 'holdsRepoHistory'}{t('aboutThis.removal.holdsRepoHistory')}
         {:else if consequence.type === 'untrackedNotInGit'}{t('aboutThis.removal.untrackedNotInGit')}
         {:else if consequence.type === 'ignoredByGit'}{t('aboutThis.removal.ignoredByGit')}

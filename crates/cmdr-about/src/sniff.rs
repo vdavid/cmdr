@@ -9,6 +9,7 @@
 use infer::MatcherType;
 use serde::Serialize;
 
+use crate::fact::{Fact, UnknownWhy};
 use crate::text::ItemText;
 
 /// How much of a file's start the host reads for [`real_type`].
@@ -22,8 +23,10 @@ pub const TAIL_BYTES: usize = 512;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RealType {
-    /// What the bytes are.
-    pub sniffed: Sniffed,
+    /// What the bytes are, or why Cmdr didn't read them (a share's file, an
+    /// online-only one, a refused read): then the kind is the name's claim alone
+    /// ([`RealType::by_name`]).
+    pub sniffed: Fact<Sniffed>,
     /// What the extension claims.
     pub claimed: ExtensionClaim,
     /// Whether the two agree.
@@ -59,8 +62,8 @@ pub enum TypeAgreement {
     Matches,
     /// The bytes are something else (a `.jpg` that's a program).
     Mismatch,
-    /// One side isn't confident: unrecognized bytes, or an extension with no
-    /// claim.
+    /// One side isn't confident: unrecognized or unread bytes, or an extension
+    /// with no claim.
     CantTell,
 }
 
@@ -251,12 +254,38 @@ pub fn real_type(head: &[u8], tail: Option<&[u8]>, extension: Option<&str>) -> R
         Some(_) | None => TypeAgreement::CantTell,
     };
     RealType {
-        sniffed,
+        sniffed: Fact::Known(sniffed),
         claimed: ExtensionClaim {
             extension: extension.map(ItemText::new),
             kind: claimed_kind,
         },
         agreement,
+    }
+}
+
+/// Whether `extension` (without the dot, any case) names a kind Cmdr knows: what
+/// the plan asks before giving a file whose bytes it won't read a Kind row.
+pub(crate) fn claims_a_kind(extension: Option<&str>) -> bool {
+    extension.is_some_and(|extension| claimed_kind(&extension.to_ascii_lowercase()).is_some())
+}
+
+impl RealType {
+    /// What a file is when Cmdr didn't read its bytes, `why` saying why: the name's
+    /// claim alone, which the card words as a claim ("Zip archive, as its name
+    /// says"), never as checked. `Unknown(why)` when the name claims nothing Cmdr
+    /// knows, since a Kind row would then have nothing to say.
+    pub fn by_name(extension: Option<&str>, why: UnknownWhy) -> Fact<RealType> {
+        let Some(kind) = extension.and_then(|extension| claimed_kind(&extension.to_ascii_lowercase())) else {
+            return Fact::unknown(why);
+        };
+        Fact::Known(RealType {
+            sniffed: Fact::unknown(why),
+            claimed: ExtensionClaim {
+                extension: extension.map(ItemText::new),
+                kind: Some(kind),
+            },
+            agreement: TypeAgreement::CantTell,
+        })
     }
 }
 
@@ -346,8 +375,8 @@ mod tests {
         // Text under a name Cmdr has no claim for is text, with nothing to agree with.
         let bare = real_type(b"hello", None, Some("xyz"));
         assert_eq!(
-            (bare.sniffed.kind, bare.agreement),
-            (SniffedKind::Text, TypeAgreement::CantTell)
+            (bare.sniffed.known().map(|sniffed| sniffed.kind), bare.agreement),
+            (Some(SniffedKind::Text), TypeAgreement::CantTell)
         );
     }
 
@@ -384,7 +413,10 @@ mod tests {
     fn a_program_behind_a_picture_name_is_a_mismatch() {
         let found = real_type(MACH_O_64, None, Some("JPG"));
         assert_eq!(found.agreement, TypeAgreement::Mismatch);
-        assert_eq!(found.sniffed.kind, SniffedKind::MachO);
+        assert_eq!(
+            found.sniffed.known().map(|sniffed| sniffed.kind),
+            Some(SniffedKind::MachO)
+        );
         assert_eq!(found.claimed.kind, Some(SniffedKind::Image));
         assert_eq!(found.claimed.extension, Some(ItemText::new("JPG")));
 
@@ -430,5 +462,30 @@ mod tests {
         assert_eq!(bare.claimed.extension, None);
         // A disk image whose tail the host couldn't read.
         assert_eq!(real_type(b"\0\0", None, Some("dmg")).agreement, TypeAgreement::CantTell);
+    }
+
+    /// A share's file, an online-only one, or a refused read: the Kind row is the
+    /// name's claim, marked unread, so the card words it as a claim and never as
+    /// checked; a name that claims nothing leaves only the reason.
+    #[test]
+    fn unread_bytes_leave_the_names_claim_marked_unread() {
+        let Fact::Known(zip) = RealType::by_name(Some("ZIP"), UnknownWhy::VolumeCantTell) else {
+            panic!("a zip's name claims a kind");
+        };
+        assert_eq!(zip.sniffed, Fact::unknown(UnknownWhy::VolumeCantTell));
+        assert_eq!(zip.claimed.kind, Some(SniffedKind::Archive));
+        assert_eq!(zip.claimed.extension.as_ref().map(ItemText::as_str), Some("ZIP"));
+        assert_eq!(zip.agreement, TypeAgreement::CantTell);
+        assert_eq!(
+            RealType::by_name(Some("xyz"), UnknownWhy::PermissionDenied),
+            Fact::unknown(UnknownWhy::PermissionDenied)
+        );
+        assert_eq!(
+            RealType::by_name(None, UnknownWhy::VolumeCantTell),
+            Fact::unknown(UnknownWhy::VolumeCantTell)
+        );
+        assert!(claims_a_kind(Some("JPG")));
+        assert!(!claims_a_kind(Some("xyz")));
+        assert!(!claims_a_kind(None));
     }
 }

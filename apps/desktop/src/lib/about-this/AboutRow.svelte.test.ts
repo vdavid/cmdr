@@ -98,3 +98,33 @@ describe('What it shows', () => {
     expect(text(target)).toContain('<b>sign</b>')
   })
 })
+
+function rowOf(target: HTMLElement, kind: string): HTMLElement {
+  const found = target.querySelector<HTMLElement>(`[data-row-kind="${kind}"]`)
+  if (!found) throw new Error(`no ${kind} row`)
+  return found
+}
+
+describe('Kind', () => {
+  // Regression: a confirmed JPEG read "Image, as its name says", the same words a claim would use.
+  it('says Cmdr checked a match, and words a kind it read no bytes for as the name’s claim', async () => {
+    expect(text(rowOf(await render(fixture('downloaded')), 'realType'))).toContain(
+      'Disk image, checked against its contents',
+    )
+    if (mounted) void unmount(mounted)
+    mounted = null
+    document.body.innerHTML = ''
+    expect(text(rowOf(await render(fixture('share-file')), 'realType'))).toMatch(/, as its name says$/)
+  })
+})
+
+describe('A standard folder', () => {
+  it('names the folder as the system’s and says what removing it means', async () => {
+    const target = await render(fixture('standard-folder'))
+    expect(text(rowOf(target, 'owner'))).toContain('Your Downloads folder, set up by the system')
+    const whole = text(target)
+    expect(whole).toContain('It’s one of your standard folders')
+    expect(whole).not.toContain('Nothing Cmdr knows of made this')
+    expect(whole).toContain('Cmdr hasn’t scored how much this folder matters yet')
+  })
+})
