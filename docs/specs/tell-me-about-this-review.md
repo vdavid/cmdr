@@ -30,7 +30,7 @@ questions are at its top). The eval's full evidence: `docs/notes/about-verdict-e
    - The take: its block right above What removing it means, labeled "AI wrote this", its "From the facts above and …"
      line, Stop (the text so far stays, marked "Stopped"), a reopen of the same item ("From earlier"), and Esc mid-take.
    - The unavailable lines: in the dialog gallery (Debug > Soft dialogs > Tell me about this), every state from recorded
-     events, including cloud AI needing allowing again, no key, a model Cmdr hasn't tested, and AI off.
+     events, including cloud AI needing allowing again, no key, the three model trust tiers, and AI off.
    - Both themes, and reduced motion on (nothing on the card animates anyway).
    - The footer: three actions plus More and Close, Move to trash never first, and the delete dialog asking first.
 4. **What a picture shows**: in the gallery, the four `Picture:` states (tags and text, not indexed, indexing off,
@@ -48,18 +48,12 @@ questions are at its top). The eval's full evidence: `docs/notes/about-verdict-e
 - **The take starts by itself** (default) or on a button. Eval: on Sonnet 5.5 a take is done in 2.0 s p50 and costs
   about $0.003, and it adds something true in 96% of 831 takes (Opus 99%); by the eval agent's stricter reading, about
   three in four ordinary takes are useful and every hostile one is. Its recommendation: automatic.
-- **Local writes no take** (default). The bundled 3B model gave 29 green lights and followed 24 injections in 139 takes.
 - **No model words removal** (decided by the eval, yours to confirm). With the removal sentence, every Claude class
   handed out green lights (Sonnet 19 then 9, Haiku 5 then 22, Opus 1 then 1); without it, Sonnet and Opus gave none in
   1,662 takes. Removal stays Cmdr's own row.
 - **The look inside on Cloud** (default: every automatic take looks inside, and the block says so). Facts only already
   adds something true in 94% (Sonnet) and 98% (Opus) against 100% with the look. The eval agent leans the other way:
   facts only by default, the look on a second press, since the first page of a tax return would leave on every open.
-- **Which models write a take**: Sonnet 5.5 and Opus 5.5 on Anthropic (`PASSED_THE_EVAL`). Both have more question 3–4
-  flags (minor inventions) than the bar's literal two; at 831 takes per class they sit at a third of the bar's rate, and
-  the eval agent added them on that reading. **Every unmeasured model is off** (OpenAI, Gemini, other hosts, older
-  Claudes) and now says so in one quiet line. Letting them write is one constant (`UNMEASURED_MODELS_WRITE`); measuring
-  them is #1190.
 - **The removal row can fall below the fold** when a take shows on a long card: the take sits right above it by design,
   so the model's sentence always has Cmdr's own removal line next to it. A taller default, or accept it?
 - **Folder suggestions stay silent after the consent bump**: every cloud user allows cloud AI again once (version 2 →
@@ -71,6 +65,15 @@ questions are at its top). The eval's full evidence: `docs/notes/about-verdict-e
 - **An inspector that follows the cursor** beside the dialog (#1181).
 
 The other follow-ups filed from this effort: #1175–#1180, #1182–#1187, and #1189 (the eval's two cleanups).
+
+## Decided since
+
+- **Which models write a take**: every model, in three trust tiers, so you can see how it feels (you may restrict it
+  again). Trusted, with no warning: Anthropic's Opus, Fable, and Sonnet on Anthropic's API, OpenAI's GPT-6 Astra, and
+  Gemini 4 Carbon. Often wrong, with a red warning and a link to change the model: the Haiku family and the bundled
+  local model (the 3B model gave 29 green lights and followed 24 injections in 139 takes). Untested, with a yellow
+  warning: everything else. Only Sonnet 5.5 and Opus 5.5 were measured; the rest of the trusted list is your call. In
+  the gallery: "AI take: done", "… by a model Cmdr hasn’t tested (yellow)", "… by a model often wrong (red)".
 
 ## Review items by surface
 
@@ -84,4 +87,5 @@ The other follow-ups filed from this effort: #1175–#1180, #1182–#1187, and #
 - **Settings and consent**: the take's switch, both consent items' text, and what the other cloud features show after
   the bump.
 - **Outside the app**: the `feature-status.json` note (now `alpha`), the website's roadmap and features page (untouched,
-  yours to flip), and the analytics event's props (`apps/desktop/src-tauri/src/analytics/DETAILS.md`).
+  yours to flip), and the analytics event's props (`apps/desktop/src-tauri/src/analytics/DETAILS.md`), which now also
+  carry the take’s trust tier (`verdict_trust`).

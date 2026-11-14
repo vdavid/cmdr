@@ -126,7 +126,7 @@ pub(crate) async fn run(verdict: VerdictRun<'_>, decision: Decision, watched: &W
     let key = cache_key(&verdict, &ready, watched);
     if let Some(earlier) = verdict.limits.recall(&key) {
         log::debug!(target: "about", "the verdict is from earlier; no call");
-        watched.send_verdict(&card, AboutUpdate::VerdictPlanned);
+        watched.send_verdict(&card, AboutUpdate::VerdictPlanned { trust: ready.trust });
         watched.send_verdict(
             &card,
             AboutUpdate::VerdictFromEarlier {
@@ -146,7 +146,7 @@ pub(crate) async fn run(verdict: VerdictRun<'_>, decision: Decision, watched: &W
         );
         return;
     }
-    watched.send_verdict(&card, AboutUpdate::VerdictPlanned);
+    watched.send_verdict(&card, AboutUpdate::VerdictPlanned { trust: ready.trust });
 
     // Its own token under the card's: Stop, a consent revoke, a policy narrowing, or a
     // newer verdict trip only this one; closing the card trips both.

@@ -16,7 +16,7 @@ use super::gate::Ready;
 use super::limits::{Limits, MAX_STARTS};
 use super::prompt::{FACTS_BEGIN, FACTS_END, PromptVariant};
 use super::*;
-use crate::about::event::Derived;
+use crate::about::event::{Derived, ModelTrust};
 use crate::about::jobs::Sources;
 use crate::about::probe::probe;
 use crate::about::route::local_gathered;
@@ -91,6 +91,7 @@ impl World {
             model: "claude-haiku-5-5".to_string(),
             call: CallSettings::default(),
             variant: PromptVariant::WithRemoval,
+            trust: ModelTrust::OftenWrong,
             meter: Arc::new(move |usage: AgentUsage| {
                 metered.fetch_add(1, Ordering::SeqCst);
                 crate::agent::pricing::price_call(ProviderTag::Anthropic, "claude-haiku-5-5", usage)
@@ -288,7 +289,15 @@ async fn a_verdict_streams_after_the_plan_with_its_given_line_first() {
         matches!(updates[0], AboutUpdate::Planned { .. }),
         "the plan is first: {updates:?}"
     );
-    let planned = position(&updates, |u| matches!(u, AboutUpdate::VerdictPlanned));
+    // The block carries the model's trust from its first frame.
+    let planned = position(&updates, |u| {
+        matches!(
+            u,
+            AboutUpdate::VerdictPlanned {
+                trust: ModelTrust::OftenWrong
+            }
+        )
+    });
     let given = position(&updates, |u| matches!(u, AboutUpdate::VerdictGiven { .. }));
     let first_delta = position(&updates, |u| matches!(u, AboutUpdate::VerdictDelta { .. }));
     let settled = position(&updates, |u| matches!(u, AboutUpdate::FactsSettled));
@@ -336,7 +345,6 @@ async fn each_refusal_reads_nothing_and_calls_nothing() {
     let refusals = [
         VerdictUnavailable::AiOff,
         VerdictUnavailable::TurnedOff,
-        VerdictUnavailable::LocalOff,
         VerdictUnavailable::NoCloudConsent,
         VerdictUnavailable::NotConfigured,
         VerdictUnavailable::NotReady,
@@ -392,7 +400,7 @@ async fn the_slots_answer_arrives_before_the_facts_settle() {
             recorder
                 .updates()
                 .iter()
-                .any(|u| matches!(u, AboutUpdate::VerdictPlanned))
+                .any(|u| matches!(u, AboutUpdate::VerdictPlanned { .. }))
         })
         .await;
         assert!(

@@ -1073,14 +1073,21 @@ the person or the local model's default). AI off entirely: no block, one quiet h
 - `aboutThis.verdict.problem.managed`: Your IT team’s policy stopped this on its way out.
 - `aboutThis.verdict.problem.noAnswer`: The AI didn’t write anything this time.
 - `aboutThis.verdict.problem.other`: Your AI provider couldn’t answer this time.
+- `aboutThis.verdict.trust.oftenWrong`: This model, or a similar one, often got its take wrong when Cmdr tested it.
+  Check it against the facts above, or switch to a stronger model.
+  - Where: Red line with an alert icon inside the AI take's block, under its heading, when the model is the Haiku family
+    or the bundled local model. "Change the model" follows it.
+- `aboutThis.verdict.trust.changeModel`: Change the model
+  - Where: The link after the red line; opens Settings > AI > Provider.
+- `aboutThis.verdict.trust.untested`: Cmdr hasn’t tested this model for these takes, so it can’t say whether to trust
+  this one.
+  - Where: Yellow line with an alert icon inside the AI take's block, under its heading, for any model outside the
+    trusted list (Anthropic's Opus, Fable, and Sonnet, OpenAI's GPT-6 Astra, Gemini 4 Carbon) and the often-wrong one.
+    No link.
 - `aboutThis.verdict.unavailable.noCloudConsent`: Cloud AI needs your OK before Cmdr can write a short AI take here.
   - Where: In place of the block, with "Open AI settings" beside it, which opens Settings at the full disclosure. ❌ No
     one-click allow on the card.
 - `aboutThis.verdict.unavailable.notConfigured`: Add your AI provider’s key in Settings for a short AI take here.
-- `aboutThis.verdict.unavailable.modelOff`: Cmdr writes AI takes only with models it’s tested for this, and your model
-  isn’t one of them.
-  - Where: In place of the block, no link, when the picked cloud model isn't one the AI take's eval passed (the Haiku
-    family, or any model nobody measured).
 - `aboutThis.verdict.unavailable.notReady`: The local AI model isn’t running, so there’s no AI take this time.
 - `aboutThis.verdict.unavailable.tooManyRequests`: That’s a lot of AI takes in a minute. Try again in a moment.
 - `aboutThis.verdict.unavailable.openAiSettings`: Open AI settings

@@ -115,16 +115,18 @@ fall below the fold.
 - **Stop** calls `stopAboutVerdict` (`about_stop_verdict`): the take alone stops, the card stays, and the backend's
   `stopped` keeps the text. Esc closes the card, which stops both. **Decision: no Stop shortcut**: it's a Tab stop in
   the card, and a chord would be a new command and scope.
+- **The model's trust**: `verdictPlanned` carries Rust's `ModelTrust` tier, and the block draws it from its first frame,
+  under the heading: nothing for `trusted`; for `oftenWrong` a red line (`--color-error-text`, a triangle alert icon)
+  saying this model or a similar one was often wrong when tested, with "Change the model" opening Settings > AI >
+  Provider; for `untested` a yellow line (`--color-warning-text`, a circle alert icon) saying Cmdr can't vouch for it.
+  Icon plus words, so color is never the only signal. The take still shows in full under either. Which model lands
+  where: `apps/desktop/src-tauri/src/about/DETAILS.md` § The order.
 - **Unavailable**: `unavailableShowsALine` says which reasons draw one quiet line in the slot (cloud AI needs allowing,
-  no key, a model Cmdr hasn't tested for takes, the local server not running, the organization's policy through
-  `managedAiRefusalMessage`, too many in a minute) and which draw nothing (`aiOff`, `turnedOff`, `localOff`).
-  **Decision: `localOff` draws nothing**: it's every Local user's default until the eval says the local model's takes
-  are good, and a line on every card wouldn't change it. **`modelOff` gets its line, with no link** (a cloud model the
-  eval didn't pass: the Haiku family, and every model nobody measured, `gate::writes_verdicts`,
-  `docs/notes/about-verdict-eval.md`): that person picked a model and expects a take, so a silent card reads as a fault.
-  AI off gets one quiet hint in the footer, on a row of its own under the buttons (`ModalDialog`'s `footerNote`: "AI is
-  off…" plus a link to Settings > AI), never in the body. **Decision: a row of its own**: as a second line of
-  `footerLeading` it pushed Close off the buttons' line (QA screenshots, 2026-11-13).
+  no key, the local server not running, the organization's policy through `managedAiRefusalMessage`, too many in a
+  minute) and which draw nothing (`aiOff`, `turnedOff`). AI off gets one quiet hint in the footer, on a row of its own
+  under the buttons (`ModalDialog`'s `footerNote`: "AI is off…" plus a link to Settings > AI), never in the body.
+  **Decision: a row of its own**: as a second line of `footerLeading` it pushed Close off the buttons' line (QA
+  screenshots, 2026-11-13).
 - ❌ **No one-click allow**: the consent hint's link opens Settings > AI at the Allow cloud AI switch, where the whole
   disclosure is read (`openCloudConsentSettings('about-this-card')`). A card that's open when consent arrives doesn't
   start a call by itself (nothing re-asks); the next open does.

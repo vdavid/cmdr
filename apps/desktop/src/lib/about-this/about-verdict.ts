@@ -11,6 +11,7 @@
 
 import type {
   AboutEvent,
+  ModelTrust,
   VerdictContents,
   VerdictCost,
   VerdictEnding,
@@ -23,6 +24,8 @@ export type AboutVerdict =
   | { status: 'unavailable'; why: VerdictUnavailable }
   | {
       status: 'planned'
+      /** How far the model writing it can be trusted: the block warns below `trusted`. Rust decides it. */
+      trust: ModelTrust
       /** What of the item's contents went out with the facts, from the moment the call went out. */
       given: VerdictContents | null
       /** The text so far. Plain text, ❌ never Markdown or markup. */
@@ -71,7 +74,15 @@ export function isVerdictUpdate(update: AboutUpdate): update is VerdictUpdate {
 export function applyVerdictUpdate(verdict: AboutVerdict | null, update: VerdictUpdate): AboutVerdict | null {
   if (update.type === 'verdictPlanned') {
     if (verdict !== null) return verdict
-    return { status: 'planned', given: null, text: '', ending: null, cost: null, fromEarlier: false }
+    return {
+      status: 'planned',
+      trust: update.trust,
+      given: null,
+      text: '',
+      ending: null,
+      cost: null,
+      fromEarlier: false,
+    }
   }
   if (update.type === 'verdictUnavailable') {
     return verdict === null ? { status: 'unavailable', why: update.why } : verdict
@@ -118,18 +129,13 @@ export function verdictProblem(verdict: Extract<AboutVerdict, { status: 'planned
 
 /**
  * Whether the card shows anything for an unavailable verdict in its body. `aiOff` gets a quiet hint in the footer
- * instead, and `turnedOff` and `localOff` show nothing: the person chose the first, and the second is every Local
- * user's default until the local model's answers are measured good, which a line on every card wouldn't change.
- * `modelOff` (a cloud model the verdict eval didn't pass) gets its one muted line: that person picked a model and
- * expects a take, and without the line the block's absence reads as a fault.
+ * instead, and `turnedOff` shows nothing: the person chose it.
  */
 export function unavailableShowsALine(why: VerdictUnavailable): boolean {
   switch (why.kind) {
     case 'aiOff':
     case 'turnedOff':
-    case 'localOff':
       return false
-    case 'modelOff':
     case 'noCloudConsent':
     case 'notConfigured':
     case 'notReady':

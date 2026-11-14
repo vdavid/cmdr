@@ -28,7 +28,16 @@ function card(verdict: AboutVerdict | null): AboutCardData {
 }
 
 function planned(over: Partial<Extract<AboutVerdict, { status: 'planned' }>>): AboutVerdict {
-  return { status: 'planned', given: null, text: 'Some take.', ending: null, cost: null, fromEarlier: false, ...over }
+  return {
+    status: 'planned',
+    trust: 'trusted',
+    given: null,
+    text: 'Some take.',
+    ending: null,
+    cost: null,
+    fromEarlier: false,
+    ...over,
+  }
 }
 
 describe('aboutUsageProps', () => {
@@ -42,6 +51,7 @@ describe('aboutUsageProps', () => {
       settled: true,
       verdict: 'none',
       verdict_why: 'none',
+      verdict_trust: 'none',
       action: 'continueInAskCmdr',
       continued: true,
     })
@@ -55,7 +65,7 @@ describe('aboutUsageProps', () => {
     [planned({ ending: { kind: 'failed', problem: 'noAnswer' } }), 'failed', 'noAnswer'],
     [planned({}), 'closed_early', 'none'],
     [planned({ text: '' }), 'closed_early', 'none'],
-    [{ status: 'unavailable', why: { kind: 'modelOff' } } as const, 'unavailable', 'modelOff'],
+    [{ status: 'unavailable', why: { kind: 'notConfigured' } } as const, 'unavailable', 'notConfigured'],
   ])('words a take that ended as %j', (verdict, word, why) => {
     const props = aboutUsageProps(card(verdict), context, { type: 'closed' })
     expect(props.verdict).toBe(word)

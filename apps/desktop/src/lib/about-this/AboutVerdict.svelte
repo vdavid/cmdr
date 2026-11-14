@@ -3,6 +3,10 @@
   its surface, holding two or three sentences a model wrote from the card's facts. Or, when the card gets none, one
   quiet line saying why (cloud AI needs allowing again, no key, the organization's policy, too many in a minute).
 
+  Every model writes; Rust sends how far it can be trusted with `verdictPlanned`, and below `trusted` the block carries
+  a warning line from its first frame: red with an alert icon for a model known to be often wrong (with a link to
+  change the model), yellow with an info icon for one nobody tested. Icon and words, so color is never the only signal.
+
   ❗ The text is untrusted (a hostile file name can steer it): it renders as ONE text node, ❌ never Markdown, `{@html}`,
   or a link. Nothing else on the card reads it.
 
@@ -60,6 +64,20 @@
                 </span>
             {/if}
         </div>
+        {#if verdict.trust === 'oftenWrong'}
+            <p class="trust often-wrong" data-verdict-trust="oftenWrong">
+                <span class="trust-glyph" aria-hidden="true"><Icon name="triangle-alert" size={14} /></span>
+                <span>
+                    {tString('aboutThis.verdict.trust.oftenWrong')}
+                    <LinkButton onclick={openProviderSettings}>{tString('aboutThis.verdict.trust.changeModel')}</LinkButton>
+                </span>
+            </p>
+        {:else if verdict.trust === 'untested'}
+            <p class="trust untested" data-verdict-trust="untested">
+                <span class="trust-glyph" aria-hidden="true"><Icon name="circle-alert" size={14} /></span>
+                <span>{tString('aboutThis.verdict.trust.untested')}</span>
+            </p>
+        {/if}
         <p class="given">{verdict.given === null ? '' : tString(VERDICT_GIVEN[verdict.given])}</p>
         <!-- One line on purpose: under `pre-wrap`, any whitespace between these tags would show. -->
         <p class="text">{#if phase === 'waiting'}<span class="quiet">{tString('aboutThis.verdict.writing')}</span>{:else if verdict.text !== ''}<span data-verdict-text>{verdict.text}</span>{/if}{#if phase === 'stopped'}<span class="mark">{tString('aboutThis.verdict.stopped')}</span>{:else if problem !== null}<span class="mark">{tString(VERDICT_PROBLEM[problem])}</span>{/if}</p>
@@ -78,8 +96,6 @@
         {tString('aboutThis.verdict.unavailable.notConfigured')}
         <LinkButton onclick={openProviderSettings}>{tString('aboutThis.verdict.unavailable.openAiSettings')}</LinkButton>
     </p>
-{:else if verdict.why.kind === 'modelOff'}
-    <p class="unavailable" data-verdict="modelOff">{tString('aboutThis.verdict.unavailable.modelOff')}</p>
 {:else if verdict.why.kind === 'notReady'}
     <p class="unavailable" data-verdict="notReady">{tString('aboutThis.verdict.unavailable.notReady')}</p>
 {:else if verdict.why.kind === 'managed'}
@@ -126,6 +142,29 @@
 
     .stop {
         margin-left: auto;
+    }
+
+    /* A model's trust, in the warning roles' text tokens (AA on this surface in both themes). */
+    .trust {
+        display: flex;
+        gap: var(--spacing-xs);
+        align-items: flex-start;
+        margin: 0;
+        font-size: var(--font-size-xs);
+    }
+
+    .trust-glyph {
+        display: inline-flex;
+        /* Centers the 14px glyph on the first line of text. */
+        padding-top: 1px;
+    }
+
+    .often-wrong {
+        color: var(--color-error-text);
+    }
+
+    .untested {
+        color: var(--color-warning-text);
     }
 
     .given {

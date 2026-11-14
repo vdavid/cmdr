@@ -26,7 +26,7 @@ function planned(verdict: AboutVerdict | null): Extract<AboutVerdict, { status: 
 describe('applyVerdictUpdate', () => {
   it('streams: planned, given, deltas, then done', () => {
     const steps: VerdictUpdate[] = [
-      { type: 'verdictPlanned' },
+      { type: 'verdictPlanned', trust: 'trusted' },
       { type: 'verdictGiven', contents: 'firstPage' },
       { type: 'verdictDelta', text: 'A tax ' },
       { type: 'verdictDelta', text: 'return.' },
@@ -42,7 +42,7 @@ describe('applyVerdictUpdate', () => {
   })
 
   it('waits with no text, and shows what it was given as soon as it goes out', () => {
-    const waiting = planned(fold([{ type: 'verdictPlanned' }]))
+    const waiting = planned(fold([{ type: 'verdictPlanned', trust: 'trusted' }]))
     expect(verdictPhase(waiting)).toBe('waiting')
     expect(waiting.given).toBeNull()
     const going = planned(applyVerdictUpdate(waiting, { type: 'verdictGiven', contents: 'none' }))
@@ -53,7 +53,7 @@ describe('applyVerdictUpdate', () => {
   it('keeps the text so far when it stops', () => {
     const stopped = planned(
       fold([
-        { type: 'verdictPlanned' },
+        { type: 'verdictPlanned', trust: 'trusted' },
         { type: 'verdictDelta', text: 'Half' },
         { type: 'verdictEnd', ending: { kind: 'stopped' }, cost: null },
       ]),
@@ -64,7 +64,10 @@ describe('applyVerdictUpdate', () => {
 
   it('takes a take from earlier whole, as finished', () => {
     const earlier = planned(
-      fold([{ type: 'verdictPlanned' }, { type: 'verdictFromEarlier', contents: 'entryNames', text: 'An archive.' }]),
+      fold([
+        { type: 'verdictPlanned', trust: 'trusted' },
+        { type: 'verdictFromEarlier', contents: 'entryNames', text: 'An archive.' },
+      ]),
     )
     expect(verdictPhase(earlier)).toBe('fromEarlier')
     expect(earlier).toMatchObject({ given: 'entryNames', text: 'An archive.', fromEarlier: true })
@@ -73,20 +76,20 @@ describe('applyVerdictUpdate', () => {
   it('names the problem of a failed one, and none otherwise', () => {
     const failed = planned(
       fold([
-        { type: 'verdictPlanned' },
+        { type: 'verdictPlanned', trust: 'trusted' },
         { type: 'verdictEnd', ending: { kind: 'failed', problem: 'noAnswer' }, cost: null },
       ]),
     )
     expect(verdictPhase(failed)).toBe('failed')
     expect(verdictProblem(failed)).toBe('noAnswer')
-    expect(verdictProblem(planned(fold([{ type: 'verdictPlanned' }])))).toBeNull()
+    expect(verdictProblem(planned(fold([{ type: 'verdictPlanned', trust: 'trusted' }])))).toBeNull()
   })
 
   it('drops what comes out of order: a second answer, anything unplanned, anything after the end', () => {
     const refused = fold([{ type: 'verdictUnavailable', why: { kind: 'noCloudConsent' } }])
     expect(refused).toEqual({ status: 'unavailable', why: { kind: 'noCloudConsent' } })
     for (const late of [
-      { type: 'verdictPlanned' },
+      { type: 'verdictPlanned', trust: 'trusted' },
       { type: 'verdictDelta', text: 'x' },
       { type: 'verdictGiven', contents: 'none' },
     ] satisfies VerdictUpdate[]) {
@@ -95,8 +98,11 @@ describe('applyVerdictUpdate', () => {
 
     expect(fold([{ type: 'verdictDelta', text: 'before the plan' }])).toBeNull()
 
-    const once = fold([{ type: 'verdictPlanned' }, { type: 'verdictGiven', contents: 'firstLines' }])
-    expect(applyVerdictUpdate(once, { type: 'verdictPlanned' })).toBe(once)
+    const once = fold([
+      { type: 'verdictPlanned', trust: 'trusted' },
+      { type: 'verdictGiven', contents: 'firstLines' },
+    ])
+    expect(applyVerdictUpdate(once, { type: 'verdictPlanned', trust: 'trusted' })).toBe(once)
     expect(applyVerdictUpdate(once, { type: 'verdictUnavailable', why: { kind: 'aiOff' } })).toBe(once)
     expect(applyVerdictUpdate(once, { type: 'verdictGiven', contents: 'protected' })).toBe(once)
     expect(applyVerdictUpdate(once, { type: 'verdictDelta', text: '' })).toBe(once)
@@ -106,17 +112,19 @@ describe('applyVerdictUpdate', () => {
     expect(applyVerdictUpdate(ended, { type: 'verdictEnd', ending: { kind: 'stopped' }, cost: null })).toBe(ended)
     expect(applyVerdictUpdate(ended, { type: 'verdictFromEarlier', contents: 'none', text: 'x' })).toBe(ended)
 
-    const writing = fold([{ type: 'verdictPlanned' }, { type: 'verdictDelta', text: 'Live.' }])
+    const writing = fold([
+      { type: 'verdictPlanned', trust: 'trusted' },
+      { type: 'verdictDelta', text: 'Live.' },
+    ])
     expect(applyVerdictUpdate(writing, { type: 'verdictFromEarlier', contents: 'none', text: 'x' })).toBe(writing)
   })
 })
 
 describe('unavailableShowsALine', () => {
   it('draws nothing for AI off, the person’s own off, and the local model’s default', () => {
-    const quiet: VerdictUnavailable[] = [{ kind: 'aiOff' }, { kind: 'turnedOff' }, { kind: 'localOff' }]
+    const quiet: VerdictUnavailable[] = [{ kind: 'aiOff' }, { kind: 'turnedOff' }]
     for (const why of quiet) expect(unavailableShowsALine(why)).toBe(false)
     const said: VerdictUnavailable[] = [
-      { kind: 'modelOff' },
       { kind: 'noCloudConsent' },
       { kind: 'notConfigured' },
       { kind: 'notReady' },

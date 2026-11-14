@@ -194,7 +194,7 @@ impl AboutSink for Kept {
             AboutUpdate::VolumeStoppedAnswering
             | AboutUpdate::FactsSettled
             | AboutUpdate::Unavailable { .. }
-            | AboutUpdate::VerdictPlanned
+            | AboutUpdate::VerdictPlanned { .. }
             | AboutUpdate::VerdictUnavailable { .. }
             | AboutUpdate::VerdictGiven { .. }
             | AboutUpdate::VerdictDelta { .. }

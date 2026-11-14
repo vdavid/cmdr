@@ -13,12 +13,12 @@ every rule; this module reads raw inputs.
 - `platform/`: per-OS seam for xattrs, Spotlight, default app, code signature, `stat` extras.
 - `history.rs` (the operation log), `git.rs`, `index.rs` (size, importance), `digest.rs` (What's inside, an app's
   Library data), `image.rs` (What it shows), `owner.rs`, `model.rs` (a model's view, gated), `lookup.rs`.
-- `verdict/`: the AI take: `gate.rs`, `limits.rs`, `peek.rs`, `prompt.rs` (the fence), `watched.rs` (tees the channel).
+- `verdict/`: the AI take: `gate.rs` (`model_trust`, the one tier table), `limits.rs`, `peek.rs`, `prompt.rs`, `watched.rs`.
 
 ## Must-knows
 
 - ❌ **Route by volume, never by path prefix** (a Finder SMB path looks local). Only a live local disk gets local
-  jobs; everything else goes `route::Way` by way, through the volume's OWN calls (`through.rs`).
+  jobs; everything else goes `route::Way` by way, through its OWN calls (`through.rs`).
 - ❌ **A volume call runs to its end on a pool thread** (`Handle::block_on`), ❌ never awaited on the executor or cut by
   a bare `timeout` (that wedges an MTP phone). `Stuck` caps a volume at two calls out.
 - ❗ **A non-local card is planned from the pane's `isDirectory`, before the volume is asked**, so a dead NAS opens at
@@ -44,7 +44,7 @@ every rule; this module reads raw inputs.
 - ❗ **The verdict's order is the consent guarantee**: gate (provider, setting, slot) → reuse and ceiling → facts →
   sensitive gate and peek → prompt → call. A refusal reads nothing for a model. ❌ Its text is never stored, logged, or
   cached on disk; only its cost lands, on `main.db`'s `about_this` row.
-- ❗ **The real-model eval is the verdict's only safety gate**: rerun the whole corpus after changing a verdict prompt,
-  `for_model`, the fence, or a default model (`docs/notes/about-verdict-eval.md`).
+- ❗ **Rerun the whole real-model eval** after changing a verdict prompt, `for_model`, the fence, or a default model: it's
+  the only evidence behind the trust tiers (`docs/notes/about-verdict-eval.md`).
 
-Flows, budgets, the verdict, evidence, and the test map: `DETAILS.md`.
+Flows, the verdict, and the test map: `DETAILS.md`.

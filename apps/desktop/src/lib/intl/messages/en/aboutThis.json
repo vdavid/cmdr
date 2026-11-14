@@ -1375,6 +1375,18 @@
   "@aboutThis.verdict.label": {
     "description": "Heading of the AI take's block on the \"Tell me about this\" card. The \"AI take\" is two or three sentences an AI model writes about the item from the facts the card lists, shown in its own block, set apart from the facts, right above \"What removing it means\". It says plainly that the text below was written by an AI, not by Cmdr, so nobody mistakes it for one of Cmdr's own facts. Short label, sentence case."
   },
+  "aboutThis.verdict.trust.oftenWrong": "This model, or a similar one, often got its take wrong when Cmdr tested it. Check it against the facts above, or switch to a stronger model.",
+  "@aboutThis.verdict.trust.oftenWrong": {
+    "description": "Red warning line inside the AI take's block on the \"Tell me about this\" card, shown when the AI model writing the take is one Cmdr tested for this feature (or one like it, for example a smaller or older model of the same family, or the small on-device model) and found that its write-ups often say things that aren't right. The \"take\" is the two or three sentences the AI writes about the file. A link after it opens Settings to change the model (aboutThis.verdict.trust.changeModel). Plain words, no blame on the person."
+  },
+  "aboutThis.verdict.trust.changeModel": "Change the model",
+  "@aboutThis.verdict.trust.changeModel": {
+    "description": "Link after the red warning in the AI take's block on the \"Tell me about this\" card (aboutThis.verdict.trust.oftenWrong). Opens Settings > AI, where the person picks which AI model Cmdr uses. Short link text."
+  },
+  "aboutThis.verdict.trust.untested": "Cmdr hasn’t tested this model for these takes, so it can’t say whether to trust this one.",
+  "@aboutThis.verdict.trust.untested": {
+    "description": "Yellow warning line inside the AI take's block on the \"Tell me about this\" card, shown when the AI model writing the take is one Cmdr never tested for this feature, so Cmdr can't say whether its two or three sentences about the file can be trusted. No link. Plain words."
+  },
   "aboutThis.verdict.writing": "Writing a short take…",
   "@aboutThis.verdict.writing": {
     "description": "Quiet placeholder in the AI take's block on the \"Tell me about this\" card while the AI hasn't written anything yet (the facts may still be landing, or the request is on its way). The \"AI take\" is two or three sentences an AI model writes about the item from the facts the card lists, shown in its own block, set apart from the facts, right above \"What removing it means\". Ends with an ellipsis."
@@ -1459,10 +1471,6 @@
   "aboutThis.verdict.unavailable.notConfigured": "Add your AI provider’s key in Settings for a short AI take here.",
   "@aboutThis.verdict.unavailable.notConfigured": {
     "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when a cloud AI provider is picked but has no key or address set up. A link beside it opens Settings > AI."
-  },
-  "aboutThis.verdict.unavailable.modelOff": "Cmdr writes AI takes only with models it’s tested for this, and your model isn’t one of them.",
-  "@aboutThis.verdict.unavailable.modelOff": {
-    "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when the picked cloud AI model isn't one whose takes Cmdr has tested and found careful enough (it never measured it, or it measured it and the model made claims it shouldn't). The facts above still show in full. No link: there's nothing to fix in Settings unless the person picks a different model."
   },
   "aboutThis.verdict.unavailable.notReady": "The local AI model isn’t running, so there’s no AI take this time.",
   "@aboutThis.verdict.unavailable.notReady": {

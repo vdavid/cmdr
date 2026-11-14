@@ -104,12 +104,15 @@ describe('applyAboutEvent', () => {
   })
 
   it('folds the verdict in after the plan, and past the settle, without touching the facts', () => {
-    const before = applyAboutEvent(emptyCard('r', subject), { requestId: 'r', update: { type: 'verdictPlanned' } })
+    const before = applyAboutEvent(emptyCard('r', subject), {
+      requestId: 'r',
+      update: { type: 'verdictPlanned', trust: 'trusted' },
+    })
     expect(before.verdict).toBeNull()
     let card = applyAboutEvent(emptyCard('r', subject), planned('r'))
     card = applyAboutEvent(card, settled('r'))
     const facts = card.facts
-    card = applyAboutEvent(card, { requestId: 'r', update: { type: 'verdictPlanned' } })
+    card = applyAboutEvent(card, { requestId: 'r', update: { type: 'verdictPlanned', trust: 'trusted' } })
     card = applyAboutEvent(card, { requestId: 'r', update: { type: 'verdictDelta', text: 'Words.' } })
     expect(card.verdict).toMatchObject({ status: 'planned', text: 'Words.' })
     expect(card.facts).toBe(facts)
@@ -186,7 +189,7 @@ describe('the open card', () => {
       vi.advanceTimersByTime(GRACE_MS)
       run.onEvent(planned(run.requestId))
       expect(aboutThisState.shown).toBe(false)
-      run.onEvent({ requestId: run.requestId, update: { type: 'verdictPlanned' } })
+      run.onEvent({ requestId: run.requestId, update: { type: 'verdictPlanned', trust: 'trusted' } })
       expect(aboutThisState.shown).toBe(true)
     } finally {
       vi.useRealTimers()
@@ -241,7 +244,7 @@ describe('the open card', () => {
     openAboutThis(subject)
     const [run] = started
     run.onEvent(planned(run.requestId))
-    run.onEvent({ requestId: run.requestId, update: { type: 'verdictPlanned' } })
+    run.onEvent({ requestId: run.requestId, update: { type: 'verdictPlanned', trust: 'trusted' } })
     run.onEvent({ requestId: run.requestId, update: { type: 'verdictDelta', text: 'Half a ' } })
     stopAboutVerdict()
     expect(run.stopVerdict).toHaveBeenCalledOnce()
@@ -260,7 +263,7 @@ describe('the open card', () => {
     run.onEvent(planned(run.requestId))
     run.onEvent({ requestId: run.requestId, update: { type: 'verdictUnavailable', why: { kind: 'noCloudConsent' } } })
     // Consent arriving while it's open is a settings change the card doesn't listen to: no second request.
-    run.onEvent({ requestId: run.requestId, update: { type: 'verdictPlanned' } })
+    run.onEvent({ requestId: run.requestId, update: { type: 'verdictPlanned', trust: 'trusted' } })
     expect(started).toHaveLength(1)
     expect(aboutThisState.card?.verdict).toEqual({ status: 'unavailable', why: { kind: 'noCloudConsent' } })
   })

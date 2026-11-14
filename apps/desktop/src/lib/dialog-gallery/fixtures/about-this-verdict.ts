@@ -6,7 +6,7 @@
  * Every verdict here is made up, and written the way the prompt asks (two or three plain sentences, no green light).
  */
 
-import type { AboutEvent, Actions, ManagedAiRefusal, VerdictProblem } from '#lib/ipc/bindings.js'
+import type { AboutEvent, Actions, ManagedAiRefusal, ModelTrust, VerdictProblem } from '#lib/ipc/bindings.js'
 import type { AboutCardData } from '#lib/about-this/about-card.js'
 import { card, type Stream } from './about-this-stream'
 
@@ -20,7 +20,8 @@ const DMG_VERDICT = [
   'Removing it doesn’t uninstall Tessera, and Cmdr can’t tell whether the site still offers this version.',
 ]
 
-const planned: Update = { type: 'verdictPlanned' }
+const plannedWith = (trust: ModelTrust): Update => ({ type: 'verdictPlanned', trust })
+const planned = plannedWith('trusted')
 const givenNone: Update = { type: 'verdictGiven', contents: 'none' }
 const deltas = (pieces: string[]): Update[] => pieces.map((text): Update => ({ type: 'verdictDelta', text }))
 const done: Update = {
@@ -86,6 +87,8 @@ export function aboutThisVerdictFixtures(bases: VerdictBases): Record<string, Ab
       ...deltas(DMG_VERDICT.slice(0, 1)),
       { type: 'verdictEnd', ending: { kind: 'stopped' }, cost: null },
     ]),
+    'verdict-untested': on(downloaded, [plannedWith('untested'), givenNone, ...deltas(DMG_VERDICT), done]),
+    'verdict-often-wrong': on(downloaded, [plannedWith('oftenWrong'), givenNone, ...deltas(DMG_VERDICT), done]),
     'verdict-from-earlier': on(downloaded, [
       planned,
       { type: 'verdictFromEarlier', contents: 'none', text: DMG_VERDICT.join('') },
@@ -100,10 +103,8 @@ export function aboutThisVerdictFixtures(bases: VerdictBases): Record<string, Ab
     'verdict-no-consent': on(downloaded, [unavailable({ kind: 'noCloudConsent' })]),
     'verdict-not-configured': on(downloaded, [unavailable({ kind: 'notConfigured' })]),
     'verdict-not-ready': on(downloaded, [unavailable({ kind: 'notReady' })]),
-    'verdict-model-off': on(downloaded, [unavailable({ kind: 'modelOff' })]),
     'verdict-managed': on(downloaded, [managed('cloudAiOff')]),
     'verdict-too-many': on(downloaded, [unavailable({ kind: 'tooManyRequests' })]),
-    'verdict-local-off': on(downloaded, [unavailable({ kind: 'localOff' })]),
     'verdict-ai-off': card(document.name, document.path, document.stream, [unavailable({ kind: 'aiOff' })]),
   }
 }

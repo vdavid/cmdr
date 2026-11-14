@@ -6723,7 +6723,14 @@ export type AboutUpdate =
       why: AboutUnavailable
     }
   // The card gets a verdict: reserve its block. Right after `planned`.
-  | { type: 'verdictPlanned' }
+  | {
+      type: 'verdictPlanned'
+      /**
+       *  How far the model writing it can be trusted, which the block says from its
+       *  first frame.
+       */
+      trust: ModelTrust
+    }
   // The card gets no verdict, and why. Right after `planned`.
   | {
       type: 'verdictUnavailable'
@@ -14691,6 +14698,25 @@ export type MissToken =
   | 'permissionDenied'
   // The user stopped the turn while the place was being read.
   | 'cancelled'
+
+/**
+ *  How far the card can trust the model that writes its AI take, decided once from the
+ *  provider and model id (`verdict::gate::model_trust`). Every model writes; the card
+ *  warns on the two tiers below `Trusted`.
+ */
+export type ModelTrust =
+  /**
+   *  A model David picked as trusted for this (the eval measured Sonnet 5.5 and Opus
+   *  5.5; the rest of the list is his call). No warning.
+   */
+  | 'trusted'
+  /**
+   *  This model, or one like it, was tested for this and its takes were often wrong
+   *  (the Haiku family, the bundled local model). A red warning.
+   */
+  | 'oftenWrong'
+  // Nobody tested this model for this. A yellow warning.
+  | 'untested'
 
 /**
  *  What the chat-memory setting needs to warn honestly: the model the next turn would use,
@@ -23504,14 +23530,6 @@ export type VerdictUnavailable =
   | { kind: 'aiOff' }
   // The person turned the verdict off (`aboutThis.aiVerdict`).
   | { kind: 'turnedOff' }
-  // The local model writes no verdict until its answers are measured good.
-  | { kind: 'localOff' }
-  /**
-   *  The configured cloud model isn't one whose takes passed the verdict eval
-   *  (`gate::writes_verdicts`): it failed the bar, or nobody measured it. The
-   *  card says so in one quiet line.
-   */
-  | { kind: 'modelOff' }
   // Cloud AI is picked and not allowed (or allowed under older copy).
   | { kind: 'noCloudConsent' }
   // A cloud provider is picked but has no key or endpoint.

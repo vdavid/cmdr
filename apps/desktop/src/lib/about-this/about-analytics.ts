@@ -12,7 +12,7 @@
 import type { AboutAction, AboutTarget } from '#lib/ipc/bindings.js'
 import { trackEvent } from '#lib/tauri-commands/index.js'
 import type { AboutCardData } from './about-card'
-import { verdictPhase } from './about-verdict'
+import { verdictPhase, type AboutVerdict } from './about-verdict'
 
 /**
  * The road the card's command came in by: the dispatch core's `DispatchSource` token, passed by the opener. On macOS
@@ -41,11 +41,20 @@ const TARGET_TOKENS: Record<AboutTarget, string> = {
   archiveEntry: 'archive_entry',
 }
 
-/** How the card's AI take ended, plus the typed reason it had none or couldn't finish (`none` otherwise). */
-function verdictProps(card: AboutCardData): { verdict: string; verdict_why: string } {
+/**
+ * How the card's AI take ended, plus the typed reason it had none or couldn't finish (`none` otherwise), and the
+ * model's trust tier when a take was planned (`none` otherwise).
+ */
+function verdictProps(card: AboutCardData): { verdict: string; verdict_why: string; verdict_trust: string } {
   const verdict = card.verdict
-  if (verdict === null) return { verdict: 'none', verdict_why: 'none' }
-  if (verdict.status === 'unavailable') return { verdict: 'unavailable', verdict_why: verdict.why.kind }
+  if (verdict === null) return { verdict: 'none', verdict_why: 'none', verdict_trust: 'none' }
+  if (verdict.status === 'unavailable') {
+    return { verdict: 'unavailable', verdict_why: verdict.why.kind, verdict_trust: 'none' }
+  }
+  return { ...plannedProps(verdict), verdict_trust: verdict.trust }
+}
+
+function plannedProps(verdict: Extract<AboutVerdict, { status: 'planned' }>): { verdict: string; verdict_why: string } {
   const phase = verdictPhase(verdict)
   switch (phase) {
     case 'done':

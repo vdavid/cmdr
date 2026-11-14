@@ -415,12 +415,13 @@ streamed on the card's own channel beside the facts. The decisions it rests on:
   it shows" row counts as contents**: it rides the same switch (`verdict::Inside`, set once in
   `AUTOMATIC_TAKE_INSIDE`), so flipping to "look on a press" holds back both the look and the picture's tags and text,
   and the row is left out of that take's projection (`holding_contents_back_keeps_the_look_and_the_pictures_text_home`).
-- **No model words removal, and Local writes no take**: below, with the eval's numbers.
+- **No model words removal, and every model writes, under a warning by its trust tier**: below, with the eval's numbers.
 
 ### Its events
 
-After `planned`, interleaved with the facts: `verdictPlanned` (reserve the block) or `verdictUnavailable { why }` (no
-block; `aiOff`, `turnedOff`, and `localOff` draw nothing in the body), then `verdictGiven { contents }` right BEFORE the call goes out (so the
+After `planned`, interleaved with the facts: `verdictPlanned { trust }` (reserve the block; `trust` is the model's
+`ModelTrust` tier, which the block warns by from its first frame) or `verdictUnavailable { why }` (no block; `aiOff` and
+`turnedOff` draw nothing in the body), then `verdictGiven { contents }` right BEFORE the call goes out (so the
 card says what's leaving while it leaves), `verdictDelta { text }`s (plain text: render as a text node), and one
 `verdictEnd { ending, cost }` (`done`, `stopped`, or `failed { problem }`; `cost` only when the call reached its end).
 A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { contents, text }` instead, with no call.
@@ -433,19 +434,23 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
 1. **The gate** (`gate::resolve_for_card`, on a blocking thread beside the card's placing). ❌ Nothing of the card's own
    waits for it: `verdict::run_when_gated` takes it as a future and joins it after `planned`, so a `main.db` held by a
    writer delays the verdict alone (test: `tests.rs` `the_facts_dont_wait_for_the_verdicts_gate`). `ai.provider` off →
-   `aiOff`; `aboutThis.aiVerdict` false → `turnedOff` (`settings::load_about_this_ai_verdict`, absent = on); Local →
-   `localOff` while `VERDICT_ON_LOCAL` is false (the bundled 3B model failed the eval; flipping it is that one
-   constant); then
+   `aiOff`; `aboutThis.aiVerdict` false → `turnedOff` (`settings::load_about_this_ai_verdict`, absent = on); then
    `resolve_agent_llm(app, AgentSlot::AboutThis)`, whose refusals map to `noCloudConsent`, `managed { refusal }`,
    `notConfigured`, or `notReady` (a local server that isn't running: a verdict never starts it or a download). Then
-   the model the slot named, against the eval's table (`gate::writes_verdicts`): only a model in `PASSED_THE_EVAL`, on
-   the provider it was measured through (a dated snapshot of its id counts), writes; a family in `FAILED_THE_EVAL`
-   (Haiku, in any provider's spelling) never does; anything else is unmeasured and follows `UNMEASURED_MODELS_WRITE`
-   (off). Each refusal is `modelOff`, which the card words as one quiet line. **Decision: unmeasured means off**: the
-   bundled 3B model showed an unmeasured model can hand out green lights and follow
-   injections, and nothing at runtime would catch it. Letting unmeasured cloud models write on the no-removal prompt is
-   that one constant. Adding a model is one row, after the eval:
-   `docs/notes/about-verdict-eval.md` § Measuring a new model. No `main.db` ledger row → `notReady`, ❌ never an
+   the model the slot named gets its tier from `gate::model_trust`, the ONE place a model's trust is decided:
+   - `trusted` (no warning): `claude-<opus|fable|sonnet>-<version>` on Anthropic (version digits and dashes only, so a
+     dated snapshot matches and `-mini` or the older `claude-3-5-sonnet` shape don't), `gpt-6-astra` or its
+     `-YYYY-MM-DD` snapshot on OpenAI, and exactly `gemini-4-carbon` on Gemini (ids from the providers' model pages,
+     2026-11-14).
+   - `oftenWrong` (red): every Local model, and anything holding both `claude` and `haiku`, on any provider.
+   - `untested` (yellow): the rest, an aggregator's route to a trusted model included (its call settings are another
+     measurement). An id the table doesn't recognize lands here, never in `trusted`.
+   **Decision: every model writes, and the card warns** (David, 2026-11-14, to see how it feels; he may restrict it
+   again). Only Sonnet 5.5 and Opus 5.5 were measured and passed; the other trusted models are David's call, unmeasured.
+   The bundled 3B model failed hard (green lights, followed injections), so its take carries the red warning, and the
+   block's untrusted-text rules (nothing else on the card reads it) are what hold the rest. The E2E fake (`Local` /
+   `fake`) is `trusted`, so the QA run shows the plain block; the gallery shows each warning. No `main.db` ledger row →
+   `notReady`, ❌ never an
    unmetered call. Only an `Ok` builds a `gate::Ready` (the LLM, the call settings, the prompt variant, the meter), and
    everything after takes one.
 2. **The reuse and the ceiling** (`limits.rs`): a finished verdict for the same volume, path, node, size, mtime,
@@ -520,8 +525,8 @@ The verdict's only gate on its no-green-light rule is `apps/desktop/src-tauri/sr
 tempting, hostile) through the shipped projection, fence, prompt files, and call settings, on real models, in five
 languages, graded by an Opus judge against `apps/desktop/src-tauri/src/ai/about_verdict_eval/rubric.md` with a Sonnet second judge on every flag. ❗ Rerun the
 whole corpus after any change to a prompt file, `for_model`, the fence, the call settings, or a default model. What it
-decided: no model words removal, only Sonnet 5.5 and Opus 5.5 (on Anthropic) write a take (`gate::PASSED_THE_EVAL`),
-the Haiku family never does, and Local stays off. Results and every flagged take: `docs/notes/about-verdict-eval.md`.
+decided: no model words removal, Sonnet 5.5 and Opus 5.5 (on Anthropic) are trusted, and the Haiku family and Local
+are often wrong (`gate::model_trust`). Results and every flagged take: `docs/notes/about-verdict-eval.md`.
 
 Before it, a hand run on `claude-haiku-5-5` at the model's default effort under 120 tokens wrote nothing at all, which
 is what `VERDICT_THINKING_ROOM` and `noAnswer` answer (verified 2026-11-13, four cards).

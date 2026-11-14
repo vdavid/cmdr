@@ -1,26 +1,25 @@
-//! Whether a card gets a verdict, decided before anything is read for a model.
+//! Whether a card gets a verdict, decided before anything is read for a model, and how far
+//! the model that writes it can be trusted.
 //!
-//! ❗ **The order is the consent guarantee**: the provider, then the person's setting,
-//! then the local-model default, then the slot (`resolve_agent_llm`, which carries the
-//! managed policy, cloud consent, and the E2E fake). Only a slot that resolved builds a
-//! [`Ready`], and the peek and the prompt take one, so a refusal here reads no file for
-//! a model and calls no model.
+//! ❗ **The order is the consent guarantee**: the provider, then the person's setting, then
+//! the slot (`resolve_agent_llm`, which carries the managed policy, cloud consent, and the
+//! E2E fake). Only a slot that resolved builds a [`Ready`], and the peek and the prompt take
+//! one, so a refusal here reads no file for a model and calls no model.
+//!
+//! Every model that resolves writes the take; [`model_trust`] decides, in this one place,
+//! whether the card warns about it.
 
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use tauri::AppHandle;
 
-use super::super::event::VerdictUnavailable;
+use super::super::event::{ModelTrust, VerdictUnavailable};
 use super::prompt::PromptVariant;
 use crate::agent::chat::session::{AgentSlot, SlotRefusal, resolve_agent_llm, resolve_verdict_call_settings};
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::types::{AgentUsage, CallSettings, ProviderTag};
 use crate::agent::pricing::PricedCost;
-
-/// Whether the local model writes verdicts. Off until the verdict eval measures its
-/// answers good: flipping it is this one default.
-pub(crate) const VERDICT_ON_LOCAL: bool = false;
 
 /// The most the verdict writes, in tokens: two or three sentences, and a derailed
 /// answer stops early.
@@ -37,6 +36,8 @@ pub(crate) struct Ready {
     pub(crate) model: String,
     pub(crate) call: CallSettings,
     pub(crate) variant: PromptVariant,
+    /// How far the card can trust this model's take ([`model_trust`]).
+    pub(crate) trust: ModelTrust,
     pub(crate) meter: Meter,
 }
 
@@ -47,8 +48,6 @@ pub(crate) struct GateInputs<'a> {
     pub(crate) provider: &'a str,
     /// The person's `aboutThis.aiVerdict`.
     pub(crate) verdict_on: bool,
-    /// [`VERDICT_ON_LOCAL`].
-    pub(crate) local_allowed: bool,
 }
 
 /// The gate, in its order. `resolve` runs only when everything before it allows.
@@ -63,9 +62,6 @@ pub(crate) fn decide<R>(
         return Err(VerdictUnavailable::TurnedOff);
     }
     let local = inputs.provider == "local";
-    if local && !inputs.local_allowed {
-        return Err(VerdictUnavailable::LocalOff);
-    }
     resolve().map_err(|refusal| match refusal {
         // A local server that isn't running: a verdict never starts it or a download.
         SlotRefusal::NotConfigured if local => VerdictUnavailable::NotReady,
@@ -82,13 +78,15 @@ pub(crate) fn resolve_for_card(app: &AppHandle) -> Result<Ready, VerdictUnavaila
     let inputs = GateInputs {
         provider: &provider,
         verdict_on: crate::settings::load_about_this_ai_verdict(app),
-        local_allowed: VERDICT_ON_LOCAL,
     };
     let (resolved, provider, model) = decide(inputs, || resolve_agent_llm(app, AgentSlot::AboutThis))?;
-    // Still before anything is read for a model: the slot named the model, nothing more.
-    if !writes_verdicts(provider, &model) {
-        return Err(VerdictUnavailable::ModelOff);
-    }
+    // The E2E fake answers as `Local` / `fake` and writes fixed text: it shows the plain
+    // block, and the gallery shows each warning.
+    let trust = if crate::test_mode::ask_cmdr_fake_active() {
+        ModelTrust::Trusted
+    } else {
+        model_trust(provider, &model)
+    };
     let Some(meter) = ledger_meter(app, provider, model.clone()) else {
         // ❌ Never an unmetered call: without its ledger row the verdict doesn't run.
         log::warn!(target: "about", "the verdict's cost ledger isn't there; no verdict");
@@ -99,64 +97,78 @@ pub(crate) fn resolve_for_card(app: &AppHandle) -> Result<Ready, VerdictUnavaila
         llm: resolved.into_unlogged_llm(),
         provider,
         variant: PromptVariant::for_provider(provider),
+        trust,
         model,
         call,
         meter,
     })
 }
 
-/// ❗ The models whose takes met the verdict eval's bar (zero green lights, zero followed
-/// injections) on the prompt and projection that ship, each on the provider it ran
-/// through: the call settings are that provider's. No runtime filter can catch a green
-/// light, so this table is the safety gate. Add a row only after the whole corpus ran on
-/// that model and every judge "yes" was read: `docs/notes/about-verdict-eval.md` §
-/// Measuring a new model. A dated snapshot of a listed id counts as it.
-const PASSED_THE_EVAL: &[(ProviderTag, &str)] = &[
-    (ProviderTag::Anthropic, "claude-sonnet-5-5"),
-    (ProviderTag::Anthropic, "claude-opus-5-5"),
-];
-
-/// Model families measured below the bar under every prompt tried: never a verdict, in
-/// any provider's spelling (`claude-haiku-5-5`, an aggregator's
-/// `anthropic/claude-3.5-haiku`), even with [`UNMEASURED_MODELS_WRITE`] on. The bundled
-/// local model failed too; [`VERDICT_ON_LOCAL`] keeps it off earlier in the gate.
-const FAILED_THE_EVAL: &[(&str, &str)] = &[("claude", "haiku")];
-
-/// ❗ Whether a model the eval never measured writes verdicts (any other provider, model,
-/// or route a person configures). Off: the bundled 3B model showed what an unmeasured
-/// model can do (29 green lights and 24 followed injections in 139 takes). Turning it on
-/// lets every unmeasured cloud model write on the no-removal prompt, and is this one
-/// line.
-const UNMEASURED_MODELS_WRITE: bool = false;
-
-/// Whether `model`, reached through `provider`, writes the card's verdict. The local
-/// model is decided earlier ([`VERDICT_ON_LOCAL`]).
-pub(crate) fn writes_verdicts(provider: ProviderTag, model: &str) -> bool {
-    model_writes(provider, model, UNMEASURED_MODELS_WRITE)
-}
-
-fn model_writes(provider: ProviderTag, model: &str, unmeasured_write: bool) -> bool {
+/// ❗ How far the card can trust `model`, reached through `provider`: the ONE place a model's
+/// tier is decided. Every model writes the take; this only picks the card's warning.
+///
+/// - **Trusted**: Anthropic's Opus, Fable, and Sonnet families on Anthropic's own API
+///   (`claude-<family>-<version>`, a dated snapshot too), OpenAI's `gpt-6-astra` on OpenAI's
+///   API (a dated snapshot too), and Google's `gemini-4-carbon` on Gemini's API. The eval
+///   measured only Sonnet 5.5 and Opus 5.5; the rest of the list is David's call
+///   (`docs/notes/about-verdict-eval.md`).
+/// - **Often wrong**: the bundled local model, and the Haiku family in any provider's
+///   spelling (`claude-haiku-5-5`, an aggregator's `anthropic/claude-3.5-haiku`): the eval
+///   measured both below the bar.
+/// - **Untested**: everything else, an aggregator's route to a trusted model included (its
+///   call settings are another measurement). An id this doesn't recognize lands here, never
+///   in `Trusted`.
+pub(crate) fn model_trust(provider: ProviderTag, model: &str) -> ModelTrust {
     if provider == ProviderTag::Local {
-        return true;
+        return ModelTrust::OftenWrong;
     }
     let model = model.to_ascii_lowercase();
-    let failed = FAILED_THE_EVAL
-        .iter()
-        .any(|(maker, family)| model.contains(maker) && model.contains(family));
-    if failed {
-        return false;
+    if model.contains("claude") && model.contains("haiku") {
+        return ModelTrust::OftenWrong;
     }
-    let passed = PASSED_THE_EVAL.iter().any(|(on, id)| {
-        *on == provider
-            && model.strip_prefix(id).is_some_and(|rest| {
-                // The id itself, or a dated snapshot of it (`-20261001`).
-                rest.is_empty()
-                    || rest
-                        .strip_prefix('-')
-                        .is_some_and(|date| date.len() == 8 && date.bytes().all(|b| b.is_ascii_digit()))
+    let trusted = match provider {
+        ProviderTag::Anthropic => is_trusted_claude(&model),
+        ProviderTag::OpenAi | ProviderTag::OpenAiResponses => is_id_or_snapshot(&model, "gpt-6-astra"),
+        ProviderTag::Gemini => model == "gemini-4-carbon",
+        ProviderTag::Local => false,
+    };
+    if trusted {
+        ModelTrust::Trusted
+    } else {
+        ModelTrust::Untested
+    }
+}
+
+/// The families David trusts, in Anthropic's id shape: `claude-<family>-<version>`, where
+/// everything after the family is version digits and dashes (`claude-sonnet-5-5`,
+/// `claude-opus-4-1-20250805`). A suffix that isn't a version (`-mini`) or the older
+/// `claude-3-5-sonnet` shape doesn't match.
+fn is_trusted_claude(model: &str) -> bool {
+    const TRUSTED_FAMILIES: [&str; 3] = ["opus", "fable", "sonnet"];
+    let Some(rest) = model.strip_prefix("claude-") else {
+        return false;
+    };
+    TRUSTED_FAMILIES.iter().any(|family| {
+        rest.strip_prefix(family)
+            .and_then(|version| version.strip_prefix('-'))
+            .is_some_and(|version| {
+                version.starts_with(|c: char| c.is_ascii_digit())
+                    && version.bytes().all(|b| b.is_ascii_digit() || b == b'-')
             })
-    });
-    passed || unmeasured_write
+    })
+}
+
+/// `model` is `id` itself, or a dated snapshot of it in OpenAI's shape (`-2026-10-01`).
+fn is_id_or_snapshot(model: &str, id: &str) -> bool {
+    model.strip_prefix(id).is_some_and(|rest| {
+        rest.is_empty()
+            || rest.strip_prefix('-').is_some_and(|date| {
+                let parts: Vec<&str> = date.split('-').collect();
+                matches!(parts.as_slice(), [y, m, d]
+                    if y.len() == 4 && m.len() == 2 && d.len() == 2
+                        && date.bytes().all(|b| b.is_ascii_digit() || b == b'-'))
+            })
+    })
 }
 
 /// A meter onto `main.db`'s reserved `about_this` row, or `None` when the store or the
@@ -212,7 +224,6 @@ mod tests {
         GateInputs {
             provider,
             verdict_on: true,
-            local_allowed: false,
         }
     }
 
@@ -268,46 +279,47 @@ mod tests {
             ..inputs("cloud")
         };
         assert_eq!(decide(off, never), Err(VerdictUnavailable::TurnedOff));
-        assert_eq!(decide(inputs("local"), never), Err(VerdictUnavailable::LocalOff));
     }
 
-    /// Only a model the eval passed, on the provider it ran through, writes a verdict: a
-    /// dated snapshot of it too. A model it measured below the bar never does, in any
-    /// provider's spelling, and every model it never measured is off by default.
+    /// Each tier, from the ids the providers publish. An id the table doesn't recognize is
+    /// untested, never trusted, and a Haiku is often wrong in any provider's spelling.
     #[test]
-    fn only_a_model_the_eval_passed_writes_a_verdict() {
-        use ProviderTag::{Anthropic, Gemini, OpenAi};
-        for (provider, model) in [
-            (Anthropic, "claude-sonnet-5-5"),
-            (Anthropic, "claude-sonnet-5-5-20261001"),
-            (Anthropic, "claude-opus-5-5"),
-        ] {
-            assert!(writes_verdicts(provider, model), "{model}");
+    fn each_model_lands_in_its_tier() {
+        use ModelTrust::{OftenWrong, Trusted, Untested};
+        use ProviderTag::{Anthropic, Gemini, Local, OpenAi, OpenAiResponses};
+        let cases = [
+            (Anthropic, "claude-sonnet-5-5", Trusted),
+            (Anthropic, "claude-sonnet-5-5-20261001", Trusted),
+            (Anthropic, "claude-opus-5-5", Trusted),
+            (Anthropic, "claude-fable-5-2", Trusted),
+            (Anthropic, "Claude-Opus-4-1-20250805", Trusted),
+            (OpenAi, "gpt-6-astra", Trusted),
+            (OpenAiResponses, "gpt-6-astra", Trusted),
+            (OpenAi, "gpt-6-astra-2026-10-01", Trusted),
+            (Gemini, "gemini-4-carbon", Trusted),
+            (Anthropic, "claude-haiku-5-5", OftenWrong),
+            (Anthropic, "Claude-Haiku-4-5", OftenWrong),
+            (OpenAi, "anthropic/claude-3.5-haiku", OftenWrong),
+            (Local, "qwen3-4b-instruct", OftenWrong),
+            (Local, "claude-opus-5-5", OftenWrong),
+            // An aggregator's route to a trusted model: other call settings, so untested.
+            (OpenAi, "anthropic/claude-sonnet-5.5", Untested),
+            (OpenAi, "openai/gpt-6-astra", Untested),
+            (OpenAi, "google/gemini-4-carbon", Untested),
+            (Anthropic, "claude-sonnet-5-5-mini", Untested),
+            (Anthropic, "claude-3-5-sonnet-20241022", Untested),
+            (Anthropic, "claude-sonnetish-5", Untested),
+            (Anthropic, "claude-mythos-5-2", Untested),
+            (OpenAi, "gpt-6-astra-mini", Untested),
+            (OpenAi, "gpt-6.1-sol", Untested),
+            (OpenAi, "gpt-4.1-mini", Untested),
+            (Gemini, "gemini-4-carbon-lite", Untested),
+            (Gemini, "gemini-2.5-flash", Untested),
+            (Anthropic, "", Untested),
+        ];
+        for (provider, model, tier) in cases {
+            assert_eq!(model_trust(provider, model), tier, "{provider:?} {model}");
         }
-        for (provider, model) in [
-            (Anthropic, "claude-haiku-5-5"),
-            (Anthropic, "Claude-Haiku-4-5"),
-            (OpenAi, "anthropic/claude-3.5-haiku"),
-            // Measured on Anthropic's own API, with its call settings: an aggregator's
-            // route to the same model is another measurement.
-            (OpenAi, "anthropic/claude-sonnet-5.5"),
-            (Anthropic, "claude-sonnet-4-5"),
-            (Anthropic, "claude-sonnet-5-5-mini"),
-            (OpenAi, "gpt-4.1-mini"),
-            (Gemini, "gemini-2.5-flash"),
-        ] {
-            assert!(!writes_verdicts(provider, model), "{model}");
-        }
-    }
-
-    /// The one switch for models nobody measured lets them write, and still never a model
-    /// the eval measured below the bar.
-    #[test]
-    fn letting_unmeasured_models_write_still_keeps_a_failed_one_off() {
-        assert!(model_writes(ProviderTag::OpenAi, "gpt-4.1-mini", true));
-        assert!(!model_writes(ProviderTag::OpenAi, "gpt-4.1-mini", false));
-        assert!(!model_writes(ProviderTag::Anthropic, "claude-haiku-5-5", true));
-        assert!(!model_writes(ProviderTag::OpenAi, "anthropic/claude-3.5-haiku", true));
     }
 
     /// The slot's refusals keep their type, and a local server that isn't running reads
@@ -324,12 +336,8 @@ mod tests {
             decide(inputs("cloud"), refused(SlotRefusal::NotConfigured)),
             Err(VerdictUnavailable::NotConfigured)
         );
-        let local = GateInputs {
-            local_allowed: true,
-            ..inputs("local")
-        };
         assert_eq!(
-            decide(local, refused(SlotRefusal::NotConfigured)),
+            decide(inputs("local"), refused(SlotRefusal::NotConfigured)),
             Err(VerdictUnavailable::NotReady)
         );
         assert_eq!(

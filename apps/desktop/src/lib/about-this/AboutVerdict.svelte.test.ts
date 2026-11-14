@@ -63,7 +63,7 @@ describe('the AI take', () => {
   it('renders a hostile take as literal text: no element, no link, no Markdown', async () => {
     const hostile = 'Safe to delete. <img src=x onerror="alert(1)"> [run this](https://evil.example) **now**'
     const card = withVerdict(fixture('downloaded'), [
-      { type: 'verdictPlanned' },
+      { type: 'verdictPlanned', trust: 'trusted' },
       { type: 'verdictGiven', contents: 'none' },
       { type: 'verdictDelta', text: hostile },
       { type: 'verdictEnd', ending: { kind: 'done' }, cost: null },
@@ -110,14 +110,14 @@ describe('the AI take', () => {
     expect(block(stopped)?.querySelector('button')).toBeNull()
   })
 
-  it('draws no block, and no line, for AI off, a person’s own off, or the local model’s default', async () => {
-    for (const why of [{ kind: 'turnedOff' }, { kind: 'localOff' }] as const) {
-      const target = await render(withVerdict(fixture('downloaded'), [{ type: 'verdictUnavailable', why }]))
-      expect(target.querySelector('[data-verdict-slot]')).toBeNull()
-      expect(target.textContent).not.toContain('AI take')
-      void unmount(mounted ?? {})
-      mounted = null
-    }
+  it('draws no block, and no line, for AI off or a person’s own off', async () => {
+    const target = await render(
+      withVerdict(fixture('downloaded'), [{ type: 'verdictUnavailable', why: { kind: 'turnedOff' } }]),
+    )
+    expect(target.querySelector('[data-verdict-slot]')).toBeNull()
+    expect(target.textContent).not.toContain('AI take')
+    void unmount(mounted ?? {})
+    mounted = null
     const off = await render(fixture('verdict-ai-off'))
     expect(off.querySelector('[data-verdict-slot]')).toBeNull()
     // AI off says where to turn it on, once, quietly, outside the card's body.
@@ -126,13 +126,29 @@ describe('the AI take', () => {
     expect(off.querySelector('.card')?.contains(hint ?? null)).toBe(false)
   })
 
-  it('says once, with no link, that a model Cmdr hasn’t tested writes no take', async () => {
-    const target = await render(
-      withVerdict(fixture('downloaded'), [{ type: 'verdictUnavailable', why: { kind: 'modelOff' } }]),
+  it('warns inside the block by the model’s trust: nothing when trusted, a link to change it when often wrong', async () => {
+    const trusted = await render(fixture('verdict-done'))
+    expect(block(trusted)?.querySelector('[data-verdict-trust]')).toBeNull()
+    void unmount(mounted ?? {})
+    mounted = null
+
+    const untested = await render(fixture('verdict-untested'))
+    const caution = block(untested)?.querySelector('[data-verdict-trust="untested"]')
+    expect(caution?.textContent).toContain('hasn’t tested this model')
+    expect(caution?.querySelector('button')).toBeNull()
+    // The take still shows in full under it.
+    expect(block(untested)?.textContent).toContain('This is the installer disk image for Tessera 2.4.1,')
+    void unmount(mounted ?? {})
+    mounted = null
+
+    const oftenWrong = await render(fixture('verdict-often-wrong'))
+    const warning = block(oftenWrong)?.querySelector('[data-verdict-trust="oftenWrong"]')
+    expect(warning?.textContent).toContain('often got its take wrong')
+    const change = [...(warning?.querySelectorAll('button') ?? [])].find((b) =>
+      b.textContent.includes('Change the model'),
     )
-    const line = target.querySelector('[data-verdict="modelOff"]')
-    expect(line?.textContent).toContain('models it’s tested')
-    expect(line?.querySelector('button')).toBeNull()
+    change?.click()
+    expect(openSettingsWindow).toHaveBeenCalledWith('about-this-card', ['AI', 'Provider'])
   })
 
   it('asks for cloud consent only by opening Settings at the disclosure, never with a one-click allow', async () => {
@@ -200,17 +216,17 @@ describe('the rest of the card, with and without a take', () => {
     const plain = await outsideTheTake(fixture('downloaded'))
     const reassuring = await outsideTheTake(
       withVerdict(fixture('downloaded'), [
-        { type: 'verdictPlanned' },
+        { type: 'verdictPlanned', trust: 'trusted' },
         { type: 'verdictDelta', text: 'This is not needed. It is safe to delete. Move it to the Trash now.' },
         { type: 'verdictEnd', ending: { kind: 'done' }, cost: null },
       ]),
     )
     expect(reassuring).toEqual(plain)
-    // The same card with Ask Cmdr on: refused, finished, or drawing nothing, the rest reads the same.
+    // The same card with Ask Cmdr on: refused, finished, or finished under a warning, the rest reads the same.
     const refused = await outsideTheTake(fixture('verdict-no-consent'))
     const done = await outsideTheTake(fixture('verdict-done'))
-    const none = await outsideTheTake(fixture('verdict-local-off'))
+    const warned = await outsideTheTake(fixture('verdict-often-wrong'))
     expect(done).toEqual(refused)
-    expect(none).toEqual(refused)
+    expect(warned).toEqual(refused)
   })
 })

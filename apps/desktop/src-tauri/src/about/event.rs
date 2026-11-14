@@ -76,7 +76,11 @@ pub enum AboutUpdate {
         why: AboutUnavailable,
     },
     /// The card gets a verdict: reserve its block. Right after `planned`.
-    VerdictPlanned,
+    VerdictPlanned {
+        /// How far the model writing it can be trusted, which the block says from its
+        /// first frame.
+        trust: ModelTrust,
+    },
     /// The card gets no verdict, and why. Right after `planned`.
     VerdictUnavailable {
         /// Why.
@@ -122,12 +126,6 @@ pub enum VerdictUnavailable {
     AiOff,
     /// The person turned the verdict off (`aboutThis.aiVerdict`).
     TurnedOff,
-    /// The local model writes no verdict until its answers are measured good.
-    LocalOff,
-    /// The configured cloud model isn't one whose takes passed the verdict eval
-    /// (`gate::writes_verdicts`): it failed the bar, or nobody measured it. The
-    /// card says so in one quiet line.
-    ModelOff,
     /// Cloud AI is picked and not allowed (or allowed under older copy).
     NoCloudConsent,
     /// A cloud provider is picked but has no key or endpoint.
@@ -141,6 +139,22 @@ pub enum VerdictUnavailable {
     },
     /// Too many verdicts started in the last minute: try again in a moment.
     TooManyRequests,
+}
+
+/// How far the card can trust the model that writes its AI take, decided once from the
+/// provider and model id (`verdict::gate::model_trust`). Every model writes; the card
+/// warns on the two tiers below `Trusted`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ModelTrust {
+    /// A model David picked as trusted for this (the eval measured Sonnet 5.5 and Opus
+    /// 5.5; the rest of the list is his call). No warning.
+    Trusted,
+    /// This model, or one like it, was tested for this and its takes were often wrong
+    /// (the Haiku family, the bundled local model). A red warning.
+    OftenWrong,
+    /// Nobody tested this model for this. A yellow warning.
+    Untested,
 }
 
 /// What of the item's contents rides with the facts to the model.
