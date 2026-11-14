@@ -43,6 +43,10 @@
   "@shortcuts.scope.operationLog": {
     "sourceHash": "2c97965"
   },
+  "shortcuts.scope.tellMeAbout": "Tell me about this",
+  "@shortcuts.scope.tellMeAbout": {
+    "sourceHash": "0d5deaf"
+  },
   "shortcuts.scope.askCmdr": "Ask Cmdr",
   "@shortcuts.scope.askCmdr": {
     "sourceHash": "aafb1ce",

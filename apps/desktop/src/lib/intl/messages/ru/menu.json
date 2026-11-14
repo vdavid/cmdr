@@ -159,6 +159,10 @@
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
+  "menu.file.tellMeAbout": "Tell me about this",
+  "@menu.file.tellMeAbout": {
+    "sourceHash": "0d5deaf"
+  },
   "menu.file.quit": "{platform, select, windows {Выйти из Cmdr} other {Завершить Cmdr}}",
   "@menu.file.quit": {
     "sourceHash": "af7cf85"

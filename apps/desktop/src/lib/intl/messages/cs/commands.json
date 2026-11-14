@@ -872,6 +872,18 @@
   "@commands.fileGetInfo.label": {
     "sourceHash": "da65a65"
   },
+  "commands.fileTellMeAbout.label": "Tell me about this",
+  "@commands.fileTellMeAbout.label": {
+    "sourceHash": "0d5deaf"
+  },
+  "commands.fileTellMeAbout.description": "Shows where the item came from, what it is, and what removing it would mean",
+  "@commands.fileTellMeAbout.description": {
+    "sourceHash": "66f0488"
+  },
+  "commands.aboutThisStopVerdict.label": "Stop the AI take",
+  "@commands.aboutThisStopVerdict.label": {
+    "sourceHash": "0ffd7ae"
+  },
   "commands.fileQuickLook.label": "{platform, select, macos {Rychlý náhled} other {Náhled}}",
   "@commands.fileQuickLook.label": {
     "sourceHash": "c3f57b4"
