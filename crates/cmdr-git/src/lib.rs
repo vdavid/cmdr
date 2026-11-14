@@ -30,7 +30,8 @@
 //!   trees, built from an `Arc<GitPortal>` by its own constructor. A host routes
 //!   to it and then knows nothing about git: listing, reading, and copying out
 //!   all go through the trait.
-//! - [`repo_info`] and [`list_status`] are the chip's two answers, callable with
+//! - [`repo_info`] and [`list_status`] are the chip's two answers, and [`path_status`] the
+//!   "Tell me about this" card's answer about one item, all callable with
 //!   a [`RepoHandle`] alone.
 //!
 //! ## Two things a caller has to know
@@ -68,6 +69,7 @@ mod column_meta;
 mod fault_guard;
 mod log;
 mod path;
+mod path_status;
 mod portal;
 mod read_blob;
 mod releasing;
@@ -113,6 +115,7 @@ mod volume_tests;
 mod watcher_tests;
 
 pub use path::portal_route;
+pub use path_status::{PathStatus, path_status};
 pub use portal::GitPortal;
 pub use repo::{RepoHandle, RepoInfo, repo_info};
 pub use state_sink::{GitStateSink, no_git_state_sink};

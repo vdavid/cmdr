@@ -59,8 +59,6 @@ questions are at its top). The eval's full evidence: `docs/notes/about-verdict-e
 - **Folder suggestions stay silent after the consent bump**: every cloud user allows cloud AI again once (version 2 →
   3), and until then folder suggestions, Ask Cmdr, and AI search are off with no word why. A one-line "what changed"
   above the switch, a release-notes line, or both? (#1191)
-- **A `cmdr-git` per-path status** (#1188), so a clean file reads "Committed, no changes" and the removal row can say
-  git brings it back. Default until you say yes: without it.
 - **The `cmdr-operation-log` surface raise** (95 → 97) for "which operation put this file here". Default: in, veto-able.
 - **An inspector that follows the cursor** beside the dialog (#1181).
 
@@ -74,6 +72,11 @@ The other follow-ups filed from this effort: #1175–#1180, #1182–#1187, and #
   local model (the 3B model gave 29 green lights and followed 24 injections in 139 takes). Untested, with a yellow
   warning: everything else. Only Sonnet 5.5 and Opus 5.5 were measured; the rest of the trusted list is your call. In
   the gallery: "AI take: done", "… by a model Cmdr hasn’t tested (yellow)", "… by a model often wrong (red)".
+- **A per-path git status**: in (`cmdr_git::path_status`). A committed, unchanged file now reads "Committed, with no
+  changes" and its removal row says git can restore it from the last commit; an edited one keeps "Has changes no commit
+  has"; untracked and ignored items each say so, and git can't bring them back. A folder reads clean only when git holds
+  all of it: one with ignored files beside its tracked ones (most repo roots and source folders, with a build folder or
+  a `.env`) stays "No changes Cmdr can see", with no restore line.
 
 ## Review items by surface
 

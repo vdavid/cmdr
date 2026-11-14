@@ -31,11 +31,11 @@ app's two seams, and nothing in this crate ever asks it.
 
 ## The public surface is capped
 
-`index-crate-isolation` holds this crate to **11 root promises, 0 public modules, and 0 public items inside them**, set
+`index-crate-isolation` holds this crate to **13 root promises, 0 public modules, and 0 public items inside them**, set
 on 2026-09-05 to exactly what it exposes — no headroom, so the first addition has to be argued for.
 
 **Every module is private**, which is the tightest shape a backend crate here has taken: a host can name no path into
-this crate, so all 11 names arrive as root re-exports and both other buckets are zero. That also means `GitPortal`'s own
+this crate, so all 13 names arrive as root re-exports and both other buckets are zero. That also means `GitPortal`'s own
 methods are reachable but unmeasured, so what holds them is the list below rather than a number.
 
 **A backend's API is the `Volume` trait it implements**, which is `cmdr-fs`'s promise rather than this crate's, so
@@ -49,6 +49,11 @@ which:
   which is what `GitPortal::discover` answers with.
 - **The status column** (the same commands file): `EntryStatus` and `EntryStatusCode`, both crossing IPC, and
   `list_status`.
+- **One item's status** (`apps/desktop/src-tauri/src/about/git.rs`, the "Tell me about this" card): `path_status` and
+  `PathStatus` (approved 2026-11-14, #1188, 11 → 13). `list_status` lists changed entries only, so it can't say a file
+  is committed and clean, or tell ignored from outside the repo; this reads the index, the ignore stack, and a status
+  walk limited to the one path by a literal pathspec, with no cache. Only `Clean` may become "git can restore it": a
+  folder holding ignored files beside its tracked ones, or a submodule, is `TrackedInPart`.
 - **Reporting a change** (`file_system/git/wiring.rs`): the `GitStateSink` trait the app implements, and
   `no_git_state_sink` for a session with no window.
 - **Filling in commit counts** (`apps/desktop/src-tauri/src/file_system/git/commit_counts.rs`):
@@ -70,7 +75,7 @@ by string prefix, so it left with the caller rather than waiting for another.
 **A `testing`-gated method on `GitPortal` spends nothing here**, which is why the scripted watcher arrived without a
 conversation: `with_scripted_watcher` and `fire_watcher` are methods on a type in a private module (unmeasured, like
 every other `GitPortal` method), and the `GitWatcherBackend` trait plus both backends are `pub(crate)`. The count stands
-at 11 / 0 / 0 with them in place. ❗ That is not a loophole to route a real API through: an item a HOST calls in
+at 13 / 0 / 0 with them in place. ❗ That is not a loophole to route a real API through: an item a HOST calls in
 production is a root promise whatever it's attached to.
 
 Two gated items sit outside those numbers: `RecordingGitStateSink` and the whole `test_fixtures` module, both behind
@@ -393,9 +398,9 @@ without more, the user would read "This repo looks damaged" (`CorruptRepo`) abou
 after; one that moved means some page read in between may have been zeros, so the operation answers
 `FriendlyGitErrorKind::VolumeGone` (the host words it as "the drive with this repo went away") and drops the repo's
 cached status. The watches sit at every entry point a host reaches, inside a `GuardedRead` (which also carries the stop
-flag of § "Letting go of a volume that's about to unmount"): `repo_info`, `list_status`'s walk, every `GitPortalVolume`
-call (its `blocking` wrapper), and `GitPortal::category_rows`; `commit_rows_with_counts` takes a bare watch (its rows
-then stay pending). The watcher's recompute and the chip's handshake go through `repo_info`.
+flag of § "Letting go of a volume that's about to unmount"): `repo_info`, `list_status`'s walk, `path_status`, every
+`GitPortalVolume` call (its `blocking` wrapper), and `GitPortal::category_rows`; `commit_rows_with_counts` takes a bare
+watch (its rows then stay pending). The watcher's recompute and the chip's handshake go through `repo_info`.
 
 - **No memo stores what a watch refused.** The status cache and the snapshot-dates memo are content- or mtime-keyed and
   would otherwise serve zeros for good, so both skip the insert when the walk under them tripped.

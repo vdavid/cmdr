@@ -36,9 +36,9 @@ Modules import downward only, which is what keeps `module-cycles` green:
 - **`NoInstalledAppMatches` versus `LibraryNameMatchesNoApp`**: the same lookup result, Routine outside the Library
   (nobody expects an owner there) and Notable inside it (a folder in `Application Support` that no installed app answers
   to is what the person came to ask about). Two variants, so the rule needs no path.
-- **Decision: `GitStatus` has no "not in status" variant.** `list_status` can't tell a clean file from an ignored one
-  from one outside the repo, so that answer is `Unknown(NotInStatus)` in `GitContext::status`, ❌ never `Clean`. The
-  vocabulary already holds `Tracked(Clean)` and `Ignored` for a per-path read.
+- **Decision: `GitStatus` has no "not in status" variant.** When git can't vouch for all of an item (a tracked folder
+  holding ignored files, a submodule), that answer is `Unknown(NotInStatus)` in `GitContext::status`, ❌ never `Clean`:
+  `Tracked(Clean)` is what lets the removal row say git can restore it. The host reads `cmdr_git::path_status`.
 
 ## Text from the item: `ItemText`
 

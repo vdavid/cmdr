@@ -220,21 +220,23 @@ the log recorded THIS node landing there.
 ## Git
 
 `git.rs`. Root and branch from `cmdr_git::repo_info` (on the handle the probe's look found); the status from
-`cmdr_git::list_status` on its own pool job, waited for `STATUS_BUDGET` (600 ms) inside the row. Past it the root and
-branch stand with the status `Unknown(TimedOut)`; the walk runs on and fills the repo's status cache, so the next card
-answers at once. A cold walk is about 70 ms on a 50,000-file repo (`crates/cmdr-git/DETAILS.md` § Performance).
+`cmdr_git::path_status` on its own pool job, waited for `STATUS_BUDGET` (600 ms) inside the row. Past it the root and
+branch stand with the status `Unknown(TimedOut)`. It reads the index, the ignore rules, and a status walk limited to the
+item by a literal pathspec (a folder's subtree), never the whole repo.
 
-- **What the list proves** (`status_of`): it holds CHANGED entries only, so a clean tracked file, an ignored one, and one
-  git never saw are all absent: `Unknown(NotInStatus)` (Routine), ❌ never `Clean`. A file's own `untracked` entry is
-  `Untracked`; any other change (modified, a staged add or delete, a rename, a conflict) is `Tracked(Modified)`, worded
-  from the side that never understates a loss. A folder with any tracked change under it holds uncommitted work; one
-  with only untracked entries is `NotInStatus`, since nothing says whether git tracks the rest of it.
-- **Decision: no new `cmdr-git` read.** That crate's surface is capped and a per-path status (index lookup plus the
-  exclude check) needs David's say-so. With one, `Tracked(Clean)` and `Ignored` light up (the vocabulary and the removal
-  rules already hold them) and only `status_of`'s source changes.
-- **Gotcha: a cancelled card can't stop a cold walk.** The walk's stop flag is internal to `cmdr-git`; a cancel drops the
-  answer and the thread finishes the walk (bounded by the pool's ceiling). The per-path read above would remove the walk
-  altogether.
+- **The card's word** (`status_from`): `Clean` is `Tracked(Clean)` ("Committed, with no changes", and the removal row's
+  "Git can restore it from the last commit"); `Changed` is `Tracked(Modified)` (a staged add or delete, a rename, a
+  conflict, or untracked files in a tracked folder: worded from the side that never understates a loss); `Untracked`
+  and `Ignored` say so. `TrackedInPart` (a tracked folder that also holds ignored files, or a submodule) is
+  `Unknown(NotInStatus)`, ❌ never clean: git can't restore the ignored part, so the removal row mustn't say it can.
+  Most real repo roots and source folders land there (a build folder or a `.env` beside the tracked files).
+- **Decision: a per-path read in `cmdr-git`** (`path_status`, David's go on 2026-11-14, #1188). The status column's
+  `list_status` lists changed entries only, so absence couldn't tell clean from ignored from outside the repo.
+- **Gotcha: a nested repo that isn't a submodule reads as the outer repo's** while #1175 stands (the repo cache can
+  answer the outer handle): the outer repo calls the inner one's folder untracked or ignored, never clean, so no
+  removal line promises a restore it can't make.
+- **A cancelled card can't stop the read**: it's bounded by the item (a big folder walks its subtree) and the pool's
+  ceiling; a cancel drops the answer.
 - **The relative path** canonicalizes the item's PARENT and keeps its name, so a symlink is asked about as itself.
 
 ## The owner

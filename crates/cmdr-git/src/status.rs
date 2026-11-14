@@ -234,7 +234,7 @@ fn run_full_repo_status(repo: &RepoHandle, stop: &Arc<AtomicBool>) -> Result<Vec
 }
 
 /// Maps a `TreeIndex` change (HEAD vs index, staged) to an entry.
-fn tree_index_to_entry(change: &gix::diff::index::Change) -> Option<(String, EntryStatusCode)> {
+pub(crate) fn tree_index_to_entry(change: &gix::diff::index::Change) -> Option<(String, EntryStatusCode)> {
     use gix::bstr::ByteSlice as _;
     use gix::diff::index::ChangeRef;
     let (location, code) = match change {
@@ -256,7 +256,7 @@ fn tree_index_to_entry(change: &gix::diff::index::Change) -> Option<(String, Ent
 /// Maps an `IndexWorktree` item (index vs worktree, i.e., unstaged) to an
 /// `EntryStatus`. Returns `None` for items that don't represent a user-visible
 /// change (for example, stat-refresh-only updates).
-fn index_worktree_to_entry(
+pub(crate) fn index_worktree_to_entry(
     item: &gix::status::index_worktree::Item,
     work_dir: &Path,
 ) -> Option<(String, EntryStatusCode)> {

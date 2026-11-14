@@ -289,10 +289,11 @@ var surfaceGuardedCrates = []struct {
 		// post-change listing refresh started matching by CANONICAL worktree root
 		// instead of by string prefix, and this crate keeps no promise nothing reaches.
 		//
+		// Raised 11 -> 13 on 2026-11-14, David's go (#1188): `path_status`, `PathStatus`.
 		// Item-by-item: `crates/cmdr-git/DETAILS.md` § "The public surface is capped".
 		Name: "cmdr-git",
 		Ceilings: surfaceCeilings{
-			RootPromises:   11,
+			RootPromises:   13,
 			PublicModules:  0,
 			SubsystemItems: 0,
 		},

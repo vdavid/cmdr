@@ -36,7 +36,7 @@ every rule; this module reads raw inputs.
 - ❌ **No call follows a link into a share** (no `statfs`, `canonicalize`): local-ness is `place`'s walk.
 - ❌ **`Started::ByCmdr` asks no volume but a local disk** (`RefusedInBackground`); a path linking into a share counts
   as the share (`place::reaches_a_share`).
-- ❌ **Git's status list holds CHANGED entries only**: absent is `NotInStatus`, ❌ never "clean".
+- ❌ **Only `cmdr_git::PathStatus::Clean` reads as clean** (git can restore it); git holding part is `NotInStatus`.
 - ❌ **What's inside, an app's data, and What it shows read databases only** (the index, an ALREADY loaded search
   arena, `media.db`). Not there is `NotIndexed`.
 - ❌ **Nothing looks inside an app's container** (`probe::sealed`), and no other volume's app counts as installed.
