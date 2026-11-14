@@ -150,9 +150,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.aboutThis.item.identity": "The item’s name, path, size, and dates, how many other names point to it, and where a link points",
+  "ai.cloudConsent.aboutThis.item.identity": "What it is (a file, folder, app, or link), its name, path, size, and dates, how many files and folders a folder holds, how many other names point to it, where a link points, and whether its name hides a character that changes the order its letters show in",
   "@ai.cloudConsent.aboutThis.item.identity": {
-    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. The item's own basics. \"Other names\" are hard links; \"where a link points\" is a symbolic link's target. Sentence case, no period.",
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. The item's own basics. \"What it is\" is the item's kind (a document package or an archive entry is also possible; the four named are examples). \"Other names\" are hard links; \"where a link points\" is a symbolic link's target. The last part is a yes/no flag: the name contains an invisible Unicode character that reverses or reorders how the letters display (so a program named \"cod[U+202E]fdp.command\" can look like a PDF elsewhere); the character itself never leaves. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -168,9 +168,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.aboutThis.item.appAndSigner": "For an app or a program, its name, id, and version, and the name and team id of whoever signed it",
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "For an app or a program, its name, id, and version. For it or a disk image, the name and team id of whoever signed it, whether its code still matches that signature, and whether Apple’s notarization ticket is attached",
   "@ai.cloudConsent.aboutThis.item.appAndSigner": {
-    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Facts an app bundle or program says about itself, and its code signature. \"Team id\" is Apple's developer team identifier; keep it as a plain term. Sentence case, no period.",
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Facts an app bundle or program says about itself, and its code signature. \"Team id\" is Apple's developer team identifier; keep it as a plain term. \"Whether its code still matches\" is the result of Cmdr's quick check of the program against its signature (matches, differs, or not checked). A notarization ticket is Apple's proof that it scanned the software; use the term Apple uses in your language. Two sentences, sentence case, no final period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -180,13 +180,13 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Where Cmdr copied, moved, or extracted it from, including that path and the drive or server name",
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Where Cmdr copied, moved, or extracted it from and when, including that path, the drive or server name, and whether you or an AI assistant started it",
   "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
-    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Cmdr's own record of the copy, move, or extract that put the item there: the source path and the name of the drive or server (for example a NAS's name). Sentence case, no period.",
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Cmdr's own record of the copy, move, or extract that put the item there: the source path and the name of the drive or server (for example a NAS's name), when it happened, and who started it: the person, Ask Cmdr, or another AI app driving Cmdr. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.aboutThis.item.git": "Its git repository’s folder, branch, and status, or for a file from git’s history, the commit, branch, or tag it’s from",
+  "ai.cloudConsent.aboutThis.item.git": "Its git repository’s folder, branch, and status, or for a file from git’s history, the commit, branch, or tag it’s from and when it last changed there",
   "@ai.cloudConsent.aboutThis.item.git": {
     "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. git is a program's name; keep it lowercase. \"Status\" is whether the file changed since the last commit. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
@@ -204,9 +204,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.aboutThis.item.inside": "For a folder, the names and sizes of the biggest things in it and of its largest files, what kinds of files it holds, and how much of it hasn’t changed in a year",
+  "ai.cloudConsent.aboutThis.item.inside": "For a folder, what sort it is (like a cache or build output), how many things are in it, the names and sizes of the biggest ones and of its largest files, what kinds of files it holds, and how much of it hasn’t changed in a year",
   "@ai.cloudConsent.aboutThis.item.inside": {
-    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. What a folder holds, by name and size, never the files' contents. Sentence case, no period.",
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. What a folder holds, by name and size, never the files' contents. \"What sort it is\" is Cmdr's guess from the folder's name and place: a cache, installed dependencies, build output, or version-control data. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

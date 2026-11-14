@@ -81,30 +81,33 @@ pub trait Speak {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum AboutDisclosure {
-    /// Its name, path, kind, sizes, and dates, other names, and a link's target.
+    /// What it is, its name, path, sizes, and dates, a folder's file and folder
+    /// counts, other names, a link's target, and whether its name hid a
+    /// reordering character.
     Identity,
     /// What its first bytes say it is.
     RealType,
     /// The site it was recorded as downloaded from (host only), when, and the
     /// downloading app.
     Download,
-    /// An app's name, id, and version, and who signed it.
+    /// An app's name, id, and version, and for it or a disk image who signed
+    /// it, whether its executable matches, and its notarization ticket.
     AppAndSigner,
     /// When it was last opened, how often, and which app opens it.
     Use,
-    /// The Cmdr operation that put it here, with its source path and the drive
-    /// or server name.
+    /// The Cmdr operation that put it here: when, its source path and the drive
+    /// or server name, and who started it.
     CmdrHistory,
     /// The git repo, branch, and status, or the commit or branch a snapshot is
-    /// from.
+    /// from and when it last changed there.
     Git,
     /// The app or installer it belongs to, and how Cmdr knows.
     Owner,
     /// How much a folder matters by Cmdr's ranking, and how often Cmdr visited
     /// it.
     Importance,
-    /// A folder's biggest children and largest files by name and size, its mix
-    /// of kinds, and how much sat unchanged for a year.
+    /// A folder's class and child count, its biggest children and largest files
+    /// by name and size, its mix of kinds, and how much sat unchanged for a year.
     Inside,
     /// An app's folders in the Library, by name and size.
     AppData,

@@ -661,6 +661,7 @@ fn every_field_that_leaves_names_its_disclosure_item() {
                 "cmdrOperation",
                 "cmdrOperation.state",
                 "cmdrOperation.value",
+                // "and when", and "whether you or an AI assistant started it".
                 "cmdrOperation.value.at",
                 "cmdrOperation.value.atHuman",
                 "cmdrOperation.value.initiator",
@@ -727,6 +728,7 @@ fn every_field_that_leaves_names_its_disclosure_item() {
                 "folderDigest.value.children.value.kindMix",
                 "folderDigest.value.children.value.kindMix[].count",
                 "folderDigest.value.children.value.kindMix[].kind",
+                // "what sort it is (like a cache or build output)".
                 "folderDigest.value.class",
                 "folderDigest.value.largestFiles",
                 "folderDigest.value.largestFiles.state",
@@ -779,6 +781,7 @@ fn every_field_that_leaves_names_its_disclosure_item() {
                 "gitSnapshot.state",
                 "gitSnapshot.value",
                 "gitSnapshot.value.kind",
+                // "and when it last changed there".
                 "gitSnapshot.value.lastChanged",
                 "gitSnapshot.value.lastChangedHuman",
                 "gitSnapshot.value.name",
@@ -800,8 +803,8 @@ fn every_field_that_leaves_names_its_disclosure_item() {
                 "identity.value.modified",
                 "identity.value.modifiedHuman",
                 "identity.value.name",
-                // That the name hid a direction override. The Identity line says
-                // "its name"; it doesn't name this flag (see the model's DETAILS).
+                // "whether its name hides a character that changes the order its
+                // letters show in".
                 "identity.value.nameHidReordering",
                 "identity.value.physicalSize",
                 "identity.value.physicalSizeHuman",
@@ -860,6 +863,7 @@ fn every_field_that_leaves_names_its_disclosure_item() {
         ),
         (
             "recursiveSize",
+            // "size" and "how many files and folders a folder holds".
             D::Identity,
             &[
                 "recursiveSize",
@@ -916,6 +920,7 @@ fn every_field_that_leaves_names_its_disclosure_item() {
                 "signature",
                 "signature.state",
                 "signature.value",
+                // "whether its code still matches that signature".
                 "signature.value.checked",
                 "signature.value.checked.type",
                 "signature.value.checked.why",
@@ -923,9 +928,11 @@ fn every_field_that_leaves_names_its_disclosure_item() {
                 "signature.value.signer.org",
                 "signature.value.signer.team",
                 "signature.value.signer.type",
+                // "whether Apple’s notarization ticket is attached".
                 "signature.value.ticket",
             ],
         ),
+        // "What it is (a file, folder, app, or link)".
         ("target", D::Identity, &["target"]),
     ];
     let mut sent = std::collections::BTreeSet::new();

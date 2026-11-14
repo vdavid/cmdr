@@ -1034,26 +1034,44 @@ In the "What Cmdr sends" fold under Settings > AI > Provider and in onboarding's
 - `ai.cloudConsent.aboutThis.title`: <b>Tell me about this</b>, each time you open its card on a file or folder, with no
   further question:
   - Where: Heads the nested list below, beside "New folder name suggestions" and above Ask Cmdr's list.
-- `ai.cloudConsent.aboutThis.item.identity`: The item’s name, path, size, and dates, how many other names point to it,
-  and where a link points
+- `ai.cloudConsent.aboutThis.item.identity`: What it is (a file, folder, app, or link), its name, path, size, and dates,
+  how many files and folders a folder holds, how many other names point to it, where a link points, and whether its name
+  hides a character that changes the order its letters show in
+  - **New since the last draft** (was "The item’s name, path, size, and dates, how many other names point to it, and
+    where a link points"): the projection also sends the item's kind (`target`), a folder's file and folder counts
+    (`recursiveSize`), and a yes/no flag that the name hid a reordering character (`nameHidReordering`; the character
+    itself never leaves, and invisible ones aren't flagged). Too long for one line? Splitting the name flag into its own
+    line is the alternative (a new disclosure token).
 - `ai.cloudConsent.aboutThis.item.realType`: What kind of file its first bytes say it is
 - `ai.cloudConsent.aboutThis.item.download`: The website it was recorded as downloaded from (the site’s main address
   only, like github.com, never a subdomain or the full link), when, and the app that downloaded it. For a Mail
   attachment or an AirDrop, only that it was one, never who sent it
   - Changed from "the site’s name only" when the projection started sending the registrable domain (conformance L1): a
     subdomain can carry a share token or a private name. Needs David's review.
-- `ai.cloudConsent.aboutThis.item.appAndSigner`: For an app or a program, its name, id, and version, and the name and
-  team id of whoever signed it
+- `ai.cloudConsent.aboutThis.item.appAndSigner`: For an app or a program, its name, id, and version. For it or a disk
+  image, the name and team id of whoever signed it, whether its code still matches that signature, and whether Apple’s
+  notarization ticket is attached
+  - **New since the last draft** (was "For an app or a program, its name, id, and version, and the name and team id of
+    whoever signed it"): the projection also sends the bounded check's result (`checked`: matches, differs, or not
+    checked and why) and the stapled ticket's state (`ticket`), and a `.dmg` or `.dylib` gets a signature row too.
 - `ai.cloudConsent.aboutThis.item.use`: When you last opened it, how many times, and which app opens it
-- `ai.cloudConsent.aboutThis.item.cmdrHistory`: Where Cmdr copied, moved, or extracted it from, including that path and
-  the drive or server name
+- `ai.cloudConsent.aboutThis.item.cmdrHistory`: Where Cmdr copied, moved, or extracted it from and when, including that
+  path, the drive or server name, and whether you or an AI assistant started it
+  - **New since the last draft** (was "Where Cmdr copied, moved, or extracted it from, including that path and the drive
+    or server name"): the projection also sends when (`at`) and who started it (`initiator`: you, Ask Cmdr, or another
+    AI client).
 - `ai.cloudConsent.aboutThis.item.git`: Its git repository’s folder, branch, and status, or for a file from git’s
-  history, the commit, branch, or tag it’s from
+  history, the commit, branch, or tag it’s from and when it last changed there
+  - **New since the last draft** (added "and when it last changed there"): a snapshot sends `lastChanged`.
 - `ai.cloudConsent.aboutThis.item.owner`: The app or installer it belongs to, and how Cmdr knows
 - `ai.cloudConsent.aboutThis.item.importance`: For a folder, how much it matters by Cmdr’s ranking, and how often you
   open it in Cmdr
-- `ai.cloudConsent.aboutThis.item.inside`: For a folder, the names and sizes of the biggest things in it and of its
-  largest files, what kinds of files it holds, and how much of it hasn’t changed in a year
+- `ai.cloudConsent.aboutThis.item.inside`: For a folder, what sort it is (like a cache or build output), how many things
+  are in it, the names and sizes of the biggest ones and of its largest files, what kinds of files it holds, and how
+  much of it hasn’t changed in a year
+  - **New since the last draft** (was "For a folder, the names and sizes of the biggest things in it and of its largest
+    files, …"): the projection also sends the folder's class (`class`: cache, dependencies, build output, version
+    control) and its child count (`children.count`).
 - `ai.cloudConsent.aboutThis.item.appData`: For an app, the names and sizes of the folders it keeps in your Library (off
   macOS: "…the data folders it keeps")
 - `ai.cloudConsent.aboutThis.item.removal`: What removing it would mean, as Cmdr works it out from the facts above
