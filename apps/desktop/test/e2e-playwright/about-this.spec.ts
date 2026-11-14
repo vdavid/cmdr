@@ -35,6 +35,7 @@ import {
 } from './helpers.js'
 import { defaultKey } from './helpers/registry-keys.js'
 import { buildAboutFixtures, writeDownloadRecord, type AboutFixtureTree } from '../e2e-shared/about-fixtures.js'
+import { pressFooterAction } from './about-this-helpers.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
@@ -249,23 +250,6 @@ test.describe('Tell me about this: the next actions', () => {
     )
   }
 
-  /**
-   * Presses a footer action from the keyboard's side: focus it (it's in the Tab order), then activate it. A synthetic
-   * Enter has no default action on a button, so the activation is the button's own `click()`, which is what a real Enter
-   * on a focused button fires.
-   */
-  async function pressAction(tauriPage: PageLike, selector: string): Promise<void> {
-    const found = await tauriPage.evaluate<boolean>(`(() => {
-      const button = document.querySelector(${JSON.stringify(`${CARD} :is(${selector}) button`)})
-      if (!button) return false
-      button.focus()
-      if (document.activeElement !== button) return false
-      button.click()
-      return true
-    })()`)
-    expect(found).toBe(true)
-  }
-
   test('Move to trash opens the delete dialog for the item, and cancelling leaves it in place', async ({
     tauriPage,
   }) => {
@@ -279,7 +263,8 @@ test.describe('Tell me about this: the next actions', () => {
     expect(first).not.toBe('moveToTrash')
     expect(await tauriPage.evaluate<boolean>(`!!document.activeElement?.closest('[data-about-actions]')`)).toBe(false)
 
-    await pressAction(tauriPage, '[data-action="moveToTrash"], [data-action="delete"]')
+    // Wherever the footer put it: Ask Cmdr on (other specs leave it on for the run) pushes it behind "More".
+    await pressFooterAction(tauriPage, ['moveToTrash', 'delete'])
     await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', waitBudget(5000))
     // The card closed first, and the dialog names this one item.
     expect(await tauriPage.count(CARD)).toBe(0)
@@ -298,7 +283,7 @@ test.describe('Tell me about this: the next actions', () => {
     await waitForSettledCard(tauriPage)
     expect(await rowText(tauriPage, 'owner')).toContain('TextEdit')
 
-    await pressAction(tauriPage, '[data-action="revealOwner"]')
+    await pressFooterAction(tauriPage, ['revealOwner'])
     await expect.poll(async () => tauriPage.count(CARD), { timeout: waitBudget(3000) }).toBe(0)
     await expect.poll(async () => cursorName(tauriPage), { timeout: waitBudget(5000) }).toBe('TextEdit.app')
   })

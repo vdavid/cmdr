@@ -16,6 +16,7 @@ import path from 'path'
 import { waitBudget } from './wait-budget.js'
 import { test, expect } from './fixtures.js'
 import { closeRailIfOpen, ensureChatReady, openRailViaMenu, setAskCmdrEnabledInSettings } from './ask-cmdr-helpers.js'
+import { pressFooterAction } from './about-this-helpers.js'
 import { dismissOverlay, ensureAppReady, getFixtureRoot, moveCursorToFile, pressKey } from './helpers.js'
 import { defaultKey } from './helpers/registry-keys.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
@@ -194,27 +195,7 @@ test.describe('Tell me about this: with AI off', () => {
           timeout: waitBudget(5000),
         })
         .toBe(true)
-      // On a text file the three shown are full, so it's in "More" or shown: press it either way.
-      const pressed = await page.evaluate<boolean>(`(() => {
-        const shown = document.querySelector('${CARD} [data-action="continueInAskCmdr"] button')
-        if (shown) { shown.click(); return true }
-        document.querySelector('${CARD} [data-action="more"] button')?.click()
-        return false
-      })()`)
-      if (!pressed) {
-        await expect
-          .poll(
-            () =>
-              page.evaluate<boolean>(`(() => {
-                const item = [...document.querySelectorAll('[role="menuitem"]')].find((el) => el.textContent.trim() === 'Continue in Ask Cmdr')
-                if (!item) return false
-                item.click()
-                return true
-              })()`),
-            { timeout: waitBudget(3000) },
-          )
-          .toBe(true)
-      }
+      await pressFooterAction(page, ['continueInAskCmdr'])
 
       // The card closed first; the rail holds a fresh chat with the item and the draft, and nothing was sent.
       await expect.poll(() => cardOpen(page), { timeout: waitBudget(3000) }).toBe(false)

@@ -3,6 +3,8 @@
  * `ask-cmdr.spec.ts`, `ask-cmdr-capability.spec.ts`, and `about-this-verdict.spec.ts` share these.
  */
 
+import fs from 'node:fs'
+import path from 'node:path'
 import { waitBudget } from './wait-budget.js'
 import { expect } from './fixtures.js'
 import {
@@ -111,8 +113,35 @@ function askCmdrSwitchStateJs(): string {
   })()`
 }
 
-/** Sets Ask Cmdr's switch through the Settings window, the way a user does, and closes it. */
+/** `askCmdr.enabled` as the instance's `settings.json` holds it: what a card and a send read fresh. */
+function askCmdrEnabledOnDisk(): unknown {
+  const dataDir = process.env.CMDR_DATA_DIR
+  if (!dataDir) throw new Error('CMDR_DATA_DIR is not set; switching Ask Cmdr needs the instance’s settings.json')
+  try {
+    const parsed: unknown = JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf-8'))
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as Record<string, unknown>)['askCmdr.enabled']
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Sets Ask Cmdr's switch through the Settings window, the way a user does, and closes it once `settings.json` holds
+ * the new value (a card's "Continue in Ask Cmdr" and a send read the file fresh). Turned on, it also waits for the
+ * backend's cached wake readiness.
+ *
+ * ⚠️ The window is closed only after its own save landed: a window closed inside its 500 ms save debounce left the
+ * file at the old value, and the main window's `forceSave` on the cross-window event didn't rescue it, so the next
+ * spec's card still offered "Continue in Ask Cmdr".
+ */
 export async function setAskCmdrEnabledInSettings(main: TauriPage, on: boolean): Promise<void> {
+  await flipAskCmdrInSettings(main, on)
+  if (on) await waitForAskCmdrOnInBackend(main)
+}
+
+async function flipAskCmdrInSettings(main: TauriPage, on: boolean): Promise<void> {
   const settings = await openSettingsWindowViaProd(main)
   try {
     await settings.waitForSelector('.settings-sidebar', waitBudget(3000))
@@ -130,6 +159,16 @@ export async function setAskCmdrEnabledInSettings(main: TauriPage, on: boolean):
     await expect
       .poll(() => settings.evaluate<string>(askCmdrSwitchStateJs()), { timeout: waitBudget(3000) })
       .toBe(wanted)
+    // The E2E flush hook (installed by the settings page under `CMDR_E2E_MODE`) beats the save debounce.
+    await expect
+      .poll(
+        async () => {
+          await settings.evaluate(`window.__cmdrFlushSettings?.()`)
+          return askCmdrEnabledOnDisk() === on
+        },
+        { timeout: waitBudget(3000) },
+      )
+      .toBe(true)
   } finally {
     await closeScopedWindow(main, settings, 'settings')
   }
