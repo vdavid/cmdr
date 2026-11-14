@@ -4,6 +4,10 @@ The card for `file.tellMeAbout` (`⌘⇧I` on macOS, `Ctrl+Shift+Enter` elsewher
 the right-click row below Get info). Its strings live under `aboutThis.*` in
 `apps/desktop/src/lib/intl/messages/en/aboutThis.json`.
 
+**Decision: a resizable modal dialog, not a panel that follows the cursor.** The dialog gets every house primitive for
+free (focus trap, the soft-dialog registry so MCP can observe it, the gallery), and a panel could grow from the same
+state slice later (#1181).
+
 **Decision: `Ctrl+Shift+Enter` off macOS, not `Ctrl+Shift+I`.** `Ctrl+Shift+I` is the web inspector's chord in WebKitGTK
 and WebView2 (`routes/(main)/global-keydown.ts`), so a dev build would lose either the card or the inspector.
 
@@ -87,7 +91,10 @@ wide with one column, 60 rem with two.
   folder's digest). At the settle the reservations go and an all-routine section collapses to its heading plus "Nothing
   on record", in the same frame. **Decision**: the headline's second line goes too, since a one-line headline over a
   blank line read as a gap on every plain card. Pending rows are a static bar (no shimmer at all, so
-  `prefers-reduced-motion` has nothing to stop).
+  `prefers-reduced-motion` has nothing to stop). ⚠️ A reservation is a `min-height`, so a late answer longer than it (a
+  download row with its page and copy, an app with four or more Library folders, a wrapping owner line) still pushes the
+  rows below it before the settle, and when `SHOW_ANYWAY_MS` fires before the take answers, its block or the AI hint
+  appears later (#1203).
 - **Prominence is the wire's**: `AboutAbsence` draws a Routine unknown (or a not-applicable) as one muted line and a
   Notable one as a sentence with a quiet mark. A row-specific absence word (`ROW_UNKNOWN`) wins over the generic one.
 - **The take's column** (`[data-take-column]`) exists only when the take has a place there (§ The AI take), so a card

@@ -78,8 +78,10 @@ Pre-flight scans reuse cached listings when the source volume reports `WatchCove
   It's read off an `lstat` the engine holds anyway, AFTER the item's last date write: APFS lowers a birth time to an
   earlier modified time (verified on macOS 27.0.1: `touch -t` on a fresh file moved its `stat -f %B` back with it,
   2026-11-13), so a node read before the dates go on would make every undo read the file as a stranger. A stat that
-  fails records none, ❌ never fails the operation. `crates/cmdr-operation-log/DETAILS.md` § "A landed item must still
-  be the node that landed".
+  fails records none, ❌ never fails the operation. Accepted cost: a volume transfer landing on a local disk reads each
+  landed file's node one `node_identity` call at a time after its source (`LandedReadBack::nodes`), estimated 1–2 s for
+  50,000 files off a share, against a copy that takes minutes (by reading, 2026-11-14); one blocking batch per source is
+  the fix if it ever shows. `crates/cmdr-operation-log/DETAILS.md` § "A landed item must still be the node that landed".
 - **A transfer carries both volumes as typed sides** (`transfer_sides.rs`), captured at start: a vanished drive can't be
   named later. A drive that LEFT is the mount table's answer, ❌ never an errno.
 - **Free space: `free_space.rs`**, `statvfs` first, slow NSURL only on a shortfall; a shortfall is the person's call

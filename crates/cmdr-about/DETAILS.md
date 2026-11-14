@@ -188,6 +188,9 @@ rows, and the volume note.
   `IndexingOff` (the person turned image indexing off), `Protected` (the sensitive gate's path rule, or text holding a
   private key). `NotIndexed` and `IndexingOff` are Routine: one quiet line each. **Tags are labels, never a
   description**: `dog` and `beach` don't say a dog is on a beach, so nothing here or downstream joins them into a scene.
+- **Decision: no "same content elsewhere" row.** The drive index keeps no content hash and no size index, so twins by
+  content can be answered neither honestly nor fast. The card says what it can prove instead: the hard-link count
+  (`OtherNamesRemain`) and the copy or move Cmdr made (the operation log).
 - **A view has no note**: an archive's entry and a portal entry are views into one file or repo, so their own row says
   where they come from and no "On <volume>, Cmdr can see…" line appears.
 - **The note**: none when the volume answers everything, `IdentityOnly` when it answers nothing more, `SomeFacts` in
