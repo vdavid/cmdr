@@ -159,6 +159,9 @@ impl VolumeCaps {
 /// disk answers everything a disk can, and the card's volume note stays quiet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OsCaps {
+    /// The OS keeps a download record on an item (xattrs: macOS's quarantine and
+    /// `kMDItemWhereFroms`, Linux's `user.xdg.*`) that Cmdr reads.
+    pub download_records: bool,
     /// The OS records when an item was last opened (Spotlight on macOS).
     pub use_history: bool,
     /// The OS has code signatures to read.
@@ -338,7 +341,7 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         FactKind::Signature => signable && caps.system && os.code_signing && contents_local,
         // A symlink carries no record of its own, and an archive's entry answers with
         // the archive's.
-        FactKind::Download => target != Symlink && !git_snapshot && caps.download_record,
+        FactKind::Download => target != Symlink && !git_snapshot && caps.download_record && os.download_records,
         FactKind::CmdrOperation => target != ArchiveEntry && !git_snapshot && caps.operation_log,
         FactKind::LastOpened => matches!(target, File | AppBundle | Package) && caps.system && os.use_history,
         FactKind::DefaultApp => matches!(target, File | Package) && caps.system && os.default_app,

@@ -259,6 +259,7 @@ fn jpeg_with_camera(make: &str, model: &str, taken: &str) -> Vec<u8> {
 
 /// The macOS every card is gathered on.
 pub(super) const MACOS: OsCaps = OsCaps {
+    download_records: true,
     use_history: true,
     code_signing: true,
     default_app: true,

@@ -139,12 +139,20 @@ The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead
 the agent's burst of lookups) can't make the next card's quick rows queue past their budget; how the pool grows:
 `apps/desktop/src-tauri/src/file_system/DETAILS.md` § Threading.
 
+- **A read that failed says why** (`jobs::why_of_io`, `unix::why_of_errno`): gone since the probe is `NotFound`,
+  refused is `PermissionDenied`, an I/O failure is `Unreachable`, ❌ never `Unparseable` (a record Cmdr read and can't
+  make sense of) or `NoRecord` (none there). An index batch that couldn't be read is `Unparseable` per folder, ❌
+  never `NotIndexed`; an importance generation that couldn't be read leaves the row `Unparseable`, ❌ never a definite
+  "fresh".
 - **Real type**: the first 64 KB and, past that, the last 512 bytes (`TAIL_BYTES`: a DMG is told by its `koly`
   trailer), into `cmdr_about::sniff::real_type`.
-- **Bundle**: the top-level `Contents/Info.plist` (or a root `Info.plist`), refused past 1 MB before parsing.
+- **Bundle**: the top-level `Contents/Info.plist` (or a root `Info.plist`), refused past 1 MB before parsing. An app's
+  data row takes its id from the same file, and an unreadable one carries its reason there too.
 - **Download**: macOS `kMDItemWhereFroms` + `com.apple.quarantine`, Linux `user.xdg.origin.url` +
   `user.xdg.referrer.url`. `platform/unix.rs::read_capped` asks the size first and never reads past 64 KB; one past the
-  cap goes to the decoder as an oversized buffer, which it reads as unparseable.
+  cap goes to the decoder as an oversized buffer, which it reads as unparseable. A read the OS refused
+  (`XattrRead::Failed(errno)`) is never "no record": `unix::download_with` says why unless the other xattr answered, as
+  `through::download_through` does for a volume.
 - **Last opened**: `MDItemCopyAttribute` for `kMDItemLastUsedDate` and `kMDItemUseCount`, through
   `cmdr_about::payload::usage_fact`, which reads a date sitting on the last save as `NoRecord` (Spotlight stamps a file
   an app writes; evidence in the crate's DETAILS).
@@ -159,8 +167,9 @@ the log recorded THIS node landing there.
 - **The node comes from the probe's `lstat`** (`Probe::node`, inode + birth time), and `cmdr_operation_log::query::landed_at`
   matches it against the row's recorded `dest_inode` + `dest_birth_ns`. A file saved over since, by a temp and a
   rename as most apps save, is a new node: `Unknown(NodeChangedSince)` (Notable), ❌ never the operation. No row, a row
-  with no node (written before nodes were kept, a remote destination, FAT), or a pruned op is `Unknown(NoRecord)`
-  (Routine). The rule lives beside the schema (`crates/cmdr-operation-log/DETAILS.md` § "Where an item landed"); this
+  with no node (written before nodes were kept, a remote destination), or a pruned op is `Unknown(NoRecord)`
+  (Routine). An item on a filesystem that keeps no birth time (exFAT, FAT) has no node to ask about, even right after a
+  Cmdr copy there: `Unknown(VolumeCantTell)`, ❌ never `NoRecord` ("Cmdr never touched this"). The rule lives beside the schema (`crates/cmdr-operation-log/DETAILS.md` § "Where an item landed"); this
   module only words the answer.
 - **The database only, never the disk**: its own read connection on the about pool, through
   `operation_log_host::db_path()`. No log open (a failed start) leaves the row out of the plan, since a row with no job

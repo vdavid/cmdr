@@ -70,6 +70,7 @@ fn quick() -> Timing {
 
 fn macos() -> OsCaps {
     OsCaps {
+        download_records: true,
         use_history: true,
         code_signing: true,
         default_app: true,
@@ -335,6 +336,42 @@ fn a_link_into_a_mount_that_isnt_a_local_disk_is_described_as_a_link() {
         "reading through it reaches the other mount"
     );
     assert!(!super::place::reaches_a_share(&dir.as_ref().to_string_lossy()));
+}
+
+/// ❗ A read that failed says why: a file gone mid-gather is `NotFound` and an
+/// `Info.plist` Cmdr may not read is `PermissionDenied`, ❌ never `Unparseable` (which
+/// claims a record Cmdr read and couldn't make sense of).
+#[cfg(unix)]
+#[test]
+fn a_read_that_failed_says_why_and_never_unparseable() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = TestDir::new("about-read-failed");
+    let gone = dir.as_ref().join("gone.dmg");
+    assert_eq!(
+        super::jobs::real_type_of(&gone.to_string_lossy(), Some("dmg")),
+        Fact::unknown(UnknownWhy::NotFound)
+    );
+
+    let app = dir.as_ref().join("Locked.app");
+    std::fs::create_dir_all(app.join("Contents")).expect("make the bundle");
+    let plist = app.join("Contents/Info.plist");
+    std::fs::write(&plist, "<plist><dict/></plist>").expect("write the plist");
+    std::fs::set_permissions(&plist, std::fs::Permissions::from_mode(0o000)).expect("lock it");
+    // Root reads through any mode (the Linux container may run as root): only then
+    // is there nothing to see.
+    if std::fs::read(&plist).is_err() {
+        assert_eq!(
+            super::jobs::bundle_of(&app, AboutTarget::AppBundle),
+            Fact::unknown(UnknownWhy::PermissionDenied)
+        );
+    }
+    std::fs::set_permissions(&plist, std::fs::Permissions::from_mode(0o644)).expect("unlock it");
+    std::fs::write(&plist, "not a plist").expect("write junk");
+    assert_eq!(
+        super::jobs::bundle_of(&app, AboutTarget::AppBundle),
+        Fact::unknown(UnknownWhy::Unparseable),
+        "a description Cmdr read and can't parse is unparseable"
+    );
 }
 
 // ── Routing ─────────────────────────────────────────────────────────────────

@@ -15,7 +15,7 @@ use cmdr_about::provenance::{Download, MAX_XATTR_BYTES, download_fact};
 use cmdr_about::text::ItemText;
 
 use super::StatExtras;
-use super::unix::{XattrSyscalls, errno, executable, hard_links, physical_size, read_capped};
+use super::unix::{XattrSyscalls, download_with, errno, executable, hard_links, physical_size};
 
 pub(crate) use apps::{app_with_id, installed_apps, receipts};
 pub(crate) use signature::signature;
@@ -23,6 +23,7 @@ pub(crate) use spotlight::last_opened;
 
 pub(crate) fn os_caps() -> OsCaps {
     OsCaps {
+        download_records: true,
         use_history: true,
         code_signing: true,
         default_app: true,
@@ -83,7 +84,7 @@ impl XattrSyscalls for Darwin {
 }
 
 pub(crate) fn download(path: &str) -> Fact<Download> {
-    download_record(&mut |name| read_capped::<Darwin>(path, name, MAX_XATTR_BYTES).for_decoder(MAX_XATTR_BYTES))
+    download_with::<Darwin>(path, MAX_XATTR_BYTES, download_record)
 }
 
 pub(crate) fn download_record(read: super::ReadXattr<'_>) -> Fact<Download> {

@@ -141,19 +141,16 @@ fn sized_children(index_id: &str, parent: &str, rows: &[EntryRow], walked: &[Str
         .filter(|row| row.is_directory)
         .map(|row| child_path(parent, &row.name))
         .collect();
-    let mut folder_stats = match index().dir_stats_batch(index_id, &folder_paths) {
-        Ok(stats) => stats,
-        Err(error) => {
-            log::warn!(target: "about", "couldn't read the children's sizes from the index: {error}");
-            vec![None; folder_paths.len()]
-        }
-    }
+    let mut folder_stats = stats_or_why(
+        index().dir_stats_batch(index_id, &folder_paths).map_err(|_| ()),
+        folder_paths.len(),
+    )
     .into_iter();
     rows.iter()
         .map(|row| {
             let path = child_path(parent, &row.name);
             let size = if row.is_directory {
-                folder_size(folder_stats.next().flatten(), &path, walked)
+                folder_size(folder_stats.next().unwrap_or(Ok(None)), &path, walked)
             } else {
                 file_size(row.logical_size, row.physical_size)
             };
@@ -167,13 +164,35 @@ fn sized_children(index_id: &str, parent: &str, rows: &[EntryRow], walked: &[Str
         .collect()
 }
 
-fn folder_size(stats: Option<DirStats>, path: &str, walked: &[String]) -> Fact<RecursiveSize> {
+/// Each of `count` folders' stats from one batch read, or why there are none: a batch
+/// the index couldn't read is `Unparseable` for every folder, ❌ never `NotIndexed`
+/// (which says the index hasn't reached them).
+pub(crate) fn stats_or_why(
+    batch: Result<Vec<Option<DirStats>>, ()>,
+    count: usize,
+) -> Vec<Result<Option<DirStats>, UnknownWhy>> {
+    match batch {
+        Ok(stats) => stats.into_iter().map(Ok).collect(),
+        Err(()) => {
+            // The kind of failure only: the error's text can carry a path.
+            log::warn!(target: "about", "couldn't read folder sizes from the index for a card");
+            (0..count).map(|_| Err(UnknownWhy::Unparseable)).collect()
+        }
+    }
+}
+
+pub(crate) fn folder_size(
+    stats: Result<Option<DirStats>, UnknownWhy>,
+    path: &str,
+    walked: &[String],
+) -> Fact<RecursiveSize> {
     match stats {
-        Some(stats) => Fact::Known(recursive_size_of(
+        Ok(Some(stats)) => Fact::Known(recursive_size_of(
             &stats,
             IndexStatusResponse::walk_affects(walked, path),
         )),
-        None => Fact::unknown(UnknownWhy::NotIndexed),
+        Ok(None) => Fact::unknown(UnknownWhy::NotIndexed),
+        Err(why) => Fact::unknown(why),
     }
 }
 
@@ -318,17 +337,11 @@ pub(crate) fn app_data_fact(bundle_id: Option<&str>, home: &str, index_id: &str)
         }
     }
     let paths: Vec<String> = found.iter().map(|(_, path, _)| path.clone()).collect();
-    let mut stats = index()
-        .dir_stats_batch(index_id, &paths)
-        .unwrap_or_else(|error| {
-            log::warn!(target: "about", "couldn't read the app's data sizes from the index: {error}");
-            vec![None; paths.len()]
-        })
-        .into_iter();
+    let mut stats = stats_or_why(index().dir_stats_batch(index_id, &paths).map_err(|_| ()), paths.len()).into_iter();
     let folders = found
         .into_iter()
         .map(|(name, path, place)| {
-            let size = folder_size(stats.next().flatten(), &path, &walked);
+            let size = folder_size(stats.next().unwrap_or(Ok(None)), &path, &walked);
             LibraryFolder {
                 name: ItemText::new(&name),
                 path,

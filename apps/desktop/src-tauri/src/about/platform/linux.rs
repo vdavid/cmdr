@@ -18,10 +18,11 @@ use cmdr_about::payload::{AppRef, Signature, Usage};
 use cmdr_about::provenance::{Download, MAX_XATTR_BYTES, xdg_download_fact};
 
 use super::StatExtras;
-use super::unix::{XattrSyscalls, errno, executable, hard_links, physical_size, read_capped};
+use super::unix::{XattrSyscalls, download_with, errno, executable, hard_links, physical_size};
 
 pub(crate) fn os_caps() -> OsCaps {
     OsCaps {
+        download_records: true,
         use_history: false,
         code_signing: false,
         default_app: false,
@@ -60,7 +61,7 @@ impl XattrSyscalls for Linux {
 }
 
 pub(crate) fn download(path: &str) -> Fact<Download> {
-    download_record(&mut |name| read_capped::<Linux>(path, name, MAX_XATTR_BYTES).for_decoder(MAX_XATTR_BYTES))
+    download_with::<Linux>(path, MAX_XATTR_BYTES, download_record)
 }
 
 pub(crate) fn download_record(read: super::ReadXattr<'_>) -> Fact<Download> {

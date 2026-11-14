@@ -91,10 +91,16 @@ pub(crate) fn importance_fact(place: &IndexPlace, now_secs: u64) -> Fact<Importa
         PathImportance::Scored {
             weight, explanation, ..
         } => {
-            // The availability mask doesn't touch the generation read.
-            let recompute = ImportanceIndex::open(data_dir, volume_id, SignalSet::all())
-                .recompute_generation()
-                .unwrap_or(0);
+            // The availability mask doesn't touch the generation read. A generation
+            // Cmdr couldn't read leaves "is this score stale" open, ❌ never a
+            // definite "fresh": the record is there and unreadable.
+            let recompute = match ImportanceIndex::open(data_dir, volume_id, SignalSet::all()).recompute_generation() {
+                Ok(recompute) => recompute,
+                Err(_) => {
+                    log::warn!(target: "about", "couldn't read the importance store's generation for a card");
+                    return Fact::unknown(UnknownWhy::Unparseable);
+                }
+            };
             Fact::Known(Importance {
                 band: ImportanceBand::of_score(weight.score.value()),
                 stale: weight.as_of_generation < recompute,

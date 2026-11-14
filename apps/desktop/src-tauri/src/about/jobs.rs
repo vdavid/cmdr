@@ -193,10 +193,13 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources) -> Option
             Box::new(move || {
                 note_activity("read the index's Library listings", "appData");
                 // The app's own id, from its `Info.plist`: the bundle row reads the
-                // same small file, and the two jobs don't wait on each other.
-                let bundle_id = bundle_of(Path::new(&path), target)
-                    .known()
-                    .and_then(|bundle| bundle.bundle_id.clone());
+                // same small file, and the two jobs don't wait on each other. A
+                // description Cmdr couldn't read says why, ❌ never "no record".
+                let bundle_id = match bundle_of(Path::new(&path), target) {
+                    Fact::Known(bundle) => bundle.bundle_id,
+                    Fact::Unknown(unknown) => return AboutFact::AppData(Fact::unknown(unknown.why())),
+                    Fact::NotApplicable(_) | Fact::Pending => None,
+                };
                 let index_id = crate::index_host::index().volume_id_for_path(&home);
                 AboutFact::AppData(app_data_fact(
                     bundle_id.as_ref().map(ItemText::as_str),
@@ -217,10 +220,17 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources) -> Option
 pub(crate) fn real_type_of(path: &str, extension: Option<&str>) -> Fact<RealType> {
     match read_head_and_tail(Path::new(path)) {
         Ok((head, tail)) => Fact::Known(real_type(&head, tail.as_deref(), extension)),
-        Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => {
-            Fact::unknown(UnknownWhy::PermissionDenied)
-        }
-        Err(_) => Fact::unknown(UnknownWhy::Unparseable),
+        Err(error) => Fact::unknown(why_of_io(&error)),
+    }
+}
+
+/// Why a read of the item's own bytes failed: gone since the probe, refused, or the
+/// disk didn't deliver them. ❌ Never `Unparseable`: nothing was there to parse.
+pub(crate) fn why_of_io(error: &std::io::Error) -> UnknownWhy {
+    match error.kind() {
+        std::io::ErrorKind::NotFound | std::io::ErrorKind::NotADirectory => UnknownWhy::NotFound,
+        std::io::ErrorKind::PermissionDenied => UnknownWhy::PermissionDenied,
+        _ => UnknownWhy::Unreachable,
     }
 }
 
@@ -260,7 +270,14 @@ pub(crate) fn bundle_of(path: &Path, target: AboutTarget) -> Fact<Bundle> {
     if size > MAX_INFO_PLIST_BYTES {
         return Fact::unknown(UnknownWhy::Unparseable);
     }
-    let Ok(value) = plist::Value::from_file(&plist) else {
+    // Read here, then parsed, so a file Cmdr couldn't read says why instead of
+    // reading as one it couldn't make sense of.
+    let mut bytes = Vec::new();
+    let read = std::fs::File::open(&plist).and_then(|file| file.take(MAX_INFO_PLIST_BYTES).read_to_end(&mut bytes));
+    if let Err(error) = read {
+        return Fact::unknown(why_of_io(&error));
+    }
+    let Ok(value) = plist::Value::from_reader(std::io::Cursor::new(bytes)) else {
         return Fact::unknown(UnknownWhy::Unparseable);
     };
     let Some(dictionary) = value.as_dictionary() else {

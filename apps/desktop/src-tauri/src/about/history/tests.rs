@@ -293,8 +293,8 @@ fn every_way_of_not_knowing_has_its_reason() {
     // Replaced since: the honest answer, and a notable one.
     let replaced = ask(&history, LANDED, Some(node(8)));
     assert_eq!(why(&replaced), Some(UnknownWhy::NodeChangedSince));
-    // A row that recorded no node, a path nothing landed at, and an item whose
-    // filesystem gives no node to ask about: no record, ❌ never the operation.
+    // A row that recorded no node, and a path nothing landed at: no record, ❌ never
+    // the operation.
     assert_eq!(
         why(&ask(&history, "/Users/me/Documents/old.pdf", Some(node(7)))),
         Some(UnknownWhy::NoRecord)
@@ -303,7 +303,10 @@ fn every_way_of_not_knowing_has_its_reason() {
         why(&ask(&history, "/Users/me/Desktop/x.pdf", Some(node(7)))),
         Some(UnknownWhy::NoRecord)
     );
-    assert_eq!(why(&ask(&history, LANDED, None)), Some(UnknownWhy::NoRecord));
+    // ❗ A filesystem that keeps no birth time (exFAT, FAT) gives no node to ask
+    // about, even right after a Cmdr copy there: the volume can't tell, ❌ never
+    // "Cmdr never touched this".
+    assert_eq!(why(&ask(&history, LANDED, None)), Some(UnknownWhy::VolumeCantTell));
 }
 
 /// No database yet (a fresh install that never journaled) is no record; a file

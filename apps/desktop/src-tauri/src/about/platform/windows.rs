@@ -11,6 +11,7 @@ use super::StatExtras;
 
 pub(crate) fn os_caps() -> OsCaps {
     OsCaps {
+        download_records: false,
         use_history: false,
         code_signing: false,
         default_app: false,

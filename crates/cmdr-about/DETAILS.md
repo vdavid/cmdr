@@ -113,6 +113,8 @@ and `OsCaps`, all known before any job. It returns the sections in display order
   volume whose capabilities aren't mapped yet.
 - **`OsCaps` is apart from `VolumeCaps`** so an OS limit never reads as a volume one: Linux has no Spotlight, no code
   signing, and no default-app lookup yet (#1186), and its disk still gets no note. The host sets all three on macOS.
+  `download_records` is off on Windows, where Cmdr reads no download record: a row that could only answer `NoRecord`
+  would claim there's none.
 - **An online-only file** (`contents_local: false`, a cloud drive evicted it) plans no row that reads its bytes: the
   real type and the signature. Reading them would download it. Its xattrs are metadata and stay.
 - **Each kind sits in exactly one section** (`rows_of`): Origin (download, Cmdr operation), Nature (identity, real type,

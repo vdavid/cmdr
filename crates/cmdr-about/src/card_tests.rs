@@ -291,6 +291,7 @@ fn a_signature_is_planned_only_for_what_can_carry_one() {
 #[test]
 fn an_os_without_use_history_or_signing_plans_neither_row_and_adds_no_note() {
     let linux = OsCaps {
+        download_records: true,
         use_history: false,
         code_signing: false,
         default_app: false,
@@ -332,6 +333,29 @@ fn an_online_only_file_plans_no_row_that_reads_its_bytes() {
     assert!(!plan.has(K::RealType));
     assert!(!plan.has(K::Signature));
     assert!(plan.has(K::Download), "an xattr is metadata, kept for an evicted file");
+}
+
+/// An OS whose download records Cmdr doesn't read (Windows) plans no Download row: a
+/// row it can only answer "no record" would claim a record isn't there.
+#[test]
+fn an_os_without_download_records_plans_no_download_row() {
+    let windows = OsCaps {
+        download_records: false,
+        ..macos()
+    };
+    let plan = plan(PlanInput {
+        target: File,
+        extension: Some("dmg"),
+        is_executable: false,
+        contents_local: true,
+        caps: &local(),
+        os: &windows,
+        owner: &OwnerQuestion::Nothing,
+        in_a_repo: false,
+        git_snapshot: false,
+    });
+    assert!(!plan.has(K::Download));
+    assert!(plan.has(K::RealType));
 }
 
 #[test]

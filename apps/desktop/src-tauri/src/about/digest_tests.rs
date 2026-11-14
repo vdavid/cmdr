@@ -260,3 +260,20 @@ fn with_no_library_in_the_index_cmdr_cant_tell_what_an_app_leaves() {
         Fact::unknown(UnknownWhy::NoRecord)
     );
 }
+
+/// ❗ A batch of folder sizes the index couldn't read says so for each folder, ❌
+/// never `NotIndexed` (which says the index hasn't reached them yet).
+#[test]
+fn a_size_batch_the_index_couldnt_read_is_unparseable_never_not_indexed() {
+    let failed = stats_or_why(Err(()), 2);
+    assert_eq!(failed.len(), 2);
+    for stats in failed {
+        assert_eq!(folder_size(stats, "/x", &[]), Fact::unknown(UnknownWhy::Unparseable));
+    }
+    let read = stats_or_why(Ok(vec![None]), 1);
+    assert_eq!(
+        folder_size(read.into_iter().next().expect("one"), "/x", &[]),
+        Fact::unknown(UnknownWhy::NotIndexed),
+        "a folder the index hasn't listed is not indexed"
+    );
+}

@@ -31,6 +31,7 @@ pub(crate) fn mounted_share() -> VolumeCaps {
 /// macOS, which keeps use history, code signatures, and default apps.
 pub(crate) fn macos() -> OsCaps {
     OsCaps {
+        download_records: true,
         use_history: true,
         code_signing: true,
         default_app: true,

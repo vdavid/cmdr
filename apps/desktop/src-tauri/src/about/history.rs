@@ -55,10 +55,12 @@ pub(crate) fn cmdr_operation_naming(
     node: Option<NodeIdentity>,
     volume_name: &dyn Fn(&str) -> Option<String>,
 ) -> Fact<CmdrOperation> {
-    // No node to ask about (a filesystem with no birth time): the log records
-    // none there either, so nothing it holds could be tied to this item.
+    // No node to ask about (a filesystem with no birth time: exFAT, FAT): the log
+    // records none there either, so nothing it holds can be tied to this item, even
+    // right after a Cmdr copy. The volume can't tell; ❌ never `NoRecord`, which
+    // reads as "Cmdr never touched this".
     let Some(node) = node else {
-        return Fact::unknown(UnknownWhy::NoRecord);
+        return Fact::unknown(UnknownWhy::VolumeCantTell);
     };
     if !history.db.exists() {
         return Fact::unknown(UnknownWhy::NoRecord);
